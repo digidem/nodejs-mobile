@@ -9,7 +9,9 @@ const f = __filename;
 // This test ensures that input for lchmod is valid, testing for valid
 // inputs for path, mode and callback
 
-if (!common.isMacOS) {
+// nodejs-mobile patch: iOS is Darwin, so lchmod is available there too.
+// (Android has no lchmod; parallel.status skips this test under $system==android.)
+if (!common.isMacOS && !common.isIOS) {
   common.skip('lchmod is only available on macOS');
 }
 

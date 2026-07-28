@@ -2,8 +2,15 @@
 const common = require('../common');
 const assert = require('assert');
 
-// Import of pure js (non-shared) deps for comparison
-const acorn = require('../../deps/acorn/acorn/package.json');
+// Import of pure js (non-shared) deps for comparison.
+//
+// nodejs-mobile: the test assets copied into the app sandbox carry no
+// root-level "deps" folder, so on-device these files cannot be read at all --
+// the version cross-checks they feed are deferred to the bottom of this file
+// and skipped there. They are not replaced by hard-coded version strings: a
+// literal here goes stale at the next upstream bump and then fails on every
+// platform instead of only on the one that can't do the check.
+const canReadDeps = !common.isAndroid && !common.isIOS;
 
 const expected_keys = [
   'ares',
@@ -27,6 +34,9 @@ const expected_keys = [
   'merve',
 ];
 
+if (common.isAndroid || common.isIOS) {
+  expected_keys.push('mobile');
+}
 
 const hasUndici = process.config.variables.node_builtin_shareable_builtins.includes('deps/undici/undici.js');
 const hasAmaro = process.config.variables.node_builtin_shareable_builtins.includes('deps/amaro/dist/index.js');
@@ -111,11 +121,17 @@ for (let i = 0; i < expected_keys.length; i++) {
 assert.strictEqual(process.config.variables.napi_build_version,
                    process.versions.napi);
 
-if (hasUndici) {
+// nodejs-mobile: `canReadDeps` -- see the top of this file. Where deps/ is out
+// of reach the shape of both versions is still asserted above, against
+// `commonTemplate`; only the value cross-check is skipped.
+if (hasUndici && canReadDeps) {
   const undici = require('../../deps/undici/src/package.json');
   const expectedUndiciVersion = undici.version;
   assert.strictEqual(process.versions.undici, expectedUndiciVersion);
 }
 
-const expectedAcornVersion = acorn.version;
-assert.strictEqual(process.versions.acorn, expectedAcornVersion);
+if (canReadDeps) {
+  const acorn = require('../../deps/acorn/acorn/package.json');
+  const expectedAcornVersion = acorn.version;
+  assert.strictEqual(process.versions.acorn, expectedAcornVersion);
+}
