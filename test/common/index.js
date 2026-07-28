@@ -161,6 +161,8 @@ const isFreeBSD = process.platform === 'freebsd';
 const isOpenBSD = process.platform === 'openbsd';
 const isLinux = process.platform === 'linux';
 const isMacOS = process.platform === 'darwin';
+const isAndroid = process.platform === 'android';
+const isIOS = process.platform === 'ios';
 const isASan = process.config.variables.asan === 1;
 const isRiscv64 = process.arch === 'riscv64';
 const isDebug = process.features.debug;
@@ -976,8 +978,10 @@ const common = {
   invalidArgTypeHelper,
   isAlive,
   isASan,
+  isAndroid,
   isDebug,
   isFreeBSD,
+  isIOS,
   isLinux,
   isOpenBSD,
   isMacOS,
