@@ -334,6 +334,12 @@ void* OS::GetRandomMmapAddr() {
     MutexGuard guard(rng_mutex.Pointer());
     GetPlatformRandomNumberGenerator()->NextBytes(&raw_addr, sizeof(raw_addr));
   }
+#if defined(__APPLE__)
+#if V8_TARGET_ARCH_ARM64 && V8_OS_IOS
+  DCHECK_EQ(1 << 14, AllocatePageSize());
+  raw_addr = RoundDown(raw_addr, 1 << 14);
+#endif
+#endif
 #if V8_HOST_ARCH_ARM64
 #if defined(V8_TARGET_OS_MACOS)
   DCHECK_EQ(1 << 14, AllocatePageSize());
