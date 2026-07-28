@@ -42,7 +42,8 @@ generator_default_variables = {
     # the start of a string, while $| is used for variables that can appear
     # anywhere in a string.
     "INTERMEDIATE_DIR": "$!INTERMEDIATE_DIR",
-    "SHARED_INTERMEDIATE_DIR": "$!PRODUCT_DIR/gen",
+    # nodejs-mobile patch: allow multiple rules to generate the same object (host and target)
+    "SHARED_INTERMEDIATE_DIR": "$!PRODUCT_DIR/$|OBJ/gen",
     "PRODUCT_DIR": "$!PRODUCT_DIR",
     "CONFIGURATION_NAME": "$|CONFIGURATION_NAME",
     # Special variables that may be used by gyp 'rule' targets.
@@ -283,6 +284,13 @@ class NinjaWriter:
         CONFIGURATION_NAME = "$|CONFIGURATION_NAME"
         path = path.replace(CONFIGURATION_NAME, self.config_name)
 
+        # nodejs-mobile patch: allow multiple rules to generate the same object (host and target)
+        obj = "obj"
+        if self.toolset != "target":
+            obj += "." + self.toolset
+
+        path = path.replace("$|OBJ", obj)
+
         return path
 
     def ExpandRuleVariables(self, path, root, dirname, source, ext, name):
@@ -301,7 +309,8 @@ class NinjaWriter:
 
         See the above discourse on path conversions."""
         if env:
-            if self.flavor == "mac":
+            # nodejs-mobile patch: add ios
+            if self.flavor in ("mac", "ios"):
                 path = gyp.xcode_emulation.ExpandEnvVars(path, env)
             elif self.flavor == "win":
                 path = gyp.msvs_emulation.ExpandMacros(path, env)
@@ -393,7 +402,8 @@ class NinjaWriter:
 
         self.is_mac_bundle = gyp.xcode_emulation.IsMacBundle(self.flavor, spec)
         self.xcode_settings = self.msvs_settings = None
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             self.xcode_settings = gyp.xcode_emulation.XcodeSettings(spec)
             mac_toolchain_dir = generator_flags.get("mac_toolchain_dir", None)
             if mac_toolchain_dir:
@@ -409,7 +419,8 @@ class NinjaWriter:
             self.ninja.variable("cxx_host", "$cl_" + arch)
             self.ninja.variable("asm", "$ml_" + arch)
 
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             self.archs = self.xcode_settings.GetActiveArchs(config_name)
             if len(self.archs) > 1:
                 self.arch_subninjas = {
@@ -476,7 +487,8 @@ class NinjaWriter:
             print('spec.get("sources"): ', str(spec.get("sources")))
             raise
         if sources:
-            if self.flavor == "mac" and len(self.archs) > 1:
+            # nodejs-mobile patch: add ios
+            if self.flavor in ("mac", "ios") and len(self.archs) > 1:
                 # Write subninja file containing compile and link commands scoped to
                 # a single arch if a fat binary is being built.
                 for arch in self.archs:
@@ -512,14 +524,16 @@ class NinjaWriter:
             # Some actions/rules output 'sources' that are already object files.
             obj_outputs = [f for f in sources if f.endswith(self.obj_ext)]
             if obj_outputs:
-                if self.flavor != "mac" or len(self.archs) == 1:
+                # nodejs-mobile patch: add ios
+                if self.flavor not in ("mac", "ios") or len(self.archs) == 1:
                     link_deps += [self.GypPathToNinja(o) for o in obj_outputs]
                 else:
                     print(
                         "Warning: Actions/rules writing object files don't work with "
                         "multiarch targets, dropping. (target %s)" % spec["target_name"]
                     )
-        elif self.flavor == "mac" and len(self.archs) > 1:
+        # nodejs-mobile patch: add ios
+        elif self.flavor in ("mac", "ios") and len(self.archs) > 1:
             link_deps = collections.defaultdict(list)
 
         compile_deps = self.target.actions_stamp or actions_depends
@@ -1026,7 +1040,8 @@ class NinjaWriter:
             self.ninja.variable("nm", "$nm_host")
             self.ninja.variable("readelf", "$readelf_host")
 
-        if self.flavor != "mac" or len(self.archs) == 1:
+        # nodejs-mobile patch: add ios
+        if self.flavor not in ("mac", "ios") or len(self.archs) == 1:
             return self.WriteSourcesForArch(
                 self.ninja,
                 config_name,
@@ -1065,7 +1080,8 @@ class NinjaWriter:
         """Write build rules to compile all of |sources|."""
 
         extra_defines = []
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             cflags = self.xcode_settings.GetCflags(config_name, arch=arch)
             cflags_c = self.xcode_settings.GetCflagsC(config_name)
             cflags_cc = self.xcode_settings.GetCflagsCC(config_name)
@@ -1173,7 +1189,8 @@ class NinjaWriter:
             )
 
         pch_commands = precompiled_header.GetPchBuildCommands(arch)
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             # Most targets use no precompiled headers, so only write these if needed.
             for ext, var in [
                 ("c", "cflags_pch_c"),
@@ -1194,7 +1211,8 @@ class NinjaWriter:
         self.WriteVariableList(
             ninja_file, "cflags_cc", map(self.ExpandSpecial, cflags_cc)
         )
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             self.WriteVariableList(
                 ninja_file, "cflags_objc", map(self.ExpandSpecial, cflags_objc)
             )
@@ -1225,9 +1243,11 @@ class NinjaWriter:
                 # Add the _asm suffix as msvs is capable of handling .cc and
                 # .asm files of the same name without collision.
                 obj_ext = "_asm.obj"
-            elif self.flavor == "mac" and ext == "m":
+            # nodejs-mobile patch: add ios
+            elif self.flavor in ("mac", "ios") and ext == "m":
                 command = "objc"
-            elif self.flavor == "mac" and ext == "mm":
+            # nodejs-mobile patch: add ios
+            elif self.flavor in ("mac", "ios") and ext == "mm":
                 command = "objcxx"
                 self.target.uses_cpp = True
             elif self.flavor == "win" and ext == "rc":
@@ -1302,8 +1322,9 @@ class NinjaWriter:
             ninja_file.build(gch, cmd, input, variables=[(var_name, lang_flag)])
 
     def WriteLink(self, spec, config_name, config, link_deps, compile_deps):
-        """Write out a link step. Fills out target.binary."""
-        if self.flavor != "mac" or len(self.archs) == 1:
+        """Write out a link step. Fills out target.binary. """
+        # nodejs-mobile patch: add ios
+        if self.flavor not in ("mac", "ios") or len(self.archs) == 1:
             return self.WriteLinkForArch(
                 self.ninja, spec, config_name, config, link_deps, compile_deps
             )
@@ -1346,7 +1367,7 @@ class NinjaWriter:
     def WriteLinkForArch(
         self, ninja_file, spec, config_name, config, link_deps, compile_deps, arch=None
     ):
-        """Write out a link step. Fills out target.binary."""
+        """Write out a link step. Fills out target.binary. """
         command = {
             "executable": "link",
             "loadable_module": "solink_module",
@@ -1419,7 +1440,8 @@ class NinjaWriter:
         elif self.toolset == "host":
             env_ldflags = os.environ.get("LDFLAGS_host", "").split()
 
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             ldflags = self.xcode_settings.GetLdflags(
                 config_name,
                 self.ExpandSpecial(generator_default_variables["PRODUCT_DIR"]),
@@ -1491,7 +1513,8 @@ class NinjaWriter:
         libraries = gyp.common.uniquer(
             map(self.ExpandSpecial, spec.get("libraries", []))
         )
-        if self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if self.flavor in ("mac", "ios"):
             libraries = self.xcode_settings.AdjustLibraries(libraries, config_name)
         elif self.flavor == "win":
             libraries = self.msvs_settings.AdjustLibraries(libraries)
@@ -1598,7 +1621,8 @@ class NinjaWriter:
                     )
                     variables.append(("libflags", libflags))
 
-                if self.flavor != "mac" or len(self.archs) == 1:
+                # nodejs-mobile patch: add ios
+                if self.flavor not in ("mac", "ios") or len(self.archs) == 1:
                     self.AppendPostbuildVariable(
                         variables, spec, self.target.binary, self.target.binary
                     )
@@ -1754,9 +1778,11 @@ class NinjaWriter:
             + " && ".join([ninja_syntax.escape(command) for command in postbuilds])
         )
         command_string = (
-            commands + "); G=$$?; "
+            commands
+            + "); G=$$?; "
             # Remove the final output if any postbuild failed.
-            "((exit $$G) || rm -rf %s) " % output + "&& exit $$G)"
+            "((exit $$G) || rm -rf %s) " % output
+            + "&& exit $$G)"
         )
         if is_command_start:
             return "(" + command_string + " && "
@@ -1847,7 +1873,7 @@ class NinjaWriter:
 
         if (
             arch is None
-            and self.flavor == "mac"
+            and self.flavor in ("mac", "ios") # nodejs-mobile patch: add ios
             and type
             in ("static_library", "executable", "shared_library", "loadable_module")
         ):
@@ -1862,7 +1888,7 @@ class NinjaWriter:
         # Some products go into the output root, libraries go into shared library
         # dir, and everything else goes into the normal place.
         type_in_output_root = ["executable", "loadable_module"]
-        if self.flavor == "mac" and self.toolset == "target":
+        if self.flavor in ("mac", "ios") and self.toolset == "target":
             type_in_output_root += ["shared_library", "static_library"]
         elif self.flavor == "win" and self.toolset == "target":
             type_in_output_root += ["shared_library"]
@@ -1908,7 +1934,8 @@ class NinjaWriter:
             description = self.msvs_settings.ConvertVSMacros(
                 description, config=self.config_name
             )
-        elif self.flavor == "mac":
+        # nodejs-mobile patch: add ios
+        elif self.flavor in ("mac", "ios"):
             # |env| is an empty list on non-mac.
             args = [gyp.xcode_emulation.ExpandEnvVars(arg, env) for arg in args]
             description = gyp.xcode_emulation.ExpandEnvVars(description, env)
@@ -1945,8 +1972,7 @@ class NinjaWriter:
                 )
             else:
                 rspfile_content = gyp.msvs_emulation.EncodeRspFileList(
-                    args, win_shell_flags.quote
-                )
+                    args, win_shell_flags.quote)
             command = (
                 "%s gyp-win-tool action-wrapper $arch " % sys.executable
                 + rspfile
@@ -1980,8 +2006,9 @@ def CalculateVariables(default_variables, params):
     global generator_additional_non_configuration_keys
     global generator_additional_path_sections
     flavor = gyp.common.GetFlavor(params)
-    if flavor == "mac":
-        default_variables.setdefault("OS", "mac")
+    # nodejs-mobile patch: add ios
+    if flavor in ("mac", "ios"):
+        default_variables.setdefault("OS", flavor)
         default_variables.setdefault("SHARED_LIB_SUFFIX", ".dylib")
         default_variables.setdefault(
             "SHARED_LIB_DIR", generator_default_variables["PRODUCT_DIR"]
@@ -2083,7 +2110,6 @@ def GetDefaultConcurrentLinks():
         return pool_size
 
     if sys.platform in ("win32", "cygwin"):
-
         class MEMORYSTATUSEX(ctypes.Structure):
             _fields_ = [
                 ("dwLength", ctypes.c_ulong),
@@ -2103,8 +2129,8 @@ def GetDefaultConcurrentLinks():
 
         # VS 2015 uses 20% more working set than VS 2013 and can consume all RAM
         # on a 64 GiB machine.
-        mem_limit = max(1, stat.ullTotalPhys // (5 * (2**30)))  # total / 5GiB
-        hard_cap = max(1, int(os.environ.get("GYP_LINK_CONCURRENCY_MAX") or 2**32))
+        mem_limit = max(1, stat.ullTotalPhys // (5 * (2 ** 30)))  # total / 5GiB
+        hard_cap = max(1, int(os.environ.get("GYP_LINK_CONCURRENCY_MAX") or 2 ** 32))
         return min(mem_limit, hard_cap)
     elif sys.platform.startswith("linux"):
         if os.path.exists("/proc/meminfo"):
@@ -2115,14 +2141,14 @@ def GetDefaultConcurrentLinks():
                     if not match:
                         continue
                     # Allow 8Gb per link on Linux because Gold is quite memory hungry
-                    return max(1, int(match.group(1)) // (8 * (2**20)))
+                    return max(1, int(match.group(1)) // (8 * (2 ** 20)))
         return 1
     elif sys.platform == "darwin":
         try:
             avail_bytes = int(subprocess.check_output(["sysctl", "-n", "hw.memsize"]))
             # A static library debug build of Chromium's unit_tests takes ~2.7GB, so
             # 4GB per ld process allows for some more bloat.
-            return max(1, avail_bytes // (4 * (2**30)))  # total / 4GB
+            return max(1, avail_bytes // (4 * (2 ** 30)))  # total / 4GB
         except subprocess.CalledProcessError:
             return 1
     else:
@@ -2345,7 +2371,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
         master_ninja.variable("ld", CommandWithWrapper("LINK", wrappers, ld))
         master_ninja.variable("ldxx", CommandWithWrapper("LINK", wrappers, ldxx))
         master_ninja.variable("ar", GetEnvironFallback(["AR_target", "AR"], ar))
-        if flavor != "mac":
+        # nodejs-mobile patch: add ios
+        if flavor not in ("mac", "ios"):
             # Mac does not use readelf/nm for .TOC generation, so avoiding polluting
             # the master ninja with extra unused variables.
             master_ninja.variable("nm", GetEnvironFallback(["NM_target", "NM"], nm))
@@ -2411,7 +2438,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
             "cc_s",
             description="CC $out",
             command=(
-                "$cc $defines $includes $cflags $cflags_c $cflags_pch_c -c $in -o $out"
+                "$cc $defines $includes $cflags $cflags_c "
+                "$cflags_pch_c -c $in -o $out"
             ),
         )
         master_ninja.rule(
@@ -2522,7 +2550,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
             "solink",
             description="SOLINK $lib",
             restat=True,
-            command=mtime_preserving_solink_base % {"suffix": "@$link_file_list"},
+            command=mtime_preserving_solink_base
+            % {"suffix": "@$link_file_list"},
             rspfile="$link_file_list",
             rspfile_content=(
                 "-Wl,--whole-archive $in $solibs -Wl,--no-whole-archive $libs"
@@ -2707,7 +2736,7 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
             command="$env %(python)s gyp-mac-tool compile-ios-framework-header-map "
             "$out $framework $in && $env %(python)s gyp-mac-tool "
             "copy-ios-framework-headers $framework $copy_headers"
-            % {"python": sys.executable},
+            % {'python': sys.executable},
         )
         master_ninja.rule(
             "mac_tool",
@@ -2791,7 +2820,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
         )
 
         spec = target_dicts[qualified_target]
-        if flavor == "mac":
+        # nodejs-mobile patch: add ios
+        if flavor in ("mac", "ios"):
             gyp.xcode_emulation.MergeGlobalXcodeSettingsToSpec(data[build_file], spec)
 
         # If build_file is a symlink, we must not follow it because there's a chance
