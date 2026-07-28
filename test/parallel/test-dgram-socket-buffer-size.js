@@ -114,7 +114,7 @@ function getExpectedError(type) {
     socket.setSendBufferSize(10000);
 
     // note: linux will double the buffer size
-    const expectedBufferSize = common.isLinux ? 20000 : 10000;
+    const expectedBufferSize = (common.isLinux || common.isAndroid) ? 2e4 : 1e4;
     assert.strictEqual(socket.getRecvBufferSize(), expectedBufferSize);
     assert.strictEqual(socket.getSendBufferSize(), expectedBufferSize);
     socket.close();

@@ -43,6 +43,135 @@ test-perf-hooks: SKIP
 # https://github.com/nodejs/node/issues/39683
 test-tls-psk-client: PASS, FLAKY
 
+[$system==android]
+#
+# Tests that require child process that currently is not supported on mobile
+#
+test-child-process-*: SKIP
+test-cli-syntax-*: SKIP
+test-cluster-*: SKIP
+test-deprecation-flags: SKIP
+test-dgram-bind-shared-ports: SKIP
+test-diagnostic-dir-cpu-prof: SKIP
+test-diagnostic-dir-heap-prof: SKIP
+test-fs-stat-sync-overflow: SKIP
+test-heapdump-flag: SKIP
+test-init: SKIP
+test-net-GH-5504: SKIP
+test-net-listen-shared-ports: SKIP
+test-net-response-size: SKIP
+test-next-tick-error-spin: SKIP
+test-process-title: SKIP
+test-process-warnings: SKIP
+test-repl-timeout-throw: SKIP
+test-runner-run-inspect: SKIP
+test-set-http-max-http-headers: SKIP
+test-stream2-stderr-sync: SKIP
+test-util-debug: SKIP
+test-vm-timeout-rethrow: SKIP
+test-worker-prof: SKIP
+#
+# Tests that require the inspector, not included in the build
+#
+test-cpu-prof-*: SKIP
+test-debug*: SKIP
+test-heap-prof: SKIP
+test-inspector*: SKIP
+test-resolution-inspect-brk: SKIP
+#
+# Tests that require OpenSSL CLI that is not available on mobile
+#
+test-tls-psk-client: SKIP
+test-tls-securepair-client: SKIP
+test-tls-session-timeout: SKIP
+
+#
+# Measured on a device (Android emulator / iOS simulator), not inferred: each of
+# these spawns a child node process. The existing list enumerates individual
+# names rather than families, so everything upstream added to test-watch-mode-*,
+# test-heapdump-* and the heapsnapshot pair afterwards was never excluded. Four
+# of them do pass on the iOS *simulator*, where posix_spawn is permitted -- a
+# real device forbids it, so that is not coverage worth keeping.
+#
+test-get-heapsnapshot-options: SKIP
+test-heapdump-flag-custom-dir: SKIP
+test-watch-mode-restart-esm-loading-error: SKIP
+test-watch-mode-watch-flags: SKIP
+test-watch-mode-worker: SKIP
+test-without-async-context-frame: SKIP
+test-write-heapsnapshot-options: SKIP
+[$system==ios]
+#
+# Tests that require child process that currently is not supported on mobile
+#
+test-child-process-*: SKIP
+test-cli-syntax-*: SKIP
+test-cluster-*: SKIP
+test-deprecation-flags: SKIP
+test-dgram-bind-shared-ports: SKIP
+test-diagnostic-dir-cpu-prof: SKIP
+test-diagnostic-dir-heap-prof: SKIP
+test-fs-stat-sync-overflow: SKIP
+test-heapdump-flag: SKIP
+test-init: SKIP
+test-net-GH-5504: SKIP
+test-net-listen-shared-ports: SKIP
+test-net-response-size: SKIP
+test-next-tick-error-spin: SKIP
+test-process-title: SKIP
+test-process-warnings: SKIP
+test-repl-timeout-throw: SKIP
+test-runner-run-inspect: SKIP
+test-set-http-max-http-headers: SKIP
+test-stream2-stderr-sync: SKIP
+test-util-debug: SKIP
+test-vm-timeout-rethrow: SKIP
+test-worker-prof: SKIP
+#
+# Tests that require the inspector, not included in the build
+#
+test-cpu-prof-*: SKIP
+test-debug*: SKIP
+test-heap-prof: SKIP
+test-inspector*: SKIP
+test-resolution-inspect-brk: SKIP
+#
+# Tests that require OpenSSL CLI that is not available on mobile
+#
+test-tls-psk-client: SKIP
+test-tls-securepair-client: SKIP
+test-tls-session-timeout: SKIP
+#
+# Tests that uses fs.watch, which is inconsistent on iOS
+#
+test-fs-watch: SKIP
+
+#
+# Measured on a device (Android emulator / iOS simulator), not inferred: each of
+# these spawns a child node process. The existing list enumerates individual
+# names rather than families, so everything upstream added to test-watch-mode-*,
+# test-heapdump-* and the heapsnapshot pair afterwards was never excluded. Four
+# of them do pass on the iOS *simulator*, where posix_spawn is permitted -- a
+# real device forbids it, so that is not coverage worth keeping.
+#
+test-get-heapsnapshot-options: SKIP
+test-heapdump-flag-custom-dir: SKIP
+test-watch-mode-restart-esm-loading-error: SKIP
+test-watch-mode-watch-flags: SKIP
+test-watch-mode-worker: SKIP
+test-without-async-context-frame: SKIP
+test-write-heapsnapshot-options: SKIP
+#
+# Tests that spawn a child node process. They pass here only because the iOS
+# *simulator* permits posix_spawn; a shipped app cannot fork or exec, so
+# child_process is unusable on the platform and this was never coverage of
+# anything an embedder can run. Keeping them green on the simulator bought false
+# confidence, and because the spawn is timing-sensitive under load they were also
+# the entire flake population -- successive full sweeps failed a different
+# handful of test-runner-* each time. Android excludes the same set for the
+# harder reason that execPath there is app_process64 and the child SIGABRTs.
+#
+test-watch-mode: SKIP
 [$arch==arm]
 # https://github.com/nodejs/node/issues/49933
 test-watch-mode-inspect: SKIP
