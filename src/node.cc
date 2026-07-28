@@ -698,6 +698,8 @@ void ResetStdio() {
       CHECK_NE(err, -1);
     }
 
+#if !(defined(__APPLE__) && TARGET_OS_IPHONE)
+    // tcsetattr is not working on iOS devices.
     if (s.isatty) {
       sigset_t sa;
       int err;
@@ -719,6 +721,7 @@ void ResetStdio() {
       // - if the process group is orphaned, e.g. because the user logged out,
       //   tcsetattr fails with EIO
     }
+#endif  // !(defined(__APPLE__) && TARGET_OS_IPHONE)
   }
 #endif  // __POSIX__
 }
@@ -787,7 +790,13 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
   }
 
   // WebAssembly JS Promise Integration
+  // nodejs-mobile patch: iOS builds V8 in lite mode, which compiles out
+  // WebAssembly and every --experimental-wasm-* flag with it. V8 leaves the
+  // unrecognized flag in v8_args and node then fails with "bad option" before
+  // running any JS, so the flag must not be added there.
+#if !(defined(__APPLE__) && TARGET_OS_IPHONE)
   v8_args.emplace_back("--experimental-wasm-jspi");
+#endif  // !(defined(__APPLE__) && TARGET_OS_IPHONE)
 
 #ifdef __POSIX__
   // Block SIGPROF signals when sleeping in epoll_wait/kevent/etc.  Avoids the
