@@ -865,6 +865,15 @@
       'direct_dependent_settings': {
         'sources': ['<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources = ")'],
         'conditions': [
+          # nodejs-mobile: mirror GN's "if (!v8_enable_maglev)" block — with
+          # Maglev off, Turboshaft's Turbolev frontend still needs Maglev's
+          # graph builder. Upstream gyp never scraped it (Maglev-off is only
+          # reachable here via non-default arches upstream never gyp-builds).
+          ['v8_enable_maglev==0', {
+            'sources': [
+              '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources =.*?!v8_enable_maglev.*?v8_compiler_sources \\+= ")',
+            ],
+          }],
           ['v8_target_arch=="ia32"', {
             'sources': [
               '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources =.*?v8_current_cpu == \\"x86\\".*?v8_compiler_sources \\+= ")',
@@ -927,6 +936,11 @@
       'target_name': 'v8_compiler_for_mksnapshot_source_set',
       'type': 'static_library',
       'toolsets': ['host', 'target'],
+      # nodejs-mobile: always the real compiler sources, mirroring GN —
+      # mksnapshot needs the TurboFan backend to generate builtins even when
+      # v8_enable_turbofan==0 stubs the shipped v8_compiler. Upstream gyp
+      # wrongly stubbed this target too (that configuration is never built
+      # upstream) and omitted the fp16/abseil deps its include paths need.
       'dependencies': [
         'generate_bytecode_builtins_list',
         'run_torque',
@@ -936,13 +950,9 @@
         'v8_libbase',
         'v8_shared_internal_headers',
         'v8_pch',
-      ],
-      'conditions': [
-        ['v8_enable_turbofan==1', {
-          'dependencies': ['v8_compiler_sources'],
-        }, {
-          'sources': ['<(V8_ROOT)/src/compiler/turbofan-disabled.cc'],
-        }],
+        'v8_compiler_sources',
+        'fp16',
+        'abseil.gyp:abseil',
       ],
     },  # v8_compiler_for_mksnapshot_source_set
     {
@@ -962,11 +972,12 @@
         'abseil.gyp:abseil',
       ],
       'conditions': [
-        ['v8_enable_maglev==0', {
-          'sources': [
-            '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_header_set.\\"v8_internal_headers\\".*?!v8_enable_maglev.*?sources \\+= ")',
-          ],
-        }],
+        # nodejs-mobile: the upstream v8_enable_maglev==0 scrape that lived
+        # here matched GN's "!v8_enable_maglev → v8_compiler_sources +=" block
+        # only by substring accident ("sources += " inside
+        # "v8_compiler_sources += "); that block now lives in
+        # v8_compiler_sources, so with v8_enable_turbofan==0 this target is
+        # the pure turbofan-disabled stub, matching GN's v8_compiler.
         ['v8_enable_turbofan==1', {
           'dependencies': ['v8_compiler_sources'],
         }, {
@@ -1181,7 +1192,7 @@
           'conditions': [
             ['v8_enable_webassembly==1', {
               'conditions': [
-                ['((_toolset=="host" and host_arch=="arm64" or _toolset=="target" and target_arch=="arm64") and (OS in "linux mac ios openharmony")) or ((_toolset=="host" and host_arch=="x64" or _toolset=="target" and target_arch=="x64") and (OS in "linux mac openharmony"))', {
+                ['((_toolset=="host" and host_arch=="arm64" or _toolset=="target" and target_arch=="arm64") and (OS in "linux mac ios openharmony")) or ((_toolset=="host" and host_arch=="x64" or _toolset=="target" and target_arch=="x64") and (OS in "linux mac ios openharmony"))', {
                   'sources': [
                     '<(V8_ROOT)/src/trap-handler/handler-inside-posix.cc',
                     '<(V8_ROOT)/src/trap-handler/handler-outside-posix.cc',
@@ -1324,7 +1335,8 @@
         # Platforms that don't have Compare-And-Swap (CAS) support need to link atomic library
         # to implement atomic memory access.
         # Clang needs it for some atomic operations (https://clang.llvm.org/docs/Toolchain.html#atomics-library).
-        ['(OS=="linux" and clang==1) or (v8_current_cpu in ["mips64", "mips64el", "arm", "riscv64", "loong64"])', {
+        # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
+        ['((OS=="linux" or OS=="android") and clang==1) or (v8_current_cpu in ["mips64", "mips64el", "ppc", "arm", "riscv64", "loong64"])', {
           'link_settings': {
             'libraries': ['-latomic', ],
           },
@@ -1474,6 +1486,8 @@
             '<(V8_ROOT)/src/base/platform/platform-posix.h',
             '<(V8_ROOT)/src/base/platform/platform-posix-time.cc',
             '<(V8_ROOT)/src/base/platform/platform-posix-time.h',
+            # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
+            '<(V8_ROOT)/src/base/platform/platform-linux.h',
           ],
           'link_settings': {
             'target_conditions': [
@@ -1486,9 +1500,18 @@
           },
           'target_conditions': [
             ['_toolset=="host"', {
-              'sources': [
-                '<(V8_ROOT)/src/base/debug/stack_trace_posix.cc',
-                '<(V8_ROOT)/src/base/platform/platform-linux.cc',
+              'target_conditions': [
+                ['host_os == "mac"', {
+                  'sources': [
+                    '<(V8_ROOT)/src/base/debug/stack_trace_posix.cc',
+                    '<(V8_ROOT)/src/base/platform/platform-darwin.cc',
+                  ]
+                }, {
+                  'sources': [
+                    '<(V8_ROOT)/src/base/debug/stack_trace_posix.cc',
+                    '<(V8_ROOT)/src/base/platform/platform-linux.cc',
+                  ]
+                }],
               ],
             }, {
               'sources': [
@@ -2069,12 +2092,14 @@
             ],
           }, { # 'OS!="win"'
             'conditions': [
-              ['_toolset == "host" and host_arch == "x64" or _toolset == "target" and target_arch=="x64"', {
+              # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
+              ['_toolset == "host" and host_arch == "x64" and (target_arch == "x64" or target_arch == "arm64") or (_toolset == "target" and target_arch == "x64")', {
                 'sources': [
                   '<(V8_ROOT)/src/heap/base/asm/x64/push_registers_asm.cc',
                 ],
               }],
-              ['_toolset == "host" and host_arch == "ia32" or _toolset == "target" and target_arch=="ia32"', {
+              # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
+              ['_toolset == "host" and host_arch == "x64" and (target_arch == "arm" or target_arch == "ia32") or (_toolset == "target" and target_arch == "ia32")', {
                 'sources': [
                   '<(V8_ROOT)/src/heap/base/asm/ia32/push_registers_asm.cc',
                 ],
@@ -2290,6 +2315,46 @@
       },
     },  # postmortem-metadata
 
+    # nodejs-mobile patch: this whole target
+    {
+      'target_name': 'ndk_sources',
+      'type': 'none',
+      'conditions': [
+        ['OS=="android"', {
+          'copies': [{
+            'files': [
+              '<(android_ndk_path)/sources/android/cpufeatures/cpu-features.c',
+            ],
+            'destination': '<(SHARED_INTERMEDIATE_DIR)/ndk-sources/',
+          }],
+        }]
+      ]
+    },
+
+    # nodejs-mobile patch: this whole target
+    {
+      'target_name': 'ndk_cpufeatures',
+      'type': 'static_library',
+      'toolsets': ['target'],
+      'conditions': [
+        ['OS=="android" and _toolset=="target"', {
+          'dependencies': ['ndk_sources'],
+          'include_dirs': [
+            '<(android_ndk_path)/sources/android/cpufeatures',
+            '<(android_ndk_sysroot)/usr/include', # cpu-features.c needs sys/system_properties.h
+          ],
+          'sources': [
+            '<(SHARED_INTERMEDIATE_DIR)/ndk-sources/cpu-features.c',
+          ],
+          'direct_dependent_settings': {
+            'include_dirs': [
+              '<(android_ndk_path)/sources/android/cpufeatures',
+            ],
+          },
+        }],
+      ],
+    },
+
     {
       'target_name': 'v8_zlib',
       'type': 'static_library',
@@ -2303,6 +2368,10 @@
               'defines': ['X86_WINDOWS']
             }]
           ]
+        }],
+        # nodejs-mobile patch:
+        ['OS=="android" and _toolset=="target"', {
+          'dependencies': ['ndk_cpufeatures'],
         }],
       ],
       'direct_dependent_settings': {
