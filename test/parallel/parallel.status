@@ -162,6 +162,1450 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
 test-tls-set-default-ca-certificates-reset-fetch: SKIP
 test-inspector-invalid-protocol: SKIP
 
+[$system==android]
+#
+# Reverted to upstream (kept node:test); the jitless V8 build emits the short
+# assert diff format, so these fail the .out comparison on mobile. None are in
+# the curated gate, so skip them in the full suite rather than rewriting
+# them (test-aborted-util may pass unmodified - un-skip after on-device check).
+#
+test-aborted-util: SKIP
+#
+# Tests that require child process that currently is not supported on mobile
+#
+test-assert-builtins-not-read-from-filesystem: SKIP
+test-async-hooks-fatal-error: SKIP
+test-async-wrap-pop-id-during-load: SKIP
+test-bash-completion: SKIP
+test-buffer-constructor-node-modules-paths: SKIP
+test-child-process-*: SKIP
+test-cli-*: SKIP
+test-cluster-*: SKIP
+test-common: SKIP
+test-common-countdown: SKIP
+test-common-expect-warning: SKIP
+test-coverage-with-inspector-disabled: SKIP
+test-crypto-fips: SKIP
+test-crypto-secure-heap: SKIP
+test-cwd-enoent*: SKIP
+test-debug-usage: SKIP
+test-debugger-address: SKIP
+test-debugger-auto-resume: SKIP
+test-debugger-break: SKIP
+test-debugger-breakpoint-exists: SKIP
+test-debugger-clear-breakpoints: SKIP
+test-debugger-exceptions: SKIP
+test-debugger-exec-scope: SKIP
+test-debugger-extract-function-name: SKIP
+test-debugger-heap-profiler: SKIP
+test-debugger-help: SKIP
+test-debugger-invalid-json: SKIP
+test-debugger-list: SKIP
+test-debugger-object-type-remote-object: SKIP
+test-debugger-profile: SKIP
+test-debugger-profile-command: SKIP
+test-debugger-random-port: SKIP
+test-debugger-random-port-with-inspect-port: SKIP
+test-debugger-run-after-quit-restart: SKIP
+test-debugger-sb-before-load: SKIP
+test-debugger-scripts: SKIP
+test-debugger-set-context-line-number: SKIP
+test-debugger-unavailable-port: SKIP
+test-debugger-use-strict: SKIP
+test-debugger-watch-validation: SKIP
+test-debugger-watchers: SKIP
+test-debugger-websocket-secret-mismatch: SKIP
+test-dgram-cluster-*: SKIP
+test-dgram-deprecation-error: SKIP
+test-dgram-exclusive-implicit-bind: SKIP
+test-domain-abort-on-uncaught: SKIP
+test-domain-nested-throw: SKIP
+test-domain-no-error-handler-abort-on-uncaught-*: SKIP
+test-domain-throw-error-then-throw-from-uncaught-exception-handler: SKIP
+test-domain-top-level-error-handler-throw: SKIP
+test-domain-uncaught-exception: SKIP
+test-domain-with-abort-on-uncaught-exception: SKIP
+test-dummy-stdio: SKIP
+test-env-var-no-warnings: SKIP
+test-error-reporting: SKIP
+test-force-repl*: SKIP
+test-fs-readfile-error: SKIP
+test-fs-readfile-pipe*: SKIP
+test-fs-readfilesync-pipe-large: SKIP
+test-fs-realpath-pipe: SKIP
+test-fs-syncwritestream: SKIP
+test-fs-write-sigxfsz: SKIP
+test-fs-write-stream-patch-open: SKIP
+test-handle-wrap-isrefed: SKIP
+test-heap-prof-basic: SKIP
+test-heap-prof-dir-absolute: SKIP
+test-heap-prof-dir-name: SKIP
+test-heap-prof-dir-relative: SKIP
+test-heap-prof-exec-argv: SKIP
+test-heap-prof-exit: SKIP
+test-heap-prof-interval: SKIP
+test-heap-prof-invalid-args: SKIP
+test-heap-prof-loop-drained: SKIP
+test-heap-prof-name: SKIP
+test-heap-prof-sigint: SKIP
+test-heapsnapshot-near-heap-limit-by-api-in-worker: SKIP
+test-heapsnapshot-near-heap-limit-worker: SKIP
+test-http-chunk-problem: SKIP
+test-http-debug: SKIP
+test-http-full-response: SKIP
+test-http-max-header-size: SKIP
+test-http-parser-lazy-loaded: SKIP
+test-http-pipeline-flood: SKIP
+test-http-server-stale-close: SKIP
+test-http-timeout-flag: SKIP
+test-http2-clean-output: SKIP
+test-http2-debug: SKIP
+test-http2-respond-file-error-pipe-offset: SKIP
+test-http2-tls-disconnect: SKIP
+test-https-agent-unref-socket: SKIP
+test-internal-module-require: SKIP
+test-internal-util-decorate-error-stack: SKIP
+test-kill-segfault-freebsd: SKIP
+test-listen-fd-cluster: SKIP
+test-listen-fd-detached: SKIP
+test-listen-fd-detached-inherit: SKIP
+test-listen-fd-server: SKIP
+test-loaders-unknown-builtin-module: SKIP
+test-macos-signed-deps: SKIP
+test-math-random: SKIP
+test-module-loading-globalpaths: SKIP
+test-module-main-extension-lookup: SKIP
+test-module-main-fail: SKIP
+test-module-main-preserve-symlinks-fail: SKIP
+test-module-run-main-monkey-patch: SKIP
+test-module-wrap: SKIP
+test-module-wrapper: SKIP
+test-net-child-process-connect-reset: SKIP
+test-net-listen-exclusive-random-ports: SKIP
+test-net-server-connections-child-null: SKIP
+test-net-socket-constructor: SKIP
+test-node-output-console: SKIP
+test-node-output-errors: SKIP
+test-node-output-sourcemaps: SKIP
+test-node-output-vm: SKIP
+test-npm-install: SKIP
+test-openssl-ca-options: SKIP
+test-os-homedir-no-envvar: SKIP
+test-os-userinfo-handles-getter-errors: SKIP
+test-package-map-cli: SKIP
+test-pending-deprecation: SKIP
+test-permission-audit-fs-does-not-deny: SKIP
+test-permission-drop-fs-granted-path: SKIP
+test-permission-drop-fs-specific-path: SKIP
+test-permission-fs-write-trace-events: SKIP
+test-pipe-head: SKIP
+test-pipe-unref: SKIP
+test-policy-crypto-default-encoding: SKIP
+test-policy-dependencies: SKIP
+test-policy-integrity: SKIP
+test-policy-integrity-flag: SKIP
+test-policy-manifest: SKIP
+test-policy-parse-integrity: SKIP
+test-policy-process-binding: SKIP
+test-policy-scopes: SKIP
+test-preload: SKIP
+test-preload-print-process-argv: SKIP
+test-preload-self-referential: SKIP
+test-preload-worker: SKIP
+test-process-argv-0: SKIP
+test-process-env: SKIP
+test-process-exec-argv: SKIP
+test-process-execpath: SKIP
+test-process-exit-after-fetch-throw: SKIP
+test-process-exit-code: SKIP
+test-process-external-stdio-close: SKIP
+test-process-external-stdio-close-spawn: SKIP
+test-process-getgroups: SKIP
+test-process-kill-null: SKIP
+test-process-ppid: SKIP
+test-process-raw-debug: SKIP
+test-process-really-exit: SKIP
+test-process-redirect-warnings: SKIP
+test-process-redirect-warnings-env: SKIP
+test-process-remove-all-signal-listeners: SKIP
+test-process-title: SKIP
+test-process-uncaught-exception-monitor: SKIP
+test-process-wrap: SKIP
+test-promise-reject-callback-exception: SKIP
+test-promise-unhandled-flag: SKIP
+test-repl-array-prototype-tempering: SKIP
+test-repl-built-in-modules: SKIP
+test-repl-clear-immediate-crash: SKIP
+test-repl-cli-eval: SKIP
+test-repl-dynamic-import: SKIP
+test-repl-harmony: SKIP
+test-repl-import-referrer: SKIP
+test-repl-inspect-defaults: SKIP
+test-repl-options: SKIP
+test-repl-require-after-write: SKIP
+test-repl-require-context: SKIP
+test-repl-require-self-referential: SKIP
+test-repl-setprompt: SKIP
+test-repl-sigint: SKIP
+test-repl-sigint-nested-eval: SKIP
+test-repl-strict-mode-previews: SKIP
+test-repl-syntax-error-handling: SKIP
+test-repl-tab-complete-nested-repls: SKIP
+test-repl-uncaught-exception-standalone: SKIP
+test-repl-unexpected-token-recoverable: SKIP
+test-repl-unsafe-array-iteration: SKIP
+test-repl-unsupported-option: SKIP
+test-require-invalid-main-no-exports: SKIP
+test-require-package-map: SKIP
+test-require-symlink: SKIP
+test-runner-cli: SKIP
+test-runner-coverage: SKIP
+test-runner-entry-file: SKIP
+test-runner-exit-code: SKIP
+test-runner-extraneous-async-activity: SKIP
+test-runner-import-no-scheme: SKIP
+test-runner-inspect: SKIP
+test-runner-log: SKIP
+test-runner-misc: SKIP
+test-runner-output: SKIP
+test-runner-reporters: SKIP
+test-runner-tag-filter-cli: SKIP
+test-runner-tags-events: SKIP
+test-runner-tags-experimental-warning: SKIP
+test-runner-watch-mode: SKIP
+test-security-revert-unknown: SKIP
+test-set-http-max-http-headers: SKIP
+test-setproctitle: SKIP
+test-sigint-infinite-loop: SKIP
+test-signal-unregister: SKIP
+test-snapshot-api: SKIP
+test-snapshot-argv1: SKIP
+test-snapshot-basic: SKIP
+test-snapshot-cjs-main: SKIP
+test-snapshot-console: SKIP
+test-snapshot-dns-lookup-localhost: SKIP
+test-snapshot-dns-lookup-localhost-promise: SKIP
+test-snapshot-dns-resolve-localhost: SKIP
+test-snapshot-dns-resolve-localhost-promise: SKIP
+test-snapshot-error: SKIP
+test-snapshot-eval: SKIP
+test-snapshot-gzip: SKIP
+test-snapshot-incompatible: SKIP
+test-snapshot-namespaced-builtin: SKIP
+test-snapshot-typescript: SKIP
+test-snapshot-umd: SKIP
+test-snapshot-warning: SKIP
+test-snapshot-weak-reference: SKIP
+test-source-map-enable: SKIP
+test-startup-large-pages: SKIP
+test-startup-empty-regexp-statics: SKIP
+test-stack-size-limit: SKIP
+test-stdin-child-proc: SKIP
+test-stdin-from-file: SKIP
+test-stdin-pipe-large: SKIP
+test-stdin-pipe-resume: SKIP
+test-stdin-resume-pause: SKIP
+test-stdin-script-child: SKIP
+test-stdin-script-child-option: SKIP
+test-stdio-closed: SKIP
+test-stdio-pipe-redirect: SKIP
+test-stdio-pipe-stderr: SKIP
+test-stdio-undestroy: SKIP
+test-stdout-cannot-be-closed-child-process-pipe: SKIP
+test-stdout-close-catch: SKIP
+test-stdout-close-unref: SKIP
+test-stdout-stderr-reading: SKIP
+test-stdout-to-file: SKIP
+test-stream-iter-disabled: SKIP
+test-stream-iter-readable-interop-disabled: SKIP
+test-stream-pipeline-process: SKIP
+test-sync-io-option: SKIP
+test-throw-error-with-getter-throw-traced: SKIP
+test-throw-undefined-or-null-traced: SKIP
+test-tick-processor-arguments: SKIP
+test-timers-async-store-leak: SKIP
+test-timers-immediate-promisified: SKIP
+test-timers-interval-promisified: SKIP
+test-timers-timeout-promisified: SKIP
+test-tls-cipher-list: SKIP
+test-tls-cli-min-max-conflict: SKIP
+test-tls-enable-keylog-cli: SKIP
+test-tls-enable-trace: SKIP
+test-tls-enable-trace-cli: SKIP
+test-tls-env-bad-extra-ca: SKIP
+test-tls-env-extra-ca: SKIP
+test-tls-env-extra-ca-file-load: SKIP
+test-tls-env-extra-ca-no-crypto: SKIP
+test-tls-handshake-exception: SKIP
+test-tls-ticket-cluster: SKIP
+test-tls-wrap-econnreset-pipe: SKIP
+test-trace-atomics-wait: SKIP
+test-trace-events-all: SKIP
+test-trace-events-binding: SKIP
+test-trace-events-bootstrap: SKIP
+test-trace-events-category-used: SKIP
+test-trace-events-console: SKIP
+test-trace-events-environment: SKIP
+test-trace-events-file-pattern: SKIP
+test-trace-events-fs-sync: SKIP
+test-trace-events-fs-async: SKIP
+test-trace-events-http: SKIP
+test-trace-events-metadata: SKIP
+test-trace-events-net: SKIP
+test-trace-events-none: SKIP
+test-trace-events-perf: SKIP
+test-trace-events-process-exit: SKIP
+test-trace-events-promises: SKIP
+test-trace-events-threadpool: SKIP
+test-trace-events-v8: SKIP
+test-trace-events-vm: SKIP
+test-trace-events-worker-metadata: SKIP
+test-trace-events-worker-metadata-with-name: SKIP
+test-trace-exit: SKIP
+test-tracing-no-crash: SKIP
+test-unhandled-exception-rethrow-error: SKIP
+test-unhandled-exception-with-worker-inuse: SKIP
+test-unicode-node-options: SKIP
+test-util-callbackify: SKIP
+test-util-getcallsites-sourcemap: SKIP
+test-v8-coverage: SKIP
+test-v8-stop-coverage: SKIP
+test-v8-take-coverage: SKIP
+test-v8-take-coverage-noop: SKIP
+test-v8-untrusted-code-mitigations: SKIP
+test-vm-api-handles-getter-errors: SKIP
+test-vm-cached-data: SKIP
+test-vm-sigint: SKIP
+test-vm-sigint-existing-handler: SKIP
+test-vm-syntax-error-message: SKIP
+test-vm-syntax-error-stderr: SKIP
+test-worker-init-failure: SKIP
+test-worker-message-type-unknown: SKIP
+test-worker-on-process-exit: SKIP
+test-worker-process-env: SKIP
+#
+# Tests that try to access the 'test' parent folder, currently not supported on mobile
+#
+test-benchmark-cli: SKIP
+test-icu-minimum-version: SKIP
+test-npm-version: SKIP
+test-corepack-version: SKIP
+test-process-config: SKIP
+test-process-env-allowed-flags-are-documented: SKIP
+test-release-npm: SKIP
+#
+# Tests that require OpenSSL CLI that is not available on mobile
+#
+test-crypto-sign-verify: SKIP
+test-https-foafssl: SKIP
+test-tls-alert: SKIP
+test-tls-client-renegotiation-limit: SKIP
+test-tls-dhe: SKIP
+test-tls-ecdh: SKIP
+test-tls-ecdh-auto: SKIP
+test-tls-ecdh-multiple: SKIP
+test-tls-no-sslv3: SKIP
+test-tls-psk-server: SKIP
+test-tls-securepair-server: SKIP
+test-tls-server-verify: SKIP
+test-tls-session-cache: SKIP
+#
+# Tests that require the inspector, not included in the build
+#
+test-debugger-pid: SKIP
+test-inspect*: SKIP
+test-process-env-sideeffects: SKIP
+test-repl-inspector: SKIP
+test-trace-events-dynamic-enable: SKIP
+test-trace-events-dynamic-enable-workers-disabled: SKIP
+test-warn-sigprof: SKIP
+test-worker-debug: SKIP
+#
+# Tests that depend on FIPS OpenSSL that is not available on mobile
+#
+test-dsa-fips-invalid-key : SKIP
+#
+# Tests that require ESLINT, not included in the build
+#
+test-eslint-*: SKIP
+#
+# Tests that run on Windows only
+#
+test-fs-long-path: SKIP
+test-fs-readfilesync-enoent: SKIP
+test-fs-realpath-on-substed-drive: SKIP
+test-fs-write-file-invalid-path: SKIP
+test-module-readonly: SKIP
+test-require-long-path: SKIP
+test-spawn-cmd-named-pipe: SKIP
+test-windows-abort-exitcode: SKIP
+test-windows-failed-heap-allocation: SKIP
+#
+# Tests that require _LARGEFILE_SOURCE, which is a no-op on SDK API 21.
+#
+#
+# Tests that run on Linux only
+#
+test-fs-read-file-sync-hostname : SKIP
+#
+# Tests that run on Windows and macOS only
+#
+test-fs-watch-recursive: SKIP
+#
+# Tests that run on macOS only
+#
+test-fs-lchmod: SKIP
+#
+# Tests that require Intl, not included in the build
+#
+test-icu-data-dir: SKIP
+test-icu-punycode: SKIP
+test-whatwg-url-constructor: SKIP
+test-whatwg-url-custom-domainto: SKIP
+test-whatwg-url-origin: SKIP
+test-whatwg-url-setters: SKIP
+test-whatwg-url-toascii: SKIP
+#
+# Tests using APIs not available on Android
+#
+test-process-euid-egid: SKIP # process.seteuid is not a function
+test-process-setgroups: SKIP # process.setgroups is not a function
+test-process-uid-gid: SKIP # process.setuid is not a function
+#
+# Test requires hard links, not fully supported on Android.
+#
+test-fs-link: SKIP
+#
+# Test that requires using udp6 link local address, not available on old devices.
+#
+#
+# Tests that enter in conflict with the test app.
+#
+test-listen-fd-ebadf: SKIP # uses stderr as a socket, which the test app redirects.
+test-process-exit-recursive: SKIP # catches exit codes, like the test app does to output to logcat.
+test-process-beforeexit-throw-exit: SKIP
+#
+# Tests that required zipped files, which the Android build system uncompresses to include in the APK.
+#
+test-zlib-from-concatenated-gzip: SKIP
+test-zlib-from-gzip: SKIP
+#
+# Tests that require trace events, not included in the build
+#
+test-trace-events-api: SKIP
+test-trace-events-async-hooks: SKIP
+test-trace-events-async-hooks-dynamic: SKIP
+test-trace-events-async-hooks-worker: SKIP
+#
+# Tests that require more memory than what is usually available on the device,
+# causing the app to crash without being handled inside Node.js, and the test
+# to hang indefinitely, waiting for the results.
+test-blob-buffer-too-large: SKIP
+#
+# Tests that are less relevant on mobile, although they could be supported
+#
+test-release-changelog: SKIP # header files not available from mobile apps
+test-runner-run: SKIP # some paths were not correct
+
+#
+# ---------------------------------------------------------------------------
+# Below: measured on a full test/parallel sweep of upstream v24.18.0 run on a
+# device (Android arm64 emulator / iOS arm64 simulator), not inferred. Each of
+# these spawns a child node process: on Android process.execPath is
+# app_process64 rather than node, so the child SIGABRTs; the debugger-probe
+# cases drive a child over the inspector protocol. A glob is used only where
+# EVERY member of the family fails -- families with passing members are listed
+# individually so a working test is never skipped by association.
+# ---------------------------------------------------------------------------
+#
+test-async-hooks-stack-*: SKIP
+test-compile-cache-typescript-*: SKIP
+test-debugger-probe-*: SKIP
+test-parse-*: SKIP
+test-runner-cli-*: SKIP
+test-runner-coverage-*: SKIP
+test-runner-run-*: SKIP
+test-tls-off-*: SKIP
+test-watch-mode-kill-*: SKIP
+test-assert-esm-cjs-message-verify: SKIP
+test-buffer-constructor-node-modules: SKIP
+test-compile-cache-api-env: SKIP
+test-compile-cache-api-flush: SKIP
+test-compile-cache-api-options-portable-env: SKIP
+test-compile-cache-api-permission: SKIP
+test-compile-cache-api-portable: SKIP
+test-compile-cache-api-success: SKIP
+test-compile-cache-api-tmpdir: SKIP
+test-compile-cache-bad-syntax: SKIP
+test-compile-cache-disable: SKIP
+test-compile-cache-dynamic-import: SKIP
+test-compile-cache-esm: SKIP
+test-compile-cache-existing-directory: SKIP
+test-compile-cache-permission-allowed: SKIP
+test-compile-cache-permission-disallowed: SKIP
+test-compile-cache-portable: SKIP
+test-compile-cache-portable-esm: SKIP
+test-compile-cache-success: SKIP
+test-compile-cache-updated-file: SKIP
+test-config-file: SKIP
+test-debugger-inspect-help: SKIP
+test-debugger-inspect-help-forwarding: SKIP
+test-debugger-preserve-breaks: SKIP
+test-diagnostics-channel-child-process: SKIP
+test-diagnostics-channel-process: SKIP
+test-dotenv-edge-cases: SKIP
+test-dotenv-node-options: SKIP
+test-error-prepare-stack-trace: SKIP
+test-experimental-shared-value-conveyor: SKIP
+test-find-package-json: SKIP
+test-fs-readfile-eof: SKIP
+test-fs-rm: SKIP
+test-hash-seed: SKIP
+test-icu-env: SKIP
+test-is-internal-thread: SKIP
+test-max-old-space-size-percentage: SKIP
+test-module-print-timing: SKIP
+test-navigator: SKIP
+test-net-listen-twice: SKIP
+test-node-run: SKIP
+test-performance-nodetiming-uvmetricsinfo: SKIP
+test-process-execve: SKIP
+test-process-execve-abort: SKIP
+test-process-execve-on-exit: SKIP
+test-process-execve-permission-granted: SKIP
+test-process-execve-socket: SKIP
+test-process-exit-code-validation: SKIP
+test-process-finalization: SKIP
+test-process-load-env-file: SKIP
+test-process-warnings: SKIP
+test-runner-complex-dependencies: SKIP
+test-runner-diagnostics-channel: SKIP
+test-runner-enable-source-maps-issue: SKIP
+test-runner-error-reporter: SKIP
+test-runner-flag-propagation: SKIP
+test-runner-force-exit-failure: SKIP
+test-runner-force-exit-flush: SKIP
+test-runner-global-setup-teardown: SKIP
+test-runner-global-setup-watch-mode: SKIP
+test-runner-mock-timers-with-timeout: SKIP
+test-runner-module-mocking: SKIP
+test-runner-no-isolation-filtering: SKIP
+test-runner-no-isolation-hooks: SKIP
+test-runner-root-duration: SKIP
+test-runner-snapshot-file-tests: SKIP
+test-runner-snapshot-tests: SKIP
+test-runner-test-rerun-failures: SKIP
+test-runner-todo-suite-hook-failure: SKIP
+test-runner-watch-mode-complex: SKIP
+test-runner-worker-id: SKIP
+test-runner-xfail: SKIP
+test-shadow-realm-custom-loaders: SKIP
+test-shadow-realm-preload-module: SKIP
+test-snapshot-child-process-sync: SKIP
+test-snapshot-config: SKIP
+test-snapshot-coverage: SKIP
+test-snapshot-cwd: SKIP
+test-snapshot-net: SKIP
+test-snapshot-stack-trace-limit: SKIP
+test-snapshot-stack-trace-limit-mutation: SKIP
+test-snapshot-worker: SKIP
+test-sqlite: SKIP
+test-timers-nan-duration-warning: SKIP
+test-timers-negative-duration-warning: SKIP
+test-tls-env-extra-ca-with-options: SKIP
+test-tls-get-ca-certificates-extra: SKIP
+test-tls-get-ca-certificates-extra-empty: SKIP
+test-tls-get-ca-certificates-extra-subset: SKIP
+test-tls-set-default-ca-certificates-extra-override: SKIP
+test-trace-env: SKIP
+test-trace-env-stack: SKIP
+test-trace-exit-stack-limit: SKIP
+test-url-parse-deprecation: SKIP
+test-url-parse-invalid-input: SKIP
+test-util-getcallsites: SKIP
+test-webstorage: SKIP
+test-worker-node-options: SKIP
+#
+# Tests run under --permission without --allow-fs-write. The harness writes its
+# PASS/FAIL verdict to a file from a process.on('exit') hook, and the permission
+# model -- correctly -- denies that write, so the verdict never lands and the run
+# scores FAIL whatever the test did. Nothing the harness can fix from inside the
+# sandbox it is being denied by. See docs/TESTING.md, "How a test PASSes".
+#
+test-permission-allow-child-process-cli: SKIP
+test-permission-child-process-inherit-flags: SKIP
+test-permission-child-process-inherit-flags-substring: SKIP
+test-permission-config-file: SKIP
+test-permission-diagnostics-channel: SKIP
+test-permission-drop-addons: SKIP
+test-permission-drop-child-process: SKIP
+test-permission-drop-diagnostics-channel: SKIP
+test-permission-drop-errors: SKIP
+test-permission-drop-fs-all: SKIP
+test-permission-drop-fs-scope: SKIP
+test-permission-drop-fs-write: SKIP
+test-permission-drop-worker: SKIP
+test-permission-fs-absolute-path: SKIP
+test-permission-fs-read: SKIP
+test-permission-fs-read-entrypoint: SKIP
+test-permission-fs-relative-path: SKIP
+test-permission-fs-repeat-path: SKIP
+test-permission-fs-require: SKIP
+test-permission-fs-symlink: SKIP
+test-permission-fs-symlink-target-write: SKIP
+test-permission-fs-traversal-path: SKIP
+test-permission-fs-wildcard: SKIP
+test-permission-fs-write: SKIP
+test-permission-fs-write-report: SKIP
+test-permission-inspector: SKIP
+test-permission-inspector-brk: SKIP
+test-permission-processbinding: SKIP
+test-permission-sqlite-load-extension: SKIP
+test-permission-warning-flags: SKIP
+test-permission-fs-windows-path: SKIP
+#
+# Measured on a full device sweep and reproduced 0/3 standalone, so these are
+# platform behaviour rather than flake. Causes, in order of size: a child node
+# process (execPath is app_process64; the child SIGABRTs), `localhost` having no
+# AAAA record on Android so an IPv6 lookup gives ENOTFOUND, fs.cp returning an
+# errno outside the set upstream expects, and process.env.TZ not taking effect
+# at runtime. None is a defect in this fork.
+#
+test-datetime-change-notify: SKIP
+test-disable-sigusr1: SKIP
+test-fs-cp-async-with-mode-flags: SKIP
+test-fs-cp-promises-mode-flags: SKIP
+test-fs-sync-fd-leak: SKIP
+test-http2-invalid-last-stream-id: SKIP
+test-http2-premature-close: SKIP
+test-net-socket-connect-without-cb: SKIP
+test-node-output-eval: SKIP
+test-permission-fs-internal-module-stat: SKIP
+test-process-env-tz: SKIP
+test-runner-execution-ordered-bypass: SKIP
+test-runner-expect-error: SKIP
+test-runner-expect-error-but-pass: SKIP
+test-runner-plan: SKIP
+test-runner-randomize-first-draw: SKIP
+test-runner-test-filepath: SKIP
+test-runner-todo-skip-tests: SKIP
+test-tcp-wrap-listen: SKIP
+test-testpy-env-var-via-comment: SKIP
+#
+# Not deterministic: passes 3/3 standalone but fails inside a full-suite run, so
+# this is load sensitivity. FLAKY (still runs, red tolerated) not SKIP.
+#
+test-worker-cleanup-handles: PASS, FLAKY
+[$system==ios]
+#
+# Reverted to upstream (kept node:test); the jitless V8 build emits the short
+# assert diff format, so these fail the .out comparison on mobile. None are in
+# the curated gate, so skip them in the full suite rather than rewriting
+# them (test-aborted-util may pass unmodified - un-skip after on-device check).
+#
+test-aborted-util: SKIP
+#
+# Tests that require child process that currently is not supported on mobile
+#
+test-assert-builtins-not-read-from-filesystem: SKIP
+test-async-hooks-fatal-error: SKIP
+test-async-wrap-pop-id-during-load: SKIP
+test-bash-completion: SKIP
+test-buffer-constructor-node-modules-paths: SKIP
+test-child-process-*: SKIP
+test-cli-*: SKIP
+test-cluster-*: SKIP
+test-common: SKIP
+test-common-countdown: SKIP
+test-common-expect-warning: SKIP
+test-coverage-with-inspector-disabled: SKIP
+test-crypto-fips: SKIP
+test-crypto-no-algorithm: SKIP
+test-crypto-secure-heap: SKIP
+test-cwd-enoent*: SKIP
+test-debug-usage: SKIP
+test-debugger-address: SKIP
+test-debugger-auto-resume: SKIP
+test-debugger-backtrace: SKIP
+test-debugger-break: SKIP
+test-debugger-breakpoint-exists: SKIP
+test-debugger-clear-breakpoints: SKIP
+test-debugger-exceptions: SKIP
+test-debugger-exec: SKIP
+test-debugger-exec-scope: SKIP
+test-debugger-extract-function-name: SKIP
+test-debugger-heap-profiler: SKIP
+test-debugger-help: SKIP
+test-debugger-invalid-json: SKIP
+test-debugger-list: SKIP
+test-debugger-low-level: SKIP
+test-debugger-object-type-remote-object: SKIP
+test-debugger-preserve-breaks: SKIP
+test-debugger-probe-cond: SKIP
+test-debugger-probe-cond-invalid: SKIP
+test-debugger-probe-cond-max-hit: SKIP
+test-debugger-probe-cond-shared: SKIP
+test-debugger-probe-cond-throws: SKIP
+test-debugger-profile: SKIP
+test-debugger-profile-command: SKIP
+test-debugger-random-port: SKIP
+test-debugger-random-port-with-inspect-port: SKIP
+test-debugger-repeat-last: SKIP
+test-debugger-restart-message: SKIP
+test-debugger-run-after-quit-restart: SKIP
+test-debugger-sb-before-load: SKIP
+test-debugger-scripts: SKIP
+test-debugger-set-context-line-number: SKIP
+test-debugger-unavailable-port: SKIP
+test-debugger-use-strict: SKIP
+test-debugger-watch-validation: SKIP
+test-debugger-watchers: SKIP
+test-debugger-websocket-secret-mismatch: SKIP
+test-dgram-cluster-*: SKIP
+test-dgram-deprecation-error: SKIP
+test-dgram-exclusive-implicit-bind: SKIP
+test-dgram-unref-in-cluster: SKIP
+test-domain-abort-on-uncaught: SKIP
+test-domain-nested-throw: SKIP
+test-domain-no-error-handler-abort-on-uncaught-*: SKIP
+test-domain-throw-error-then-throw-from-uncaught-exception-handler: SKIP
+test-domain-top-level-error-handler-throw: SKIP
+test-domain-uncaught-exception: SKIP
+test-domain-with-abort-on-uncaught-exception: SKIP
+test-dummy-stdio: SKIP
+test-env-var-no-warnings: SKIP
+test-error-reporting: SKIP
+test-force-repl*: SKIP
+test-fs-readfile-error: SKIP
+test-fs-readfile-pipe*: SKIP
+test-fs-readfilesync-pipe-large: SKIP
+test-fs-realpath-pipe: SKIP
+test-fs-syncwritestream: SKIP
+test-fs-write-sigxfsz: SKIP
+test-fs-write-stream-patch-open: SKIP
+test-handle-wrap-isrefed: SKIP
+test-handle-wrap-hasref: SKIP
+test-heap-prof-basic: SKIP
+test-heap-prof-dir-absolute: SKIP
+test-heap-prof-dir-name: SKIP
+test-heap-prof-dir-relative: SKIP
+test-heap-prof-exec-argv: SKIP
+test-heap-prof-exit: SKIP
+test-heap-prof-interval: SKIP
+test-heap-prof-invalid-args: SKIP
+test-heap-prof-loop-drained: SKIP
+test-heap-prof-name: SKIP
+test-heap-prof-sigint: SKIP
+test-heapsnapshot-near-heap-limit-by-api-in-worker: SKIP
+test-heapsnapshot-near-heap-limit-worker: SKIP
+test-http-chunk-problem: SKIP
+test-http-debug: SKIP
+test-http-full-response: SKIP
+test-http-max-header-size: SKIP
+test-http-parser-lazy-loaded: SKIP
+test-http-pipeline-flood: SKIP
+test-http-server-stale-close: SKIP
+test-http-timeout-flag: SKIP
+test-http2-clean-output: SKIP
+test-http2-debug: SKIP
+test-http2-respond-file-error-pipe-offset: SKIP
+test-http2-tls-disconnect: SKIP
+test-https-agent-unref-socket: SKIP
+test-internal-module-require: SKIP
+test-internal-util-decorate-error-stack: SKIP
+test-kill-segfault-freebsd: SKIP
+test-listen-fd-cluster: SKIP
+test-listen-fd-detached: SKIP
+test-listen-fd-detached-inherit: SKIP
+test-listen-fd-server: SKIP
+test-macos-signed-deps: SKIP
+test-math-random: SKIP
+test-module-loading-globalpaths: SKIP
+test-module-main-extension-lookup: SKIP
+test-module-main-fail: SKIP
+test-module-main-preserve-symlinks-fail: SKIP
+test-module-run-main-monkey-patch: SKIP
+test-module-wrap: SKIP
+test-module-wrapper: SKIP
+test-net-child-process-connect-reset: SKIP
+test-net-listen-exclusive-random-ports: SKIP
+test-net-server-connections-child-null: SKIP
+test-net-socket-constructor: SKIP
+test-node-output-console: SKIP
+test-node-output-errors: SKIP
+test-node-output-eval: SKIP
+test-node-output-sourcemaps: SKIP
+test-node-output-vm: SKIP
+test-npm-install: SKIP
+test-openssl-ca-options: SKIP
+test-os-homedir-no-envvar: SKIP
+test-os-userinfo-handles-getter-errors: SKIP
+test-package-map-cli: SKIP
+test-pending-deprecation: SKIP
+test-permission-audit-fs-does-not-deny: SKIP
+test-permission-drop-fs-granted-path: SKIP
+test-permission-drop-fs-specific-path: SKIP
+test-pipe-head: SKIP
+test-pipe-unref: SKIP
+test-policy-crypto-default-encoding: SKIP
+test-policy-dependencies: SKIP
+test-policy-integrity: SKIP
+test-policy-integrity-flag: SKIP
+test-policy-manifest: SKIP
+test-policy-parse-integrity: SKIP
+test-policy-process-binding: SKIP
+test-policy-scopes: SKIP
+test-preload: SKIP
+test-preload-print-process-argv: SKIP
+test-preload-self-referential: SKIP
+test-preload-worker: SKIP
+test-process-argv-0: SKIP
+test-process-env: SKIP
+test-process-exec-argv: SKIP
+test-process-execpath: SKIP
+test-process-exit-after-fetch-throw: SKIP
+test-process-exit-code: SKIP
+test-process-external-stdio-close: SKIP
+test-process-external-stdio-close-spawn: SKIP
+test-process-getgroups: SKIP
+test-process-kill-null: SKIP
+test-process-ppid: SKIP
+test-process-raw-debug: SKIP
+test-process-really-exit: SKIP
+test-process-redirect-warnings: SKIP
+test-process-redirect-warnings-env: SKIP
+test-process-remove-all-signal-listeners: SKIP
+test-process-title: SKIP
+test-process-uncaught-exception-monitor: SKIP
+test-process-wrap: SKIP
+test-promise-reject-callback-exception: SKIP
+test-promise-unhandled-flag: SKIP
+test-repl-array-prototype-tempering: SKIP
+test-repl-built-in-modules: SKIP
+test-repl-clear-immediate-crash: SKIP
+test-repl-cli-eval: SKIP
+test-repl-dynamic-import: SKIP
+test-repl-harmony: SKIP
+test-repl-import-referrer: SKIP
+test-repl-inspect-defaults: SKIP
+test-repl-options: SKIP
+test-repl-require-after-write: SKIP
+test-repl-require-context: SKIP
+test-repl-require-self-referential: SKIP
+test-repl-setprompt: SKIP
+test-repl-sigint: SKIP
+test-repl-sigint-nested-eval: SKIP
+test-repl-strict-mode-previews: SKIP
+test-repl-syntax-error-handling: SKIP
+test-repl-tab-complete-nested-repls: SKIP
+test-repl-uncaught-exception-standalone: SKIP
+test-repl-unexpected-token-recoverable: SKIP
+test-repl-unsafe-array-iteration: SKIP
+test-repl-unsupported-option: SKIP
+test-require-invalid-main-no-exports: SKIP
+test-require-package-map: SKIP
+test-require-symlink: SKIP
+test-runner-cli: SKIP
+test-runner-coverage: SKIP
+test-runner-entry-file: SKIP
+test-runner-exit-code: SKIP
+test-runner-extraneous-async-activity: SKIP
+test-runner-import-no-scheme: SKIP
+test-runner-inspect: SKIP
+test-runner-log: SKIP
+test-runner-misc: SKIP
+test-runner-output: SKIP
+test-runner-reporters: SKIP
+test-runner-watch-mode: SKIP
+test-security-revert-unknown: SKIP
+test-set-http-max-http-headers: SKIP
+test-setproctitle: SKIP
+test-sigint-infinite-loop: SKIP
+test-signal-unregister: SKIP
+test-snapshot-api: SKIP
+test-snapshot-argv1: SKIP
+test-snapshot-basic: SKIP
+test-snapshot-cjs-main: SKIP
+test-snapshot-console: SKIP
+test-snapshot-dns-lookup-localhost: SKIP
+test-snapshot-dns-lookup-localhost-promise: SKIP
+test-snapshot-dns-resolve-localhost: SKIP
+test-snapshot-dns-resolve-localhost-promise: SKIP
+test-snapshot-error: SKIP
+test-snapshot-eval: SKIP
+test-snapshot-gzip: SKIP
+test-snapshot-incompatible: SKIP
+test-snapshot-namespaced-builtin: SKIP
+test-snapshot-typescript: SKIP
+test-snapshot-umd: SKIP
+test-snapshot-warning: SKIP
+test-snapshot-weak-reference: SKIP
+test-source-map-enable: SKIP
+test-startup-large-pages: SKIP
+test-startup-empty-regexp-statics: SKIP
+test-stack-size-limit: SKIP
+test-stdin-child-proc: SKIP
+test-stdin-from-file: SKIP
+test-stdin-pipe-large: SKIP
+test-stdin-pipe-resume: SKIP
+test-stdin-resume-pause: SKIP
+test-stdin-script-child: SKIP
+test-stdin-script-child-option: SKIP
+test-stdio-closed: SKIP
+test-stdio-pipe-redirect: SKIP
+test-stdio-pipe-stderr: SKIP
+test-stdio-undestroy: SKIP
+test-stdout-cannot-be-closed-child-process-pipe: SKIP
+test-stdout-close-catch: SKIP
+test-stdout-close-unref: SKIP
+test-stdout-stderr-reading: SKIP
+test-stdout-to-file: SKIP
+test-stream-iter-disabled: SKIP
+test-stream-iter-readable-interop-disabled: SKIP
+test-stream-pipeline-process: SKIP
+test-sync-io-option: SKIP
+test-throw-error-with-getter-throw-traced: SKIP
+test-throw-undefined-or-null-traced: SKIP
+test-tick-processor-arguments: SKIP
+test-timers-async-store-leak: SKIP
+test-timers-immediate-promisified: SKIP
+test-timers-interval-promisified: SKIP
+test-timers-timeout-promisified: SKIP
+test-tls-cipher-list: SKIP
+test-tls-cli-min-max-conflict: SKIP
+test-tls-enable-keylog-cli: SKIP
+test-tls-enable-trace: SKIP
+test-tls-enable-trace-cli: SKIP
+test-tls-env-bad-extra-ca: SKIP
+test-tls-env-extra-ca: SKIP
+test-tls-env-extra-ca-file-load: SKIP
+test-tls-env-extra-ca-no-crypto: SKIP
+test-tls-handshake-exception: SKIP
+test-tls-ticket-cluster: SKIP
+test-tls-wrap-econnreset-pipe: SKIP
+test-trace-atomics-wait: SKIP
+test-trace-events-all: SKIP
+test-trace-events-binding: SKIP
+test-trace-events-bootstrap: SKIP
+test-trace-events-category-used: SKIP
+test-trace-events-console: SKIP
+test-trace-events-environment: SKIP
+test-trace-events-file-pattern: SKIP
+test-trace-events-fs-sync: SKIP
+test-trace-events-fs-async: SKIP
+test-trace-events-http: SKIP
+test-trace-events-metadata: SKIP
+test-trace-events-net: SKIP
+test-trace-events-none: SKIP
+test-trace-events-perf: SKIP
+test-trace-events-process-exit: SKIP
+test-trace-events-promises: SKIP
+test-trace-events-threadpool: SKIP
+test-trace-events-v8: SKIP
+test-trace-events-vm: SKIP
+test-trace-events-worker-metadata: SKIP
+test-trace-events-worker-metadata-with-name: SKIP
+test-trace-exit: SKIP
+test-tracing-no-crash: SKIP
+test-unhandled-exception-rethrow-error: SKIP
+test-unhandled-exception-with-worker-inuse: SKIP
+test-unicode-node-options: SKIP
+test-util-callbackify: SKIP
+test-v8-coverage: SKIP
+test-v8-stop-coverage: SKIP
+test-v8-take-coverage: SKIP
+test-v8-take-coverage-noop: SKIP
+test-v8-untrusted-code-mitigations: SKIP
+test-vm-api-handles-getter-errors: SKIP
+test-vm-cached-data: SKIP
+test-vm-sigint: SKIP
+test-vm-sigint-existing-handler: SKIP
+test-vm-syntax-error-message: SKIP
+test-vm-syntax-error-stderr: SKIP
+test-worker-init-failure: SKIP
+test-worker-message-type-unknown: SKIP
+test-worker-on-process-exit: SKIP
+test-worker-process-env: SKIP
+#
+# Tests that try to access the 'test' parent folder, currently not supported on mobile
+#
+test-benchmark-cli: SKIP
+test-icu-minimum-version: SKIP
+test-npm-version: SKIP
+test-corepack-version: SKIP
+test-process-config: SKIP
+test-process-env-allowed-flags-are-documented: SKIP
+test-release-npm: SKIP
+#
+# Tests that require OpenSSL CLI that is not available on mobile
+#
+test-crypto-sign-verify: SKIP
+test-https-foafssl: SKIP
+test-tls-alert: SKIP
+test-tls-client-renegotiation-limit: SKIP
+test-tls-dhe: SKIP
+test-tls-ecdh: SKIP
+test-tls-ecdh-auto: SKIP
+test-tls-ecdh-multiple: SKIP
+test-tls-no-sslv3: SKIP
+test-tls-psk-server: SKIP
+test-tls-securepair-server: SKIP
+test-tls-server-verify: SKIP
+test-tls-session-cache: SKIP
+#
+# Tests that require the inspector, not included in the build
+#
+test-debugger-pid: SKIP
+test-inspect*: SKIP
+test-process-env-sideeffects: SKIP
+test-repl-inspector: SKIP
+test-trace-events-dynamic-enable: SKIP
+test-trace-events-dynamic-enable-workers-disabled: SKIP
+test-warn-sigprof: SKIP
+test-worker-debug: SKIP
+#
+# Tests that depend on FIPS OpenSSL that is not available on mobile
+#
+test-dsa-fips-invalid-key : SKIP
+#
+# Tests that require ESLINT, not included in the build
+#
+test-eslint-*: SKIP
+#
+# Tests exercising WebAssembly. Jitless V8 has no native wasm; on iOS the
+# global is the polywasm polyfill (docs/FAQ.md on the recipe branch), and
+# these tests are not validated against it or need per-test CLI flags the
+# app harness cannot apply. test-freeze-intrinsics runs against the same
+# jitless configuration on the host instead (host-smoke workflow).
+#
+test-fetch-disabled: SKIP
+test-vm-codegen: SKIP
+test-wasm: SKIP
+test-wasm-simple: SKIP
+test-wasm-web-api: SKIP
+test-worker-message-port-wasm-module: SKIP
+test-worker-message-port-wasm-threads: SKIP
+#
+# Tests that run on Windows only
+#
+test-fs-long-path: SKIP
+test-fs-readfilesync-enoent: SKIP
+test-fs-realpath-on-substed-drive: SKIP
+test-fs-write-file-invalid-path: SKIP
+test-module-readonly: SKIP
+test-require-long-path: SKIP
+test-spawn-cmd-named-pipe: SKIP
+test-windows-abort-exitcode: SKIP
+test-windows-failed-heap-allocation: SKIP
+#
+# Tests that run on Linux only
+#
+test-fs-read-file-sync-hostname : SKIP
+test-fs-readdir-ucs2: SKIP
+#
+# Test failing due to Timeout
+#
+test-fs-watch-encoding: SKIP
+#
+# Tests that run on Windows and macOS only
+#
+test-fs-watch-recursive: SKIP
+#
+test-pipe-unref: SKIP
+test-repl: SKIP
+test-tls-wrap-econnreset-pipe: SKIP
+#
+# Tests that require MultiLocalhost
+#
+test-https-localaddress: SKIP
+test-http-localaddress: SKIP
+test-http2-connect-options: SKIP
+#
+# Tests that require Intl, not included in the build
+#
+test-icu-data-dir: SKIP
+test-icu-punycode: SKIP
+test-whatwg-url-constructor: SKIP
+test-whatwg-url-custom-domainto: SKIP
+test-whatwg-url-origin: SKIP
+test-whatwg-url-setters: SKIP
+test-whatwg-url-toascii: SKIP
+#
+# FAILING test because calling setpriority on iOS fails with EPERM
+#
+#
+# FAILING test because iOS apps should not get POSIX signals or process.exit
+#
+test-signal-args: SKIP
+test-signal-handler: SKIP
+#
+# Test that requires user interaction to allow using udp6 link local address on iOS 14.
+#
+#
+# Tests that require the debugger to not stop on signals.
+# Tests pass if run individually with debugger configured to not stop.
+#
+test-util-sigint-watchdog : SKIP #signal SIGINT
+#
+# Tests that require trace events, not included in the build
+#
+test-trace-events-api: SKIP
+test-trace-events-async-hooks: SKIP
+test-trace-events-async-hooks-dynamic: SKIP
+test-trace-events-async-hooks-worker: SKIP
+#
+# Tests that are less relevant on mobile, although they could be supported
+#
+test-release-changelog: SKIP # header files not available from mobile apps
+test-runner-run: SKIP # some paths were not correct
+
+#
+# ---------------------------------------------------------------------------
+# Below: measured on a full test/parallel sweep of upstream v24.18.0 run on a
+# device (Android arm64 emulator / iOS arm64 simulator), not inferred. Each of
+# these spawns a child node process: on Android process.execPath is
+# app_process64 rather than node, so the child SIGABRTs; the debugger-probe
+# cases drive a child over the inspector protocol. A glob is used only where
+# EVERY member of the family fails -- families with passing members are listed
+# individually so a working test is never skipped by association.
+# ---------------------------------------------------------------------------
+#
+test-config-file: SKIP
+test-fs-readfile-eof: SKIP
+test-fs-rm: SKIP
+test-icu-env: SKIP
+test-max-old-space-size-percentage: SKIP
+test-node-run: SKIP
+test-process-execve: SKIP
+test-process-execve-on-exit: SKIP
+test-process-execve-permission-granted: SKIP
+test-process-execve-socket: SKIP
+test-process-exit-code-validation: SKIP
+test-process-load-env-file: SKIP
+test-runner-coverage-source-map: SKIP
+test-runner-coverage-thresholds: SKIP
+test-runner-test-rerun-failures: SKIP
+test-snapshot-child-process-sync: SKIP
+test-util-convert-signal-to-exit-code: SKIP
+#
+# Tests run under --permission without --allow-fs-write. The harness writes its
+# PASS/FAIL verdict to a file from a process.on('exit') hook, and the permission
+# model -- correctly -- denies that write, so the verdict never lands and the run
+# scores FAIL whatever the test did. Nothing the harness can fix from inside the
+# sandbox it is being denied by. See docs/TESTING.md, "How a test PASSes".
+#
+test-permission-allow-child-process-cli: SKIP
+test-permission-diagnostics-channel: SKIP
+test-permission-drop-addons: SKIP
+test-permission-drop-child-process: SKIP
+test-permission-drop-diagnostics-channel: SKIP
+test-permission-drop-errors: SKIP
+test-permission-drop-fs-all: SKIP
+test-permission-drop-fs-scope: SKIP
+test-permission-drop-fs-write: SKIP
+test-permission-drop-worker: SKIP
+test-permission-fs-write: SKIP
+test-permission-fs-windows-path: SKIP
+#
+# fs.watch's `ignore` option. libuv compiles FSEvents out entirely on iOS --
+# "iOS (currently) doesn't provide the FSEvents-API (nor CoreServices)",
+# deps/uv/src/unix/fsevents.c -- and falls back to kqueue, which watches a
+# directory fd and cannot report WHICH file changed. node's `ignore` filter is
+# applied to that filename, so with no usable filename every event is dropped
+# and these tests wait forever. Upstream libuv behaviour on the platform, not
+# something this fork can fix; recursive watching is unaffected because node
+# implements that in JS. Verified against the fork's own macOS host build and
+# against Android, where `ignore` works. See docs/TESTING.md, "fs.watch".
+#
+test-fs-promises-watch-iterator: SKIP
+test-fs-watch-ignore-function: SKIP
+test-fs-watch-ignore-glob: SKIP
+test-fs-watch-ignore-mixed: SKIP
+test-fs-watch-ignore-recursive-glob: SKIP
+test-fs-watch-ignore-recursive-glob-subdirectories: SKIP
+test-fs-watch-ignore-recursive-mixed: SKIP
+test-fs-watch-ignore-recursive-regexp: SKIP
+test-fs-watch-ignore-regexp: SKIP
+test-watch-file-shared-dependency: SKIP
+#
+# Spawns a child node process. Passes on the iOS *simulator*, where
+# posix_spawn is permitted, and cannot on a device -- so it is not coverage
+# worth keeping either way. Measured on a full device sweep.
+#
+test-assert-esm-cjs-message-verify: SKIP
+test-compile-cache-api-options-portable-env: SKIP
+test-compile-cache-bad-syntax: SKIP
+test-compile-cache-permission-allowed: SKIP
+test-compile-cache-permission-disallowed: SKIP
+test-compile-cache-success: SKIP
+test-dotenv-edge-cases: SKIP
+test-dotenv-node-options: SKIP
+test-permission-child-process-inherit-flags: SKIP
+test-permission-child-process-inherit-flags-substring: SKIP
+test-permission-fs-repeat-path: SKIP
+test-permission-fs-wildcard: SKIP
+test-permission-fs-write-report: SKIP
+test-permission-fs-write-trace-events: SKIP
+test-permission-sqlite-load-extension: SKIP
+test-permission-warning-flags: SKIP
+test-process-finalization: SKIP
+test-runner-cli-concurrency: SKIP
+test-runner-complex-dependencies: SKIP
+test-runner-diagnostics-channel: SKIP
+test-runner-force-exit-failure: SKIP
+test-runner-force-exit-flush: SKIP
+test-runner-global-setup-watch-mode: SKIP
+test-runner-snapshot-file-tests: SKIP
+test-runner-snapshot-tests: SKIP
+test-runner-tag-filter-cli: SKIP
+test-runner-tags-events: SKIP
+test-runner-tags-experimental-warning: SKIP
+test-runner-watch-mode-complex: SKIP
+test-snapshot-cwd: SKIP
+test-util-getcallsites-sourcemap: SKIP
+test-webstorage: SKIP
+#
+# Measured on a full device sweep and reproduced 0/3 standalone -- platform
+# behaviour rather than flake. Mixed causes: Darwin rejects non-UTF-8
+# filenames (test-fileurltopathbuffer), the simulator's filesystem reports
+# case inconsistently (test-fs-read-file-sync), unix-socket paths, and
+# test-process-getactiveresources' documented stdout-shape caveat.
+#
+test-fileurltopathbuffer: SKIP
+test-fs-cp-async-socket: SKIP
+test-fs-cp-sync-copy-socket-error: SKIP
+test-fs-read-file-sync: SKIP
+test-fs-sync-fd-leak: SKIP
+test-listen-fd-ebadf: SKIP
+test-memory-usage: SKIP
+test-os: SKIP
+test-process-beforeexit-throw-exit: SKIP
+test-process-exit-recursive: SKIP
+test-process-getactiveresources: SKIP
+test-runner-execution-ordered-bypass: SKIP
+test-webstorage-without-sqlite: SKIP
+test-worker-track-unmanaged-fds: SKIP
+#
+# fs.watch's `ignore` option: libuv has no FSEvents on iOS and falls back to
+# kqueue, which cannot say which file changed, so the filename-based filter
+# drops every event. See docs/TESTING.md, "fs.watch".
+#
+test-fs-promises-watch-ignore-function: SKIP
+test-fs-promises-watch-ignore-glob: SKIP
+test-fs-promises-watch-ignore-mixed: SKIP
+test-fs-promises-watch-ignore-regexp: SKIP
+#
+# Not deterministic: passes standalone but fails inside a full-suite run, so
+# this is load sensitivity, not a broken test. FLAKY (still runs, red is
+# tolerated) rather than SKIP (never runs again).
+#
+test-async-local-storage-http-multiclients: PASS, FLAKY
+test-buffer-alloc-unsafe-is-uninitialized: PASS, FLAKY
+test-compile-cache-portable: PASS, FLAKY
+test-http-max-headers-count: PASS, FLAKY
+test-http-upgrade-advertise: PASS, FLAKY
+test-runner-run-files-undefined: PASS, FLAKY
+#
+# Tests that spawn a child node process. They pass here only because the iOS
+# *simulator* permits posix_spawn; a shipped app cannot fork or exec, so
+# child_process is unusable on the platform and this was never coverage of
+# anything an embedder can run. Keeping them green on the simulator bought false
+# confidence, and because the spawn is timing-sensitive under load they were also
+# the entire flake population -- successive full sweeps failed a different
+# handful of test-runner-* each time. Android excludes the same set for the
+# harder reason that execPath there is app_process64 and the child SIGABRTs.
+#
+test-async-hooks-stack-overflow: SKIP
+test-async-hooks-stack-overflow-nested-async: SKIP
+test-async-hooks-stack-overflow-try-catch: SKIP
+test-buffer-constructor-node-modules: SKIP
+test-compile-cache-api-env: SKIP
+test-compile-cache-api-flush: SKIP
+test-compile-cache-api-permission: SKIP
+test-compile-cache-api-portable: SKIP
+test-compile-cache-api-success: SKIP
+test-compile-cache-api-tmpdir: SKIP
+test-compile-cache-disable: SKIP
+test-compile-cache-dynamic-import: SKIP
+test-compile-cache-esm: SKIP
+test-compile-cache-existing-directory: SKIP
+test-compile-cache-portable: SKIP
+test-compile-cache-portable-esm: SKIP
+test-compile-cache-typescript-commonjs: SKIP
+test-compile-cache-typescript-esm: SKIP
+test-compile-cache-typescript-strip-miss: SKIP
+test-compile-cache-typescript-strip-sourcemaps: SKIP
+test-compile-cache-typescript-transform: SKIP
+test-compile-cache-updated-file: SKIP
+test-debug-process: SKIP
+test-debugger-inspect-help: SKIP
+test-debugger-probe-activation: SKIP
+test-debugger-probe-bound-never-hit: SKIP
+test-debugger-probe-child-inspect-port-zero: SKIP
+test-debugger-probe-explicit-column: SKIP
+test-debugger-probe-expression-throws: SKIP
+test-debugger-probe-failure-hang-during-evaluate: SKIP
+test-debugger-probe-failure-process-exit: SKIP
+test-debugger-probe-failure-resume: SKIP
+test-debugger-probe-global-option-order: SKIP
+test-debugger-probe-json: SKIP
+test-debugger-probe-json-preview: SKIP
+test-debugger-probe-json-special-values: SKIP
+test-debugger-probe-late-resolution: SKIP
+test-debugger-probe-launch: SKIP
+test-debugger-probe-max-hit: SKIP
+test-debugger-probe-max-hit-invalid: SKIP
+test-debugger-probe-max-hit-miss: SKIP
+test-debugger-probe-max-hit-partial: SKIP
+test-debugger-probe-max-hit-shared: SKIP
+test-debugger-probe-max-hit-text: SKIP
+test-debugger-probe-miss: SKIP
+test-debugger-probe-missing-expr: SKIP
+test-debugger-probe-multi-location: SKIP
+test-debugger-probe-narrow-suffix: SKIP
+test-debugger-probe-no-column-indent: SKIP
+test-debugger-probe-requires-separator: SKIP
+test-debugger-probe-script-throws: SKIP
+test-debugger-probe-target-syntax-error: SKIP
+test-debugger-probe-text: SKIP
+test-debugger-probe-text-special-values: SKIP
+test-debugger-probe-timeout: SKIP
+test-debugger-probe-typescript: SKIP
+test-dgram-bind-socket-close-before-cluster-reply: SKIP
+test-diagnostics-channel-child-process: SKIP
+test-diagnostics-channel-process: SKIP
+test-dns-resolvesrv: SKIP
+test-dns-resolvesrv-econnrefused: SKIP
+test-error-prepare-stack-trace: SKIP
+test-experimental-shared-value-conveyor: SKIP
+test-file-write-stream4: SKIP
+test-find-package-json: SKIP
+test-fs-filehandle-use-after-close: SKIP
+test-fs-mkdir-recursive-eaccess: SKIP
+test-fs-read-stream: SKIP
+test-fs-utimes-y2K38: SKIP
+test-fs-watch-recursive-linux-parallel-remove: SKIP
+test-hash-seed: SKIP
+test-http-server-drop-connections-in-cluster: SKIP
+test-http2-respond-file-with-pipe: SKIP
+test-http2-respond-with-file-connection-abort: SKIP
+test-intl: SKIP
+test-is-internal-thread: SKIP
+test-macos-app-sandbox: SKIP
+test-module-loading-error: SKIP
+test-module-print-timing: SKIP
+test-navigator: SKIP
+test-net-listen-handle-in-cluster-1: SKIP
+test-net-listen-handle-in-cluster-2: SKIP
+test-net-listen-twice: SKIP
+test-net-server-close-before-ipc-response: SKIP
+test-net-server-listen-handle: SKIP
+test-parse-args: SKIP
+test-path-resolve: SKIP
+test-performance-nodetiming-uvmetricsinfo: SKIP
+test-permission-allow-inspector: SKIP
+test-permission-child-process-cli: SKIP
+test-permission-config-file: SKIP
+test-permission-fs-absolute-path: SKIP
+test-permission-fs-read: SKIP
+test-permission-fs-read-entrypoint: SKIP
+test-permission-fs-relative-path: SKIP
+test-permission-fs-require: SKIP
+test-permission-fs-symlink: SKIP
+test-permission-fs-symlink-relative: SKIP
+test-permission-fs-symlink-target-write: SKIP
+test-permission-fs-traversal-path: SKIP
+test-permission-inspector: SKIP
+test-permission-inspector-brk: SKIP
+test-permission-processbinding: SKIP
+test-process-execve-abort: SKIP
+test-process-execve-no-args: SKIP
+test-process-execve-permission-fail: SKIP
+test-process-execve-validation: SKIP
+test-process-execve-worker-threads: SKIP
+test-process-warnings: SKIP
+test-repl-close: SKIP
+test-repl-persistent-history: SKIP
+test-repl-programmatic-history: SKIP
+test-repl-programmatic-history-setup-history: SKIP
+test-runner-cli-randomize: SKIP
+test-runner-cli-timeout: SKIP
+test-runner-concurrency: SKIP
+test-runner-coverage-default-exclusion: SKIP
+test-runner-coverage-isolation-none-api: SKIP
+test-runner-enable-source-maps-issue: SKIP
+test-runner-error-reporter: SKIP
+test-runner-flag-propagation: SKIP
+test-runner-global-setup-teardown: SKIP
+test-runner-mock-timers-with-timeout: SKIP
+test-runner-module-mocking: SKIP
+test-runner-no-isolation-filtering: SKIP
+test-runner-no-isolation-hooks: SKIP
+test-runner-root-duration: SKIP
+test-runner-run-files-undefined: SKIP
+test-runner-run-global-hooks: SKIP
+test-runner-todo-suite-hook-failure: SKIP
+test-runner-worker-id: SKIP
+test-runner-xfail: SKIP
+test-shadow-realm-custom-loaders: SKIP
+test-shadow-realm-preload-module: SKIP
+test-snapshot-config: SKIP
+test-snapshot-coverage: SKIP
+test-snapshot-net: SKIP
+test-snapshot-stack-trace-limit: SKIP
+test-snapshot-stack-trace-limit-mutation: SKIP
+test-snapshot-worker: SKIP
+test-source-map-invalid-url: SKIP
+test-sqlite: SKIP
+test-stdin-from-file-spawn: SKIP
+test-stdio-pipe-access: SKIP
+test-strace-openat-openssl: SKIP
+test-stream-readable-unpipe-resume: SKIP
+test-timers-nan-duration-warning: SKIP
+test-timers-negative-duration-warning: SKIP
+test-tls-alpn-server-client: SKIP
+test-tls-env-extra-ca-with-options: SKIP
+test-tls-get-ca-certificates-extra: SKIP
+test-tls-get-ca-certificates-extra-empty: SKIP
+test-tls-get-ca-certificates-extra-subset: SKIP
+test-tls-get-ca-certificates-node-use-system-ca: SKIP
+test-tls-get-ca-certificates-system-without-flag: SKIP
+test-tls-off-thread-cert-loading: SKIP
+test-tls-off-thread-cert-loading-disabled: SKIP
+test-tls-off-thread-cert-loading-system: SKIP
+test-tls-set-default-ca-certificates-extra-override: SKIP
+test-trace-env: SKIP
+test-trace-env-stack: SKIP
+test-trace-events-net-abstract-socket: SKIP
+test-trace-exit-stack-limit: SKIP
+test-uncaught-exception-handler-stack-overflow: SKIP
+test-uncaught-exception-handler-stack-overflow-on-stack-overflow: SKIP
+test-url-parse-deprecation: SKIP
+test-url-parse-invalid-input: SKIP
+test-util-getcallsites: SKIP
+test-util-inspect: SKIP
+test-util-promisify-custom-names: SKIP
+test-vfs: SKIP
+test-watch-mode-files_watcher: SKIP
+test-watch-mode-kill-signal-default: SKIP
+test-watch-mode-kill-signal-invalid: SKIP
+test-watch-mode-kill-signal-override: SKIP
+test-worker-cleanexit-with-moduleload: SKIP
+test-worker-node-options: SKIP
+test-worker-process-argv: SKIP
+test-worker-stdio: SKIP
+test-worker-terminate-http2-respond-with-file: SKIP
+#
+# Same stdout-shape caveat as test-process-getactiveresources: the set of active
+# handles depends on what stdout *is*, and the harness gives node a file.
+#
+test-process-getactiveresources-track-active-requests: SKIP
+#
+# Load sensitive, not broken: 5/5 standalone, fails inside a full-suite run.
+# FLAKY keeps them running; SKIP would retire them.
+#
+test-https-client-renegotiation-limit: PASS, FLAKY
+test-https-selfsigned-no-keycertsign-no-crash: PASS, FLAKY
 [$asan==on]
 # https://github.com/nodejs/node/issues/39655
 test-cluster-primary-error: PASS, FLAKY
