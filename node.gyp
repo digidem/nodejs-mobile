@@ -68,6 +68,11 @@
       'deps/acorn/acorn/dist/acorn.js',
       'deps/acorn/acorn-walk/dist/walk.js',
       'deps/minimatch/index.js',
+      # mobile: pure-JS WebAssembly polyfill, installed by
+      # internal/process/pre_execution when the engine ships no WebAssembly
+      # (iOS runs V8 jitless). Loaded lazily, so builds that never touch
+      # WebAssembly only pay its ~100 KB of source in the binary.
+      'deps/polywasm/polywasm.js',
       '<@(node_builtin_shareable_builtins)',
     ],
     'node_sources': [
@@ -922,7 +927,8 @@
             '<@(node_quic_sources)',
           ],
         }],
-        [ 'OS in "linux freebsd mac solaris openharmony" and '
+        # nodejs-mobile patch to mention iOS
+        [ 'OS in "linux freebsd mac ios solaris openharmony" and '
           'target_arch=="x64" and '
           'node_target_type=="executable"', {
           'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
@@ -1399,8 +1405,9 @@
         ['OS=="solaris"', {
           'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
         }],
-        # Skip cctest while building shared lib node for Windows
-        [ 'OS=="win" and node_shared=="true"', {
+        # Skip cctest while building shared lib node for Windows and Android
+        # (the only mobile target built --shared; iOS links libnode statically)
+        [ 'OS in ("win", "android") and node_shared=="true"', {
           'type': 'none',
         }],
         [ 'node_shared=="true"', {
@@ -1566,7 +1573,8 @@
         [ 'node_shared_libuv=="false"', {
           'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
         }],
-        [ 'OS in "linux mac openharmony"', {
+        # nodejs-mobile patch: add ios
+        [ 'OS in "linux mac ios openharmony"', {
           'defines': ['NODE_JS2C_USE_STRING_LITERALS'],
         }],
         [ 'debug_node=="true"', {
