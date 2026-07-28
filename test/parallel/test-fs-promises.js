@@ -321,7 +321,8 @@ async function executeOnHandle(dest, func) {
                            (await readlink(newLink)).toLowerCase());
 
         const newMode = 0o666;
-        if (common.isMacOS) {
+        // nodejs-mobile patch: iOS is Darwin, so lchmod is available there too.
+        if (common.isMacOS || common.isIOS) {
           // `lchmod` is only available on macOS.
           await lchmod(newLink, newMode);
           stats = await lstat(newLink);
@@ -353,7 +354,8 @@ async function executeOnHandle(dest, func) {
     }
 
     // create hard link
-    {
+    // nodejs-mobile patch: hard links are not fully supported on Android.
+    if (!common.isAndroid) {
       const newPath = path.resolve(tmpDir, 'baz2.js');
       const newLink = path.resolve(tmpDir, 'baz4.js');
       await link(newPath, newLink);

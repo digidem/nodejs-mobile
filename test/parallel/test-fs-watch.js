@@ -21,17 +21,20 @@ class WatchTestCase {
   get filePath() { return join(this.dirPath, this.fileName); }
 }
 
+// nodejs-mobile patch: Android reports filenames like the Linux it is built
+// on; iOS does so for file watches but is unreliable for directory watches.
 const cases = [
   // Watch on a file should callback with a filename on supported systems
   new WatchTestCase(
-    common.isLinux || common.isMacOS || common.isWindows || common.isAIX,
+    common.isLinux || common.isMacOS || common.isWindows || common.isAIX ||
+      common.isAndroid || common.isIOS,
     'watch1',
     'foo',
     'filePath'
   ),
   // Watch on a directory should callback with a filename on supported systems
   new WatchTestCase(
-    common.isLinux || common.isMacOS || common.isWindows,
+    common.isLinux || common.isMacOS || common.isWindows || common.isAndroid,
     'watch2',
     'bar',
     'dirPath'
@@ -60,7 +63,8 @@ function doWatchTest(testCase) {
       clearInterval(interval);
       interval = null;
     }
-    if (common.isMacOS)
+    // nodejs-mobile patch: iOS is Darwin (kqueue), same events as macOS.
+    if (common.isMacOS || common.isIOS)
       assert.strictEqual(['rename', 'change'].includes(eventType), true);
     else
       assert.strictEqual(eventType, 'change');
