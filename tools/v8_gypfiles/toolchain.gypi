@@ -598,6 +598,20 @@
           }],
         ],
       }],
+      ['OS=="ios"', {
+        'target_conditions': [
+          ['_toolset=="host" and host_os=="mac"', {
+            'conditions':[
+              ['target_arch=="arm64" and host_arch != "arm64"', {
+                'xcode_settings': {
+                  'ARCHS!': ['arm64'],
+                  'ARCHS': ['x86_64'],
+                },
+              }],
+            ],
+          }],
+        ]
+      }],
     ],  # conditions
     'configurations': {
       'Debug': {
