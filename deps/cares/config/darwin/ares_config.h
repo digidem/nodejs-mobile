@@ -329,7 +329,14 @@
 #define HAVE_SYS_PARAM_H 1
 
 /* Define to 1 if you have the <sys/random.h> header file. */
+/* nodejs-mobile: the iOS SDK has no <sys/random.h>; c-ares falls back to
+ * arc4random_buf on Apple, so guard this define to macOS only. */
+#if defined(__APPLE__)
+#  include <TargetConditionals.h>
+#endif
+#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 #define HAVE_SYS_RANDOM_H 1
+#endif
 
 /* Define to 1 if you have the <sys/select.h> header file. */
 #define HAVE_SYS_SELECT_H 1
