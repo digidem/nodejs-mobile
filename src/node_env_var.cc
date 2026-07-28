@@ -235,7 +235,9 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
     }
     CHECK(key->IsString());
     if (!Get(isolate, key.As<String>()).ToLocal(&value)) {
-      return nullptr;
+      // On Android, it's possible that some environment variables get removed,
+      // such as LD_PRELOAD. Skip them rather than aborting the whole clone.
+      continue;
     }
     copy->Set(isolate, key.As<String>(), value.As<String>());
   }
