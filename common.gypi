@@ -110,7 +110,7 @@
         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
         'v8_base': '<(PRODUCT_DIR)/obj.target/tools/v8_gypfiles/libv8_snapshot.a',
       }],
-      ['OS=="mac"', {
+      ['OS=="mac" or OS == "ios"', {
         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
         'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
       }],
@@ -221,6 +221,23 @@
               }],
             ],
           }],
+          ['OS=="android"', {
+            # nodejs-mobile: emit a GNU build-id on libnode.so so Sentry can
+            # match the AGP-stripped runtime binary to uploaded debug files for
+            # native crash symbolication. Android-only on purpose: Mach-O has
+            # no --build-id — Apple's ld emits an LC_UUID load command
+            # unconditionally, and that UUID is what symbolicators match dSYMs
+            # by, so iOS needs no equivalent flag. Behaviour-neutral; applies to both
+            # flavors (see docs/BUILDING.md on the recipe branch). These also
+            # reach the host build-tools, which is harmless on the Linux build
+            # host (GNU ld); Android is built on Linux (a macOS host can't link
+            # the cross-build — see that same BUILDING.md). _toolset isn't
+            # available in load-time conditions, so it can't be scoped out here.
+            # --gc-sections (both flavors): split sections and drop
+            # unreferenced ones; per-function codegen is unchanged.
+            'cflags': [ '-ffunction-sections', '-fdata-sections' ],
+            'ldflags': [ '-Wl,--build-id=sha1', '-Wl,--gc-sections' ],
+          }],
           ['OS=="solaris"', {
             # pull in V8's postmortem metadata
             'ldflags': [ '-Wl,-z,allextract' ]
@@ -229,7 +246,7 @@
             # increase performance, number from experimentation
             'cflags': [ '-qINLINE=::150:100000' ]
           }],
-          ['OS!="mac" and OS!="win" and OS!="zos"', {
+          ['OS!="mac" and OS!="ios" and OS!="win" and OS!="zos"', {
             # -fno-omit-frame-pointer is necessary for the --perf_basic_prof
             # flag to work correctly. perf(1) gets confused about JS stack
             # frames otherwise, even with --call-graph dwarf.
@@ -448,7 +465,7 @@
       [ 'target_arch=="arm64"', {
         'msvs_configuration_platform': 'arm64',
       }],
-      ['asan == 1 and OS != "mac" and OS != "zos"', {
+      ['asan == 1 and OS != "mac" and OS != "ios" and OS != "zos"', {
         'cflags+': [
           '-fno-omit-frame-pointer',
           '-fsanitize=address',
@@ -476,7 +493,7 @@
           }],
         ],
       }],
-      ['ubsan == 1 and OS != "mac" and OS != "zos"', {
+      ['ubsan == 1 and OS != "mac" and OS != "ios" and OS != "zos"', {
         'cflags+': [
           '-fno-omit-frame-pointer',
           '-fsanitize=undefined',
@@ -485,7 +502,7 @@
         'cflags!': [ '-fno-omit-frame-pointer' ],
         'ldflags': [ '-fsanitize=undefined' ],
       }],
-      ['ubsan == 1 and OS == "mac"', {
+      ['ubsan == 1 and (OS == "mac" or OS == "ios")', {
         'xcode_settings': {
           'OTHER_CFLAGS+': [
             '-fno-omit-frame-pointer',
@@ -593,11 +610,13 @@
           }],
           ['_toolset=="host"', {
             'conditions': [
-              [ 'host_arch=="ia32"', {
+              # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
+              [ 'host_arch=="ia32" or (host_arch=="x64" and (target_arch=="ia32" or target_arch=="arm"))', {
                 'cflags': [ '-m32' ],
                 'ldflags': [ '-m32' ],
               }],
-              [ 'host_arch=="x64"', {
+              # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
+              [ 'host_arch=="x64" and (target_arch=="x64" or target_arch=="arm64")', {
                 'cflags': [ '-m64' ],
                 'ldflags': [ '-m64' ],
               }],
@@ -747,6 +766,98 @@
                 '-Wl,-no_pie',
               ],
             },
+          }],
+          ['clang==1', {
+            'xcode_settings': {
+              'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
+              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++20',  # -std=gnu++20
+              'CLANG_CXX_LIBRARY': 'libc++',
+            },
+          }],
+        ],
+      }],
+      ['OS=="ios"', {
+        'defines': ['_DARWIN_USE_64_BIT_INODE=1'],
+        'xcode_settings': {
+          'ALWAYS_SEARCH_USER_PATHS': 'NO',
+          'GCC_CW_ASM_SYNTAX': 'NO',                # No -fasm-blocks
+          'GCC_DYNAMIC_NO_PIC': 'NO',               # No -mdynamic-no-pic
+                                                    # (Equivalent to -fPIC)
+          'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',        # -fno-exceptions
+          'GCC_ENABLE_CPP_RTTI': 'NO',              # -fno-rtti
+          'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
+          'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
+          'PREBINDING': 'NO',                       # No -Wl,-prebind
+          'USE_HEADERMAP': 'NO',
+        },
+        'target_conditions': [
+          ['_toolset=="host"', {
+            'xcode_settings': {
+              'SDKROOT': 'macosx',
+              'MACOSX_DEPLOYMENT_TARGET': '13.5',   # Use macOS deployment target for host tools
+              'WARNING_CFLAGS': [
+                '-Wall',
+                '-Wendif-labels',
+                '-W',
+                '-Wno-unused-parameter',
+              ],
+            },
+            'conditions': [
+              ['host_arch=="arm64"', {
+                'xcode_settings': {'ARCHS': ['arm64']},
+              }],
+              ['host_arch=="x64"', {
+                'xcode_settings': {'ARCHS': ['x86_64']},
+              }],
+            ],
+          }, {
+            'xcode_settings': {
+              'IPHONEOS_DEPLOYMENT_TARGET': '14.0', # -miphoneos-version-min=14.0
+              'WARNING_CFLAGS': [
+                '-Wall',
+                '-Wendif-labels',
+                '-W',
+                '-Wno-unused-parameter',
+                '-Wno-enum-constexpr-conversion',
+              ],
+            },
+            'conditions': [
+              ['iossim!="true" and target_arch in "arm64 arm armv7s"', {
+                'xcode_settings': {
+                  # Bitcode was removed in Xcode 14; ENABLE_BITCODE/-fembed-bitcode
+                  # now error on modern Xcode (incl. CI's Xcode 16.4).
+                  'SDKROOT': 'iphoneos',
+                }
+              }, {
+                'xcode_settings': {
+                  'SDKROOT': 'iphonesimulator',
+                }
+              }],
+            ],
+          }],
+          ['_type!="static_library"', {
+            'xcode_settings': {
+              'OTHER_LDFLAGS': [
+                '-Wl,-search_paths_first',
+              ],
+            },
+          }],
+        ],
+        'conditions': [
+          ['target_arch=="ia32"', {
+            'xcode_settings': {'ARCHS': ['i386']},
+          }],
+          ['target_arch=="x64"', {
+            'xcode_settings': {'ARCHS': ['x86_64']},
+          }],
+          [ 'target_arch=="arm64"', {
+            'xcode_settings': {'ARCHS': ['arm64']},
+          }],
+          [ 'target_arch=="arm"', {
+            'xcode_settings': {'ARCHS': ['armv7']},
+          }],
+          [ 'target_arch=="armv7s"', {
+            'xcode_settings': {'ARCHS': ['armv7s']},
           }],
           ['clang==1', {
             'xcode_settings': {
