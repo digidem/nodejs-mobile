@@ -693,6 +693,8 @@ void ResetStdio() {
       CHECK_NE(err, -1);
     }
 
+#if !(defined(__APPLE__) && TARGET_OS_IPHONE)
+    // tcsetattr is not working on iOS devices.
     if (s.isatty) {
       sigset_t sa;
       int err;
@@ -714,6 +716,7 @@ void ResetStdio() {
       // - if the process group is orphaned, e.g. because the user logged out,
       //   tcsetattr fails with EIO
     }
+#endif  // !(defined(__APPLE__) && TARGET_OS_IPHONE)
   }
 #endif  // __POSIX__
 }
