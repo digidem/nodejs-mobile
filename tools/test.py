@@ -1745,6 +1745,12 @@ def Main():
         'asan': get_asan_state(vm, context),
         'pointer_compression': get_pointer_compression_state(vm, context),
       }
+      # If arch is android, system is android as well.
+      if arch.lower() == "android":
+        env['system'] = "android"
+      # If arch is ios, system is iOS as well.
+      elif arch.lower() == "ios":
+        env['system'] = "ios"
       for path in paths:
         test_list = root.ListTests([], path, context, arch, mode)
         unclassified_tests += test_list
