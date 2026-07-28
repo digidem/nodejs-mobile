@@ -35,7 +35,7 @@ const CLIENT_VARIANTS = 6;  // Same length as array above
 {
   // Use relative path to avoid hitting 108-char length limit
   // for socket paths in libuv.
-  const prefix = path.relative('.', `${common.PIPE}-net-connect-options-fd`);
+  const prefix = path.relative('.', `${common.PIPE}-n-c-o-fd`);
   const serverPath = `${prefix}-server`;
   let counter = 0;
   let socketCounter = 0;

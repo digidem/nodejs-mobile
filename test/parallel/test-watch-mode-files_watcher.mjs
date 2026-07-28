@@ -199,6 +199,8 @@ describe('watch mode file watcher', () => {
        assert.deepStrictEqual(watcher.watchedPaths, []);
      });
 
+  // nodejs-mobile patch: spawn not supported
+  /*
   it('should watch files from subprocess IPC events', async () => {
     const file = fixtures.path('watch-mode/ipc.js');
     const child = spawn(process.execPath, [file], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'], encoding: 'utf8' });
@@ -210,4 +212,5 @@ describe('watch mode file watcher', () => {
     }
     assert.deepStrictEqual(watcher.watchedPaths, expected);
   });
+  */
 });

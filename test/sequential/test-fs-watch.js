@@ -35,9 +35,13 @@ if (!isMainThread) {
   common.skip('process.chdir is not available in Workers');
 }
 
+// nodejs-mobile patch: Android and iOS report the filename like the Linux and
+// Darwin platforms they are built on.
 const expectFilePath = common.isWindows ||
                        common.isLinux ||
                        common.isMacOS ||
+                       common.isAndroid ||
+                       common.isIOS ||
                        common.isAIX;
 
 const testDir = tmpdir.path;

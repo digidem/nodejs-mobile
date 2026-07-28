@@ -82,7 +82,8 @@ assert.throws(
   { code: 'ERR_INVALID_ARG_VALUE', name: 'TypeError' }
 );
 
-if (common.isLinux || common.isMacOS) {
+// nodejs-mobile patch: Android is Linux and iOS is Darwin; O_DSYNC works on both.
+if (common.isLinux || common.isMacOS || common.isAndroid || common.isIOS) {
   const tmpdir = require('../common/tmpdir');
   tmpdir.refresh();
   const file = tmpdir.resolve('a.js');
