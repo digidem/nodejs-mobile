@@ -3,6 +3,12 @@
     'conditions': [
       ['OS=="win"', {
         'shared_unix_defines': [ ],
+      }, 'OS=="android" and target_arch in ("arm","ia32")', {
+        # Android on API < 24 will miss function definitions for
+        #_FILE_OFFSET_BITS=64
+        'shared_unix_defines': [
+          '_LARGEFILE_SOURCE',
+        ],
       }, {
         'shared_unix_defines': [
           '_LARGEFILE_SOURCE',
@@ -292,8 +298,22 @@
           'defines': [
             '_GNU_SOURCE',
           ],
-          'sources': [
-            '<@(uv_sources_android)',
+          'target_conditions': [
+            ['_toolset=="target"', {
+              'sources': [
+                '<@(uv_sources_android)',
+              ],
+            }],
+            ['_toolset=="host" and host_os=="mac"', {
+              'sources': [
+                '<@(uv_sources_apple)',
+              ],
+            }],
+            ['_toolset=="host" and host_os=="linux"', {
+              'sources': [
+                '<@(uv_sources_linux)',
+              ],
+            }],
           ],
           'link_settings': {
             'libraries': [ '-ldl' ],

@@ -1046,8 +1046,11 @@ static ssize_t uv__fs_sendfile(uv_fs_t* req) {
     try_sendfile = 1;
 
 #ifdef __linux__
+#if !defined(__ANDROID__) || (!defined(__i386__) && !defined(__arm__)) || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS-0 == 64)
+// copy_file_range needs large offsets.
     r = uv__fs_try_copy_file_range(in_fd, &off, out_fd, len);
     try_sendfile = (r == -1 && errno == ENOSYS);
+#endif
 #endif
 
     if (try_sendfile)
