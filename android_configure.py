@@ -1,25 +1,14 @@
 import platform
 import sys
 import os
-
-# TODO: In next version, it will be a JSON file listing all the patches, and then it will iterate through to apply them.
-def patch_android():
-    print("- Patches List -")
-    print("[1] [deps/v8/src/trap-handler/trap-handler.h] related to https://github.com/nodejs/node/issues/36287")
-    if platform.system() == "Linux":
-        os.system('patch -f ./deps/v8/src/trap-handler/trap-handler.h < ./android-patches/trap-handler.h.patch')
-    print("\033[92mInfo: \033[0m" + "Tried to patch.")
+import shutil
 
 if platform.system() != "Linux" and platform.system() != "Darwin":
     print("android-configure is currently only supported on Linux and Darwin.")
     sys.exit(1)
 
-if len(sys.argv) == 2 and sys.argv[1] == "patch":
-    patch_android()
-    sys.exit(0)
-
 if len(sys.argv) != 4:
-    print("Usage: ./android-configure [patch] <path to the Android NDK> <Android SDK version> <target architecture>")
+    print("Usage: ./android-configure <path to the Android NDK> <Android SDK version> <target architecture>")
     sys.exit(1)
 
 if not os.path.exists(sys.argv[1]) or not os.listdir(sys.argv[1]):
@@ -55,7 +44,7 @@ else:
 print("\033[92mInfo: \033[0m" + "Configuring for " + DEST_CPU + "...")
 
 if platform.system() == "Darwin":
-    host_os = "darwin"
+    host_os = "mac"
     toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
 
 elif platform.system() == "Linux":
@@ -65,13 +54,66 @@ elif platform.system() == "Linux":
 os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
 os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
 os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
+# nodejs-mobile patch: add host CC and CXX
+os.environ['CC_host'] = os.popen('command -v clang').read().strip()
+os.environ['CXX_host'] = os.popen('command -v clang++').read().strip()
+
+# nodejs-mobile patch: route every compile through sccache, but only when the
+# caller opts in (CI sets NODEJS_MOBILE_SCCACHE=1 next to the
+# mozilla-actions/sccache-action setup). Opt-in rather than "wrap when
+# installed": a local build must not silently change behaviour because a
+# developer happens to have sccache on PATH. This lives here and not in CI env
+# because this script overwrites CC/CXX with the NDK toolchain paths above —
+# an externally exported CC would not survive to the make invocation.
+if os.environ.get("NODEJS_MOBILE_SCCACHE"):
+    sccache = shutil.which("sccache")
+    if not sccache:
+        print("\033[91mError: \033[0m" + "NODEJS_MOBILE_SCCACHE is set but sccache is not on PATH")
+        sys.exit(1)
+    for _var in ("CC", "CXX", "CC_host", "CXX_host"):
+        os.environ[_var] = sccache + " " + os.environ[_var]
 
 GYP_DEFINES = "target_arch=" + arch
 GYP_DEFINES += " v8_target_arch=" + arch
 GYP_DEFINES += " android_target_arch=" + arch
 GYP_DEFINES += " host_os=" + host_os + " OS=android"
 GYP_DEFINES += " android_ndk_path=" + android_ndk_path
+GYP_DEFINES += " android_ndk_sysroot=" + toolchain_path + "/sysroot"
+# Flavor switch (mobile-only, wrapper-level so configure.py stays upstream-clean):
+#   full (default) — the shared build all consumers get; flags unchanged.
+#   lite           — size-reduced subtractions (see "The lite variant" in
+#                    docs/BUILDING.md on the recipe branch).
+# Set via env NODEJS_MOBILE_FLAVOR=lite. Android lite keeps the JIT and V8's
+# native WASM engine (undici uses them); it drops features that
+# size-constrained consumers don't need and compresses V8 pointers (below).
+# Dead-code stripping applies to both flavors (common.gypi).
+flavor = os.environ.get("NODEJS_MOBILE_FLAVOR", "full").strip().lower()
+if flavor not in ("full", "lite"):
+    print("\033[91mError: \033[0m" + "NODEJS_MOBILE_FLAVOR must be 'full' or 'lite'")
+    sys.exit(1)
+print("\033[92mInfo: \033[0m" + "Build flavor: " + flavor)
+
+intl = "small-icu"
+extra_flags = ""
+if flavor == "lite":
+    intl = "none"
+    extra_flags = " --without-amaro --without-inspector --without-sqlite"
+    # Pointer compression: 32-bit compressed pointers inside a 4GB cage — the
+    # size lever on the JS heap rather than on the binary. lite only, because it
+    # changes the V8 ABI for addons that include V8's headers directly (N-API
+    # addons are unaffected). See "The lite variant" in docs/BUILDING.md on the
+    # recipe branch.
+    #
+    # Gated to 64-bit rather than left to upstream's common.gypi, which already
+    # force-disables it for `target_arch in "arm ia32 mips mipsel"`: that guard
+    # zeroes the gyp variable but not the one configure wrote into config.gypi,
+    # so an ungated flag would leave process.config claiming compression on an
+    # uncompressed armeabi-v7a build (tools/test.py derives $pointer_compression
+    # from it, and two parallel tests branch on it).
+    if arch in ("arm64", "x64"):
+        extra_flags += " --experimental-enable-pointer-compression"
+
 os.environ['GYP_DEFINES'] = GYP_DEFINES
 
 if os.path.exists("./configure"):
-    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --cross-compiling")
+    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --with-intl=" + intl + extra_flags + " --cross-compiling --shared")
