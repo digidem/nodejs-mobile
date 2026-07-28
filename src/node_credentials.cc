@@ -45,7 +45,7 @@ bool linux_at_secure() {
 
 namespace credentials {
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(NODE_MOBILE)
 // Returns true if the current process only has the passed-in capability.
 static bool HasOnly(int capability) {
   DCHECK(cap_valid(capability));
@@ -73,7 +73,29 @@ static bool HasOnly(int capability) {
 // setuid root then lookup will not be allowed.
 bool SafeGetenv(const char* key, std::string* text, Environment* env) {
 #if !defined(__CloudABI__) && !defined(_WIN32)
-#if defined(__linux__)
+#if defined(NODE_MOBILE)
+  // nodejs-mobile: node is a library inside somebody else's app, so the
+  // "does this process look privileged" question keys off the host process
+  // rather than off node, and the embedder is the one setting the environment.
+  //
+  // On Android the answer is not merely irrelevant, it is stale: an app process
+  // is fork()ed from the zygote without exec(), so it inherits the zygote's
+  // auxiliary vector -- AT_SECURE=1 and AT_{,E}{U,G}ID=0, describing init's exec
+  // of the zygote -- while the process itself runs unprivileged with
+  // uid == euid. linux_at_secure() therefore reports 1 for every app, forever,
+  // and SafeGetenv() declines every variable the embedder sets that is read
+  // through it: TMPDIR (so os.tmpdir() falls back to a non-existent /tmp),
+  // NODE_EXTRA_CA_CERTS, NODE_USE_SYSTEM_CA, NODE_ICU_DATA, NODE_OPTIONS,
+  // OPENSSL_CONF, NODE_PATH, NODE_COMPILE_CACHE and the rest. (Not TZ: its only
+  // SafeGetenv() read is under #ifndef __POSIX__, so on mobile it reaches libc
+  // and ICU through plain getenv and was never affected.)
+  //
+  // Gated on NODE_MOBILE -- the embedded-library build -- rather than on the OS:
+  // a standalone node exec()ed on Android would have a truthful auxv and should
+  // keep upstream's behaviour. The uid/gid comparisons below are still live, so
+  // they stay.
+  if (getuid() != geteuid() || getgid() != getegid())
+#elif defined(__linux__)
   if ((!HasOnly(CAP_NET_BIND_SERVICE) && linux_at_secure()) ||
       getuid() != geteuid() || getgid() != getegid())
 #else
@@ -181,6 +203,19 @@ static char* name_by_uid(uid_t uid) {
   return nullptr;
 }
 
+#ifdef __ANDROID__
+// Android has getgrnam instead of getgrnam_r.
+static gid_t gid_by_name(const char* name) {
+  struct group* pp = getgrnam(name);  // NOLINT(runtime/threadsafe_fn)
+
+  errno = 0;
+
+  if (pp != nullptr)
+    return pp->gr_gid;
+
+  return gid_not_found;
+}
+#else  // __ANDROID__
 static gid_t gid_by_name(const char* name) {
   struct group pwd;
   struct group* pp;
@@ -194,6 +229,7 @@ static gid_t gid_by_name(const char* name) {
 
   return gid_not_found;
 }
+#endif  // __ANDROID__
 
 #if 0  // For future use.
 static const char* name_by_gid(gid_t gid) {
@@ -286,6 +322,8 @@ static void GetEGid(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(static_cast<uint32_t>(getegid()));
 }
 
+#ifndef __ANDROID__
+// Android blocks setting Uid and Gid.
 static void SetGid(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   CHECK(env->owns_process_state());
@@ -369,6 +407,7 @@ static void SetEUid(const FunctionCallbackInfo<Value>& args) {
     args.GetReturnValue().Set(0);
   }
 }
+#endif  // ifndef __ANDROID__
 
 static void GetGroups(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
@@ -392,6 +431,8 @@ static void GetGroups(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
+#ifndef __ANDROID__
+// Android blocks setting groups
 static void SetGroups(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
 
@@ -427,6 +468,7 @@ static void SetGroups(const FunctionCallbackInfo<Value>& args) {
 
   args.GetReturnValue().Set(0);
 }
+#endif  // ifndef __ANDROID__
 
 static void InitGroups(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
@@ -486,11 +528,13 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(GetGroups);
 
   registry->Register(InitGroups);
+  #ifndef __ANDROID__
   registry->Register(SetEGid);
   registry->Register(SetEUid);
   registry->Register(SetGid);
   registry->Register(SetUid);
   registry->Register(SetGroups);
+  #endif
 #endif  // NODE_IMPLEMENTS_POSIX_CREDENTIALS
 }
 
@@ -514,11 +558,13 @@ static void Initialize(Local<Object> target,
 
   if (env->owns_process_state()) {
     SetMethod(context, target, "initgroups", InitGroups);
+    #ifndef __ANDROID__ // nodejs-mobile patch
     SetMethod(context, target, "setegid", SetEGid);
     SetMethod(context, target, "seteuid", SetEUid);
     SetMethod(context, target, "setgid", SetGid);
     SetMethod(context, target, "setuid", SetUid);
     SetMethod(context, target, "setgroups", SetGroups);
+    #endif
   }
 #endif  // NODE_IMPLEMENTS_POSIX_CREDENTIALS
 }
