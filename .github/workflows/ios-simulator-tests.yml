@@ -1,0 +1,137 @@
+name: iOS Simulator Tests
+
+# Runs the curated device-test subset of the Node.js JS suite (docs/TESTING.md)
+# inside the testnode harness on a booted iOS simulator, via simctl — runtime
+# signal beyond the compile-only coverage of build.yml.
+#
+# simctl launch doesn't return the app's exit code, so the app writes the
+# test's real exit code to a per-launch verdict file in its sandbox that the
+# proxy reads (docs/TESTING.md, "How a test PASSes"). Reuses the framework
+# build.yml already produced and runs the subset serially (~20-30 min of
+# macos runner time).
+#
+# Called from build.yml on every event that produces artifacts — PR, push and
+# release alike. Advisory on PRs (not part of ci-required) because simulator
+# lifecycles flake; blocking on the release chain, where publish needs: it.
+on:
+  # Called from build.yml; build_run_id points at the calling run so the
+  # artifact fetch targets it directly.
+  workflow_call:
+    inputs:
+      build_run_id:
+        type: string
+        required: false
+        default: ''
+      # JSON array of flavors to test. build.yml passes full-only on
+      # pull_request to stay inside the hosted macOS concurrency cap; pushes
+      # and releases pass both.
+      flavors:
+        type: string
+        required: false
+        default: '["full","lite"]'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Needed to list/download the libnode artifact from the Build workflow run.
+  actions: read
+
+jobs:
+  ios-simulator-tests:
+    # Both flavors run the SAME curated list, no exclusions: the whole list
+    # verified passing on a local lite build despite iOS lite dropping the
+    # WebAssembly + Intl globals (--v8-lite-mode + intl=none) — the ICU tests
+    # self-skip via common.hasIntl and the WebAssembly-named test only
+    # inspects a string fixture. Each flavor fetches its own framework from
+    # the same Build run (which produces both).
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: ${{ fromJSON(inputs.flavors || '["full","lite"]') }}
+
+    # macos-26 is Apple Silicon with current Xcode, matching build.yml.
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      NODEJS_MOBILE_FLAVOR: ${{ matrix.flavor }}
+      FLAVOR_SUFFIX: ${{ matrix.flavor == 'lite' && '-lite' || '' }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/materialize
+
+      # Reuse the framework build.yml already produced for this commit instead
+      # of rebuilding (a from-scratch build is 1.5-3h and overruns the job
+      # timeout). Build deletes the per-arch node-ios-* artifacts after
+      # combining, so pull this flavor's combined artifact
+      # (nodejs-mobile-ios[-lite]: the device+simulator NodeMobile.xcframework)
+      # and stage it at the path the testnode project references.
+      - name: Fetch NodeMobile.xcframework from the Build run
+        uses: ./.github/actions/fetch-build-artifact
+        with:
+          name: nodejs-mobile-ios${{ env.FLAVOR_SUFFIX }}
+          dest: nm-ios
+          build_run_id: ${{ inputs.build_run_id }}
+          token: ${{ github.token }}
+
+      - name: Stage xcframework
+        run: |
+          mkdir -p out_ios
+          rm -rf out_ios/NodeMobile.xcframework
+          cp -R nm-ios/NodeMobile.xcframework out_ios/NodeMobile.xcframework
+          test -d out_ios/NodeMobile.xcframework \
+            || { echo "::error::NodeMobile.xcframework missing from nodejs-mobile-ios${FLAVOR_SUFFIX}"; ls -R nm-ios || true; exit 1; }
+
+      - name: Boot iPhone simulator
+        id: boot-sim
+        uses: ./.github/actions/boot-ios-simulator
+        with:
+          device_name: nodejs-mobile-test
+
+      - name: Prepare tests on simulator
+        env:
+          DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
+        run: ./tools/mobile-test/ios/prepare-ios-sim-tests.sh
+
+      - name: Run curated JS subset on simulator
+        env:
+          DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
+        run: |
+          # Curated, deterministic subset (shared with the Android workflow).
+          # --timeout=300: test.py's per-test wall-clock budget (scaled by host
+          # arch) must exceed the proxy's 120s verdict poll so the PROXY is the
+          # authoritative deadline and emits its no-verdict diagnostic before
+          # test.py kills it.
+          #
+          # pipefail + count guard: without them a missing/emptied list file
+          # passes vacuously — grep's failure is masked by the pipe, and BSD
+          # xargs runs nothing (exit 0) on empty input.
+          set -o pipefail
+          COUNT=$(grep -cvE '^[[:space:]]*#|^[[:space:]]*$' tools/mobile-test/curated-device-tests.txt)
+          [ "$COUNT" -ge 100 ] || { echo "::error::curated list missing or implausibly small ($COUNT entries)"; exit 1; }
+          echo "running $COUNT curated tests"
+          grep -vE '^[[:space:]]*#|^[[:space:]]*$' tools/mobile-test/curated-device-tests.txt \
+            | xargs ./tools/test.py -j 1 --flaky-tests=skip --timeout=300 \
+                --arch ios --shell="./tools/mobile-test/ios/node-ios-sim-proxy.sh"
+
+      # Native-addon gate: build the crc-native N-API addon against THIS build's
+      # framework (-framework NodeMobile -> two-level napi_* binding) and load it
+      # in the testnode app. Proves a real addon dlopens + runs (the "B-1"
+      # concern the symbol-grep smoke only approximates). Runs for both flavors.
+      - name: Build + run NAPI addon on simulator
+        run: |
+          ./tools/mobile-test/addon/build-ios-addon.sh \
+            out_ios/NodeMobile.xcframework ios-arm64-simulator nm-ios/include/node \
+            "$PWD/crcnative.node"
+          ./tools/mobile-test/addon/run-ios-addon.sh \
+            "$PWD/out_ios_testnode/Release-iphonesimulator/testnode.app" \
+            "${{ steps.boot-sim.outputs.udid }}" \
+            "$PWD/crcnative.node"
+
+      - name: Shutdown simulator
+        if: always()
+        run: |
+          xcrun simctl shutdown "${{ steps.boot-sim.outputs.udid }}" || true
+          xcrun simctl delete "${{ steps.boot-sim.outputs.udid }}" || true

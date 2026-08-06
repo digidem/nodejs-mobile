@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # "/" covers .github/workflows; the glob covers the composite actions,
+  # which Dependabot does not reach from the root entry.
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ci

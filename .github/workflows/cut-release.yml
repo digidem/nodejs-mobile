@@ -1,0 +1,125 @@
+name: Cut release
+
+# The release button (Actions -> Cut release -> Run workflow). Computes
+# everything a human used to hand-edit and opens a release PR:
+#
+#   - X.Y.Z comes from upstream-base.txt;
+#   - the -R revision is the next free one, derived from existing tags
+#     (vX.Y.Z-R and legacy nodejs-mobile-X.Y.Z-R both count) -- nobody
+#     types a revision by hand;
+#   - mobile-src/src/node_mobile_version.h is synced to that version;
+#   - a dated CHANGELOG section (TOC entry + anchor) is stubbed for editing;
+#   - expected-tree.txt is re-anchored by actually running prepare.sh.
+#
+# Reviewing and merging the PR is the human sign-off; the merge push then
+# runs the full gate chain and publishes (see build.yml release-check --
+# the version being untagged is what makes the merged push a release).
+# NOTE: the PR branch is pushed with GITHUB_TOKEN, which does not trigger
+# PR checks -- by design nothing publishes unverified, because every gate
+# re-runs on the merge push and the publish job needs: all of them.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cut:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Compute next version
+        id: v
+        run: |
+          XYZ=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]' | sed 's/^v//')
+          # Only a real 404 counts as "revision free". A transient API failure
+          # must abort — reading it as absence reuses a taken -R, and the
+          # release PR then merges into a silent no-op (release-check sees the
+          # existing tag and never publishes).
+          tag_exists() {
+            local out
+            if out=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/$1" 2>&1); then
+              return 0
+            fi
+            printf '%s' "$out" | grep -q 'HTTP 404' && return 1
+            echo "::error::tag probe for $1 failed (not a 404): $out"
+            exit 1
+          }
+          R=0
+          while tag_exists "v${XYZ}-${R}" || tag_exists "nodejs-mobile-${XYZ}-${R}"; do
+            R=$((R + 1))
+          done
+          V="${XYZ}-${R}"
+          echo "xyz=$XYZ" >> "$GITHUB_OUTPUT"
+          echo "r=$R"     >> "$GITHUB_OUTPUT"
+          echo "v=$V"     >> "$GITHUB_OUTPUT"
+          echo "Next release: $V"
+
+      - name: Bump version of record + CHANGELOG stub
+        env:
+          XYZ: ${{ steps.v.outputs.xyz }}
+          R: ${{ steps.v.outputs.r }}
+          V: ${{ steps.v.outputs.v }}
+        run: |
+          MAJOR=${XYZ%%.*}; REST=${XYZ#*.}; MINOR=${REST%%.*}; PATCH=${REST##*.}
+          f=mobile-src/src/node_mobile_version.h
+          sed -i -E "s/(#define NODE_MOBILE_MAJOR_VERSION )[0-9]+/\1${MAJOR}/" "$f"
+          sed -i -E "s/(#define NODE_MOBILE_MINOR_VERSION )[0-9]+/\1${MINOR}/" "$f"
+          sed -i -E "s/(#define NODE_MOBILE_PATCH_VERSION )[0-9]+/\1${PATCH}/" "$f"
+          sed -i -E "s/(#define NODE_MOBILE_REVISION )[0-9]+/\1${R}/" "$f"
+          grep -E 'NODE_MOBILE_(MAJOR|MINOR|PATCH)_VERSION|NODE_MOBILE_REVISION' "$f"
+          python3 - <<'EOF'
+          import datetime, os, re
+          v = os.environ['V']
+          p = 'docs/CHANGELOG.md'
+          s = open(p).read()
+          date = datetime.date.today().isoformat()
+          section = (f'<a id="{v}"></a>\n## {date}, Version {v} (Current)\n\n'
+                     '- _TODO: summarize changes before merging._\n\n')
+          # Insert the section before the first existing anchor, drop the old
+          # "(Current)" marker, and add a TOC entry above the first one.
+          m = re.search(r'^<a id="', s, re.M)
+          assert m, 'no existing anchor found'
+          s = s[:m.start()] + section + s[m.start():]
+          s = re.sub(r'^(## .+, Version (?!'+re.escape(v)+r').+) \(Current\)$', r'\1', s, flags=re.M)
+          mt = re.search(r'^<a href="#', s, re.M)
+          assert mt, 'no TOC entry found'
+          s = s[:mt.start()] + f'<a href="#{v}">{v}</a><br/>\n' + s[mt.start():]
+          open(p, 'w').write(s)
+          print(f'CHANGELOG stubbed for {v}')
+          EOF
+
+      - name: Re-anchor expected-tree.txt (runs prepare.sh)
+        run: |
+          SKIP_VERIFY=1 scripts/prepare.sh "$RUNNER_TEMP/matsrc"
+          GOT=$(git -C "$RUNNER_TEMP/matsrc" rev-parse 'HEAD^{tree}')
+          sed -i -E "s/^[0-9a-f]{40}$/${GOT}/" expected-tree.txt
+          grep -E '^[0-9a-f]{40}$' expected-tree.txt
+
+      - name: Open release PR
+        env:
+          V: ${{ steps.v.outputs.v }}
+        run: |
+          BR="release/v${V}"
+          git config user.name "nodejs-mobile-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git checkout -b "$BR"
+          git commit -aqm "release: nodejs-mobile ${V}"
+          git push -f origin "$BR"
+          gh pr create --base recipe --head "$BR" \
+            --title "release: nodejs-mobile ${V}" \
+            --body "Automated release PR for **nodejs-mobile ${V}** (see docs/RELEASING.md).
+
+          - [x] version of record bumped (revision computed from existing tags)
+          - [x] \`expected-tree.txt\` re-anchored via \`prepare.sh\`
+          - [ ] CHANGELOG entry filled in (the \`release-notes\` check fails while the \`_TODO_\` stub is there)
+          - [ ] review + merge = release sign-off
+
+          Merging makes the version-of-record untagged-at-HEAD, so the merge push runs the **full gate chain** (build matrix, boot smokes, curated and full device suites, real devices) and, if everything is green, tags \`v${V}\` and publishes the prerelease. PR checks do not run on this bot-pushed branch — your CHANGELOG commit is what starts them, and it is also what clears the \`release-notes\` check. Nothing publishes unverified either way (all gates re-run on the merge push)."

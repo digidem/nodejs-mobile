@@ -1,0 +1,271 @@
+name: Verify recipe branch
+
+# Integrity gate for the patches-only representation: reconstruct the full
+# source tree from a real shallow clone of upstream nodejs/node at the pinned
+# base, and fail unless the result hashes byte-for-byte to expected-tree.txt.
+# Fast (no compilation): clone + git am + overlay + tree hash.
+on:
+  push:
+    branches: [recipe]
+  pull_request:
+    branches: [recipe]
+  workflow_dispatch:
+
+# One run per PR/branch; a new PR commit supersedes the previous run. Pushes to
+# recipe are never cancelled — a release run must be allowed to finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # The tree-hash check (prepare.sh) proves the recipe reproduces the
+      # reviewed tree, but not that the recipe's own bookkeeping is coherent —
+      # a hand-edited .patch (banned but unpoliced) can pass the hash while
+      # breaking the next contributor's regenerate loop.
+      - name: Lint the recipe partition
+        run: |
+          python3 - <<'EOF'
+          import os, re, sys
+          fail = []
+          series = [l.strip() for l in open('patches/series')
+                    if l.strip() and not l.startswith('#')]
+          on_disk = sorted(f for f in os.listdir('patches')
+                           if f.endswith('.patch'))
+          if sorted(series) != on_disk:
+              fail.append(f'series/on-disk mismatch: only-in-series='
+                          f'{sorted(set(series) - set(on_disk))} '
+                          f'orphan-files={sorted(set(on_disk) - set(series))}')
+          owned = {}
+          for line in open('patches/files.map'):
+              line = line.rstrip('\n')
+              if not line or line.startswith('#'):
+                  continue
+              patch, path = line.split('\t', 1)
+              if patch not in series:
+                  fail.append(f'files.map references unknown patch: {patch}')
+              if path in owned:
+                  fail.append(f'{path} owned by both {owned[path]} and {patch}')
+              owned[path] = patch
+          # Each patch's diff paths must exactly match its files.map lines.
+          for p in series:
+              diffed = set()
+              for line in open(os.path.join('patches', p)):
+                  m = re.match(r'^diff --git a/(.*) b/', line)
+                  if m:
+                      diffed.add(m.group(1))
+              mapped = {path for path, patch in owned.items() if patch == p}
+              if diffed != mapped:
+                  fail.append(f'{p}: diff paths != files.map '
+                              f'(diff-only={sorted(diffed - mapped)}, '
+                              f'map-only={sorted(mapped - diffed)})')
+          # A path owned by a patch must not also be a fork-only file — the
+          # mobile-src overlay would silently overwrite the patched version.
+          ms = {l[len('mobile-src/'):] for l in
+                os.popen('git ls-files -- mobile-src').read().splitlines() if l}
+          both = ms & set(owned)
+          if both:
+              fail.append(f'paths in both files.map and mobile-src/: {sorted(both)}')
+          if fail:
+              print('\n'.join('::error::' + f for f in fail))
+              sys.exit(1)
+          print(f'recipe partition OK: {len(series)} patches, '
+                f'{len(owned)} owned paths, {len(ms)} fork-only files')
+          EOF
+
+      - name: Reconstruct + verify
+        run: scripts/prepare.sh out
+
+      # The curated device-test list is the functional gate; validate it against
+      # the materialized tree so an upstream bump can't silently shrink it.
+      # tools/test.py ignores a path that matches nothing, so a deleted or
+      # renamed upstream test would otherwise vanish from the gate while every
+      # job stays green. (process.exit() is fine here: the app preloads an
+      # exit-verdict hook that records the real code — docs/TESTING.md.)
+      - name: Lint the curated device-test list
+        run: |
+          set -euo pipefail
+          cd out
+          fail=0
+          count=0
+          while IFS= read -r t; do
+            case "$t" in ''|\#*) continue ;; esac
+            count=$((count + 1))
+            if [ ! -f "test/$t.js" ] && [ ! -f "test/$t.mjs" ]; then
+              echo "::error::curated entry has no test file: $t"
+              fail=1
+              continue
+            fi
+          done < tools/mobile-test/curated-device-tests.txt
+          echo "curated list: $count entries validated"
+          [ "$count" -ge 100 ] || { echo "::error::curated list implausibly small ($count)"; fail=1; }
+          [ "$fail" -eq 0 ]
+
+      # The upstream-CI-removal patch deletes ALL upstream workflows so no ref
+      # carrying the materialized tree (a release tag, a branch cut from one)
+      # can run upstream CI here. Zero files — not an allowlist of inert ones —
+      # because an inert workflow's triggers can change on an upstream bump,
+      # and a filename check would accept the file while it went live. The
+      # removal is by enumeration inside the patch, so an upstream bump that
+      # ADDS a workflow reappears here as a loud failure; the fix is always to
+      # extend the patch.
+      - name: Assert the materialized tree has no workflow files
+        run: |
+          set -euo pipefail
+          if [ -d out/.github/workflows ] && [ -n "$(ls -A out/.github/workflows)" ]; then
+            echo "::error::workflow files in the materialized tree (extend ci-remove-upstream-only-workflows-and-config.patch):"
+            ls out/.github/workflows
+            exit 1
+          fi
+          echo "materialized tree carries no workflow files"
+
+      # Minimal-test-edit policy (docs/TESTING.md): the script says it fails
+      # CI, so CI must actually run it. The prepare.sh clone carries the
+      # upstream base tag the audit diffs against.
+      - name: Audit test edits
+        run: cd out && ./tools/mobile-test/audit-test-edits.sh
+
+      - name: Report
+        if: always()
+        run: |
+          echo "base:     $(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1)"
+          echo "expected: $(grep -Ev '^\s*(#|$)' expected-tree.txt | head -n1)"
+          [ -d out ] && echo "got:      $(git -C out rev-parse 'HEAD^{tree}' 2>/dev/null || echo n/a)"
+
+  # Review aid, not a gate: a PR to this branch is a diff *of a diff* — the
+  # change to a .patch file, not the change to the source. Materialize the base
+  # and the head of the PR and diff the two reconstructed trees, so a reviewer
+  # can read the actual source change. Never fails the PR (the `verify` job
+  # above is what gates); it only publishes the diff.
+  #
+  # An upgrade PR (one that moves upstream-base.txt) legitimately produces an
+  # enormous diff — the whole upstream delta lands in it. The summary says so
+  # rather than pretending the result is reviewable.
+  tree-diff:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: head
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      # SKIP_VERIFY on both sides: this job reconstructs trees to compare them,
+      # it does not re-gate the hash. `verify` owns that, and a base whose
+      # expected-tree.txt has drifted must not block the reviewer's diff.
+      - name: Materialize both sides
+        run: |
+          SKIP_VERIFY=1 base/scripts/prepare.sh "$RUNNER_TEMP/mat-base"
+          SKIP_VERIFY=1 head/scripts/prepare.sh "$RUNNER_TEMP/mat-head"
+          # Drop the per-tree git metadata so the diff is purely about content.
+          rm -rf "$RUNNER_TEMP/mat-base/.git" "$RUNNER_TEMP/mat-head/.git"
+
+      - name: Diff the reconstructed trees
+        run: |
+          cd "$RUNNER_TEMP"
+          # --no-index exits 1 when the trees differ (the normal case), but a
+          # real git failure (exit > 1) must not silently publish an empty
+          # diff a reviewer could mistake for "no source change".
+          rc0() { local rc=0; "$@" || rc=$?; [ "$rc" -le 1 ] || exit "$rc"; }
+          rc0 git diff --no-index --stat mat-base mat-head > tree-diff.stat
+          rc0 git diff --no-index          mat-base mat-head > tree-diff.patch
+
+          BB=$(grep -Ev '^\s*(#|$)' "$GITHUB_WORKSPACE/base/upstream-base.txt" | head -n1 | tr -d '[:space:]')
+          HB=$(grep -Ev '^\s*(#|$)' "$GITHUB_WORKSPACE/head/upstream-base.txt" | head -n1 | tr -d '[:space:]')
+
+          {
+            echo "## Materialized source diff"
+            echo
+            if [ "$BB" != "$HB" ]; then
+              echo "> **Upstream base moved: \`$BB\` → \`$HB\`.** This diff therefore"
+              echo "> contains the entire upstream delta as well as the fork's changes."
+              echo "> Review the patch/mobile-src diff in the Files tab instead; use this"
+              echo "> only to confirm the fork-owned files came through the rebase."
+              echo
+            fi
+            echo '```'
+            # The stat can itself be huge on an upgrade; cap what goes inline.
+            head -c 60000 tree-diff.stat
+            echo '```'
+            if [ "$(wc -c < tree-diff.stat)" -gt 60000 ]; then
+              echo
+              echo "_Summary truncated — see the \`materialized-tree-diff\` artifact for the full diff._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          ls -la tree-diff.stat tree-diff.patch
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: materialized-tree-diff
+          path: |
+            ${{ runner.temp }}/tree-diff.stat
+            ${{ runner.temp }}/tree-diff.patch
+
+  # Per-patch build-system validation (successor to the retired
+  # validate-patch-stack workflow on the materialized branch): apply the
+  # series one patch at a time onto a clean upstream checkout and run
+  # ./android-configure after each, so a broken intermediate patch is caught
+  # even when a later patch happens to mask it at HEAD. Configure-only and
+  # arm64-only for the same reasons the old workflow was (~1 min/patch;
+  # nearly every historical patch regression surfaced at configure).
+  patch-stack-configure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      ANDROID_NDK_VERSION: r27d
+      ANDROID_TARGET_SDK_VERSION: '24'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      # gyp-next needs setuptools at build time (distutils was removed from
+      # the stdlib).
+      - name: Install Python build deps
+        run: |
+          python3.13 -m pip install --upgrade pip
+          python3.13 -m pip install setuptools
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
+        id: setup-ndk
+        with:
+          ndk-version: ${{ env.ANDROID_NDK_VERSION }}
+          add-to-path: false
+
+      - name: Apply each patch and configure
+        env:
+          MY_ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          BASE=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]')
+          git clone --depth 1 --branch "$BASE" https://github.com/nodejs/node.git src
+          git -C src config user.name ci
+          git -C src config user.email ci@invalid
+          while IFS= read -r p; do
+            [ -z "$p" ] && continue
+            case "$p" in \#*) continue ;; esac
+            git -C src am --3way --keep-cr --whitespace=nowarn "$PWD/patches/$p"
+            echo "::group::configure after $p"
+            ( cd src && ./android-configure "${MY_ANDROID_NDK_HOME}" "${ANDROID_TARGET_SDK_VERSION}" arm64 )
+            # Drop configure outputs so the next patch applies to a clean tree.
+            git -C src clean -qfdx -e .git
+            git -C src checkout -q -- .
+            echo "::endgroup::"
+          done < patches/series
+          echo "All patches configure-validate individually."

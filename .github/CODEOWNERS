@@ -1,0 +1,27 @@
+# Code owners for the recipe branch.
+#
+# This is advisory: it auto-requests review and documents who is accountable
+# for the high-authority paths. It is deliberately NOT paired with "Require
+# review from Code Owners" in branch protection — with a single maintainer,
+# a required-approval rule is a rule that gets bypassed, and a bypass habit
+# erodes the required *status checks*, which are the part no human can
+# substitute for. Turn the requirement on when there is a second regular
+# reviewer. See docs/CONTRIBUTING.md.
+
+*                       @gmaclennan
+
+# Paths that confer authority rather than just changing behaviour: a workflow
+# edit can publish a release, and the four files below define what "this
+# release is what the recipe says it is" even means.
+/.github/workflows/     @gmaclennan
+/.github/actions/       @gmaclennan
+/scripts/               @gmaclennan
+/expected-tree.txt      @gmaclennan
+/upstream-base.txt      @gmaclennan
+/patches/series         @gmaclennan
+/patches/files.map      @gmaclennan
+
+# Vendored third-party code. Provenance is the whole point (see
+# docs/CONTRIBUTING.md, "Third-party code") — a change here should never
+# land without someone checking the recorded version and hashes.
+/mobile-src/deps/       @gmaclennan

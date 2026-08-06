@@ -1,0 +1,165 @@
+# Runs the curated device-test subset of the Node.js JS suite on an Android
+# emulator (docs/TESTING.md), driving test/parallel cases through the proxy
+# harness in the testnode app.
+#
+# Runs on ubuntu + KVM (1x billing) rather than a macOS runner: the x86_64
+# system image runs natively under KVM, so the emulator is fast and cheap.
+# Reuses the libnode that build.yml already produced, so the session is
+# ~30-45 min.
+#
+# Called from build.yml on every event that produces artifacts — PR, push and
+# release alike. Advisory on PRs (not part of ci-required) because emulator
+# lifecycles flake; blocking on the release chain, where publish needs: it.
+
+name: Android Emulator Tests
+
+on:
+  # Called from build.yml; build_run_id points at the calling run so the
+  # artifact fetch targets it directly.
+  workflow_call:
+    inputs:
+      build_run_id:
+        type: string
+        required: false
+        default: ""
+  workflow_dispatch:
+
+env:
+  ANDROID_NDK_VERSION: r27d
+  ANDROID_TARGET_SDK_VERSION: 24
+  # x86_64 runs natively on the runner CPU under KVM, so the emulator is fast.
+  TARGET_ARCH: x86_64
+  EMULATOR_API_LEVEL: 30
+  # testnode app/build.gradle pins this NDK for the CMake step that links the
+  # prebuilt libnode.so; install it explicitly (see "Install testnode app NDK").
+  TESTNODE_NDK_VERSION: 27.3.13750724
+  # Only build the ABI the emulator runs; CMake imports a libnode.so per ABI.
+  ORG_GRADLE_PROJECT_testnodeAbis: x86_64
+
+permissions:
+  contents: read
+  # Needed to list/download the libnode artifact from the Build workflow run.
+  actions: read
+
+jobs:
+  android-emulator-tests:
+    # Both flavors run the SAME curated list, no exclusions: it has no
+    # sqlite/inspector/strip-types tests, the ICU tests self-skip via
+    # common.hasIntl, and the lone WebAssembly-named test only inspects a string
+    # fixture. Each flavor fetches its own libnode from the same Build run
+    # (which produces both).
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [full, lite]
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      NODEJS_MOBILE_FLAVOR: ${{ matrix.flavor }}
+      FLAVOR_SUFFIX: ${{ matrix.flavor == 'lite' && '-lite' || '' }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/materialize
+
+      - name: Install build utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
+        id: setup-ndk
+        with:
+          ndk-version: ${{ env.ANDROID_NDK_VERSION }}
+          add-to-path: false
+
+      # Reuse the libnode that build.yml already compiled for this commit rather
+      # than rebuilding. Build deletes the per-arch node-android-* artifacts
+      # after combining, so pull this flavor's combined artifact
+      # (nodejs-mobile-android[-lite]: bin/<abi>/libnode.so + headers) and stage
+      # the ABI the emulator runs.
+      - name: Fetch libnode (Android) from the Build run
+        uses: ./.github/actions/fetch-build-artifact
+        with:
+          name: nodejs-mobile-android${{ env.FLAVOR_SUFFIX }}
+          dest: nm-android
+          build_run_id: ${{ inputs.build_run_id }}
+          token: ${{ github.token }}
+
+      - name: Stage libnode for the emulator ABI
+        run: |
+          mkdir -p "out_android/${TARGET_ARCH}"
+          cp "nm-android/bin/${TARGET_ARCH}/libnode.so" "out_android/${TARGET_ARCH}/libnode.so"
+          test -f "out_android/${TARGET_ARCH}/libnode.so" \
+            || { echo "::error::libnode.so missing from nodejs-mobile-android${FLAVOR_SUFFIX}"; ls -R nm-android || true; exit 1; }
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install testnode app NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$TESTNODE_NDK_VERSION"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Native-addon gate: build the crc-native N-API addon against THIS build's
+      # libnode + headers on the host (16 KB page-aligned, like libnode.so);
+      # it's loaded on the emulator in the script below. Proves a real addon
+      # dlopens + runs (the "B-1" concern the symbol-grep smoke approximates).
+      - name: Build crc-native addon (x86_64)
+        env:
+          NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          ./tools/mobile-test/addon/build-android-addon.sh \
+            "$NDK" "$TARGET_ARCH" "$PWD/out_android/${TARGET_ARCH}" \
+            "$PWD/nm-android/include/node" "$PWD/crcnative.node"
+
+      # Boot the emulator, build + install + prime the testnode app, then run the
+      # curated subset through the proxy. Everything runs in one emulator-runner
+      # script so the device stays alive for the whole session.
+      - name: Run curated JS subset on emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ env.EMULATOR_API_LEVEL }}
+          target: default
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            set -e
+            adb wait-for-device
+
+            # Build + install the app and copy the bundled test assets, and drop
+            # the proxy at out/android.release/node (+ the out/Release/node shim).
+            ./tools/mobile-test/android/prepare-android-test.sh
+
+            # Curated, deterministic subset (shared with the iOS workflow).
+            # NB: android-emulator-runner runs `script` line-by-line, so this
+            # pipeline must stay on one physical line (no `\` continuation).
+            # --timeout=300: test.py's per-test wall-clock budget (scaled by host
+            # arch) must exceed the proxy's 120s verdict poll so the PROXY is the
+            # authoritative deadline and emits its no-verdict diagnostic before
+            # test.py kills it (default 120s is co-equal on an x86_64 host -> race).
+            # Count guard: a missing/emptied list must fail loudly, not run zero
+            # tests and pass. NB: android-emulator-runner runs each line as a
+            # separate `/usr/bin/sh -c` (dash) — `set -o pipefail` is an illegal
+            # option there and set state wouldn't persist across lines anyway;
+            # the one-line guard alone covers the missing/empty-list case.
+            test "$(grep -cvE '^[[:space:]]*#|^[[:space:]]*$' tools/mobile-test/curated-device-tests.txt)" -ge 100 || { echo "::error::curated list missing or implausibly small"; exit 1; }
+            grep -vE '^[[:space:]]*#|^[[:space:]]*$' tools/mobile-test/curated-device-tests.txt | xargs ./tools/test.py -j 1 --flaky-tests=skip --timeout=300 --arch android
+
+            # Native-addon gate: stage the prebuilt addon into the (primed) app and run it.
+            ./tools/mobile-test/addon/run-android-addon.sh "$PWD/crcnative.node"

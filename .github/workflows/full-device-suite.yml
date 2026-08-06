@@ -1,0 +1,239 @@
+# The full device suite: everything test/parallel + test/sequential that
+# .status does not skip, on an Android emulator and an iOS simulator, in 4
+# round-robin shards per platform (test.py --run=n,4).
+#
+# The curated gate (build.yml) is the fast PR allow-list; this job is the
+# complement: a test upstream adds is picked up automatically, and excluding
+# one requires a .status entry — a decision with a reason attached.
+#
+# Runs nightly against the head commit's Build artifacts, and as a release
+# gate via workflow_call from build.yml, where publish needs: it. A nightly
+# whose head commit already has a green run of this workflow is skipped —
+# retesting an identical commit buys nothing. Release calls and manual
+# dispatches always run.
+#
+# The `platform` input exists for the release gate: build.yml calls this
+# workflow once per platform so each leg waits only on its own platform's
+# artifacts — the iOS shards must not idle behind the (hours-longer) Android
+# build. The nightly and plain dispatches run both.
+#
+# -j 1 because the proxy relaunches the app per test; concurrency comes from
+# shards, not threads.
+
+name: Full device suite
+
+on:
+  schedule:
+    # 03:00 UTC. Off-peak for hosted macOS, which is the scarce runner here.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which platform legs to run
+        required: false
+        default: both
+        type: choice
+        options: [both, android, ios]
+  workflow_call:
+    inputs:
+      build_run_id:
+        description: Build run to take artifacts from (empty = look up by commit)
+        required: false
+        type: string
+        default: ''
+      platform:
+        description: Which platform legs to run (android | ios | both)
+        required: false
+        type: string
+        default: both
+
+permissions:
+  contents: read
+  # Needed to find and download the libnode/xcframework from the Build run.
+  actions: read
+
+env:
+  ANDROID_NDK_VERSION: r27d
+  ANDROID_TARGET_SDK_VERSION: 24
+  TARGET_ARCH: x86_64
+  EMULATOR_API_LEVEL: 30
+  TESTNODE_NDK_VERSION: 27.3.13750724
+  ORG_GRADLE_PROJECT_testnodeAbis: x86_64
+  # full only; lite is near-duplicate runtime signal and already covered by
+  # the curated gate on every PR.
+  NODEJS_MOBILE_FLAVOR: full
+
+jobs:
+  # Skip a scheduled run when this commit already has a green one: the suite
+  # is deterministic per commit, so a quiet day would retest the same bytes.
+  # Only the nightly skips — a workflow_call (release gate) or manual dispatch
+  # always runs, and event_name here is the caller's event, never 'schedule'.
+  precheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          skip=false
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            prev=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow full-device-suite.yml \
+                     --commit "$GITHUB_SHA" --status success --limit 1 \
+                     --json databaseId -q '.[0].databaseId')
+            if [ -n "$prev" ]; then
+              skip=true
+              echo "::notice::already green at $GITHUB_SHA (run $prev) — skipping"
+            fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
+  android:
+    needs: precheck
+    # Exclusion (`!= 'ios'`) rather than `== 'android' || == 'both'` so the
+    # empty inputs context of a schedule event means "run everything".
+    if: needs.precheck.outputs.skip != 'true' && inputs.platform != 'ios'
+    strategy:
+      fail-fast: false
+      # Keep in step with the ,4 in --run below: a matrix of a different
+      # length would drop or double-run tests rather than fail.
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/materialize
+
+      - name: Install build utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib
+
+      - name: Fetch libnode (Android) from the Build run
+        uses: ./.github/actions/fetch-build-artifact
+        with:
+          name: nodejs-mobile-android
+          dest: nm-android
+          token: ${{ github.token }}
+          build_run_id: ${{ inputs.build_run_id || '' }}
+
+      - name: Stage libnode for the emulator ABI
+        run: |
+          mkdir -p "out_android/${TARGET_ARCH}"
+          cp "nm-android/bin/${TARGET_ARCH}/libnode.so" "out_android/${TARGET_ARCH}/libnode.so"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install testnode app NDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$TESTNODE_NDK_VERSION"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run shard ${{ matrix.shard }} on emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ env.EMULATOR_API_LEVEL }}
+          target: default
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb wait-for-device
+            ./tools/mobile-test/android/prepare-android-test.sh
+            bash -o pipefail -c "./tools/test.py -j 1 --flaky-tests=skip --timeout=300 --arch android --run=${{ matrix.shard }},4 parallel sequential 2>&1 | tee shard.log"
+
+      - name: Summarize shard ${{ matrix.shard }}
+        if: always()
+        run: |
+          ./tools/mobile-test/summarize-suite-run.sh shard.log "android shard ${{ matrix.shard }}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: full-suite-android-shard-${{ matrix.shard }}
+          path: shard.log
+          if-no-files-found: ignore
+
+  ios:
+    needs: precheck
+    # Exclusion, not inclusion — see the android job.
+    if: needs.precheck.outputs.skip != 'true' && inputs.platform != 'android'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: macos-26
+    # simctl launch dominates per-test cost on iOS. Headroom, not a target.
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/materialize
+
+      - name: Fetch NodeMobile.xcframework from the Build run
+        uses: ./.github/actions/fetch-build-artifact
+        with:
+          name: nodejs-mobile-ios
+          dest: nm-ios
+          token: ${{ github.token }}
+          build_run_id: ${{ inputs.build_run_id || '' }}
+
+      - name: Stage xcframework
+        run: |
+          mkdir -p out_ios
+          rm -rf out_ios/NodeMobile.xcframework
+          cp -R nm-ios/NodeMobile.xcframework out_ios/NodeMobile.xcframework
+
+      - name: Boot iPhone simulator
+        id: boot-sim
+        uses: ./.github/actions/boot-ios-simulator
+        with:
+          device_name: nodejs-mobile-test
+
+      - name: Prepare tests on simulator
+        env:
+          DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
+        run: ./tools/mobile-test/ios/prepare-ios-sim-tests.sh
+
+      - name: Run shard ${{ matrix.shard }} on simulator
+        env:
+          DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
+        run: |
+          set -o pipefail
+          ./tools/test.py -j 1 --flaky-tests=skip --timeout=300 \
+            --arch ios --shell=./tools/mobile-test/ios/node-ios-sim-proxy.sh \
+            --run=${{ matrix.shard }},4 parallel sequential 2>&1 | tee shard.log
+
+      - name: Summarize shard ${{ matrix.shard }}
+        if: always()
+        run: |
+          ./tools/mobile-test/summarize-suite-run.sh shard.log "ios shard ${{ matrix.shard }}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: full-suite-ios-shard-${{ matrix.shard }}
+          path: shard.log
+          if-no-files-found: ignore
+
+      - name: Shutdown simulator
+        if: always()
+        run: |
+          xcrun simctl shutdown "${{ steps.boot-sim.outputs.udid }}" || true
+          xcrun simctl delete "${{ steps.boot-sim.outputs.udid }}" || true

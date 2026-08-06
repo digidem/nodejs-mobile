@@ -1,0 +1,225 @@
+name: BrowserStack device smoke
+
+# Real-device smoke (docs/TESTING.md) on BrowserStack App Automate: boot the
+# shipped binary and run the crc-native N-API addon gate on a physical Android
+# arm64 device (Espresso) and a physical iPhone (XCUITest). Checks the device
+# loader's dlopen path and 16 KB-page hardware.
+#
+# Reuses the libnode/xcframework a green Build run (build.yml) already
+# produced for the target commit — nothing is compiled here except the tiny
+# testnode app, addon, and test bundles.
+#
+# Secrets: BROWSERSTACK_USER, BROWSERSTACK_PW.
+on:
+  workflow_dispatch:
+    inputs:
+      android_devices:
+        description: "BrowserStack Android devices (CSV)"
+        required: false
+        default: "Google Pixel 9-15.0"
+      ios_devices:
+        description: "BrowserStack iOS devices (CSV)"
+        required: false
+        default: "iPhone 15-17"
+      platform:
+        description: "Which platform legs to run"
+        required: false
+        default: both
+        type: choice
+        options: [both, android, ios]
+  # Called from build.yml on release runs, making the real-device gate an
+  # automatic, required part of a release (publish needs: it). build_run_id
+  # points at the calling run so the artifact download does not depend on a
+  # separate completed Build run. build.yml calls once per platform (see the
+  # `platform` input) so each leg waits only on its own platform's artifacts
+  # and boot smoke.
+  workflow_call:
+    inputs:
+      build_run_id:
+        type: string
+        required: false
+        default: ""
+      platform:
+        description: Which platform legs to run (android | ios | both)
+        type: string
+        required: false
+        default: both
+    secrets:
+      BROWSERSTACK_USER:
+        required: true
+      BROWSERSTACK_PW:
+        required: true
+
+env:
+  ANDROID_NDK_VERSION: r27d
+  TESTNODE_NDK_VERSION: 27.3.13750724
+  TARGET_ABI: arm64-v8a
+  DEFAULT_ANDROID_DEVICES: "Google Pixel 9-15.0"
+  DEFAULT_IOS_DEVICES: "iPhone 15-17"
+
+permissions:
+  contents: read
+  actions: read # locate + download the Build run's artifacts
+
+jobs:
+  android-device-smoke:
+    # Exclusion (`!= 'ios'`) rather than `== 'android' || == 'both'` so an
+    # event with an empty inputs context runs everything.
+    if: inputs.platform != 'ios'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/materialize
+
+      - name: Fetch libnode (Android) from the Build run
+        uses: ./.github/actions/fetch-build-artifact
+        with:
+          name: nodejs-mobile-android
+          dest: nm-android
+          build_run_id: ${{ inputs.build_run_id }}
+          token: ${{ github.token }}
+
+      - name: Stage libnode for the device ABI
+        run: |
+          mkdir -p "out_android/${TARGET_ABI}"
+          cp "nm-android/bin/${TARGET_ABI}/libnode.so" "out_android/${TARGET_ABI}/libnode.so"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android NDK (addon)
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
+        id: setup-ndk
+        with:
+          ndk-version: ${{ env.ANDROID_NDK_VERSION }}
+          add-to-path: false
+
+      - name: Install testnode app NDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$TESTNODE_NDK_VERSION"
+
+      - name: Build crc-native addon (arm64-v8a)
+        env:
+          NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          ./tools/mobile-test/addon/build-android-addon.sh \
+            "$NDK" "$TARGET_ABI" "$PWD/out_android/${TARGET_ABI}" \
+            "$PWD/nm-android/include/node" "$PWD/crcnative.node"
+
+      - name: Stage smoke assets into the test APK
+        run: |
+          A=tools/mobile-test/android/testnode/app/src/androidTest/assets
+          mkdir -p "$A"
+          cp tools/mobile-test/browserstack/bs-smoke.js "$A/"
+          cp tools/mobile-test/addon/crc-native/test-napi-addon.js "$A/"
+          cp crcnative.node "$A/"
+
+      - name: Build app + Espresso APKs
+        working-directory: tools/mobile-test/android/testnode
+        run: |
+          ./gradlew --no-daemon \
+            -PtestnodeAbis=${TARGET_ABI} -PtestnodeSkipTestAssets=true \
+            :app:assembleDebug :app:assembleDebugAndroidTest
+
+      - name: Run on BrowserStack (Espresso)
+        env:
+          BROWSERSTACK_USER: ${{ secrets.BROWSERSTACK_USER }}
+          BROWSERSTACK_PW: ${{ secrets.BROWSERSTACK_PW }}
+          DEVICES_INPUT: ${{ inputs.android_devices }}
+        run: |
+          DEVICES="$DEVICES_INPUT"
+          [ -n "$DEVICES" ] || DEVICES="$DEFAULT_ANDROID_DEVICES"
+          ./tools/mobile-test/browserstack/run-bs-build.sh espresso \
+            tools/mobile-test/android/testnode/app/build/outputs/apk/debug/app-debug.apk \
+            tools/mobile-test/android/testnode/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+            "$DEVICES" nodejs-mobile "sha-${{ github.sha }}"
+
+  ios-device-smoke:
+    # Exclusion, not inclusion — see android-device-smoke.
+    if: inputs.platform != 'android'
+    # macos-15 (Xcode 16.x), NOT macos-26: an XCUITest runner built by Xcode 26
+    # references XCTest symbols (e.g. XCTCommandLineToolHelper) that don't
+    # exist in the on-device XCTest of BrowserStack's iOS 15-18 fleet — dyld
+    # aborts the runner before any test executes.
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/materialize
+
+      - name: Fetch NodeMobile.xcframework from the Build run
+        uses: ./.github/actions/fetch-build-artifact
+        with:
+          name: nodejs-mobile-ios
+          dest: nm-ios
+          build_run_id: ${{ inputs.build_run_id }}
+          token: ${{ github.token }}
+
+      - name: Stage xcframework
+        run: |
+          mkdir -p out_ios
+          rm -rf out_ios/NodeMobile.xcframework
+          cp -R nm-ios/NodeMobile.xcframework out_ios/NodeMobile.xcframework
+
+      - name: Build crc-native addon (ios-arm64 device)
+        run: |
+          ./tools/mobile-test/addon/build-ios-addon.sh \
+            out_ios/NodeMobile.xcframework ios-arm64 nm-ios/include/node \
+            "$PWD/crcnative.node"
+
+      - name: Add XCUITest target + scheme
+        run: |
+          ruby -e "require 'xcodeproj'" 2>/dev/null || gem install xcodeproj --no-document
+          ruby tools/mobile-test/browserstack/add-uitest-target.rb \
+            tools/mobile-test/ios/testnode/testnode.xcodeproj
+
+      - name: Build for testing (unsigned, device)
+        working-directory: tools/mobile-test/ios/testnode
+        run: |
+          xcodebuild build-for-testing \
+            -project testnode.xcodeproj \
+            -scheme testnode-bs \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+      - name: Package .ipa + test-suite zip
+        working-directory: tools/mobile-test/ios/testnode
+        run: |
+          P=dd/Build/Products/Debug-iphoneos
+          ls "$P"
+          # Stage the smoke files into the app bundle (unsigned build;
+          # BrowserStack re-signs on its devices). The addon dylib goes into
+          # Frameworks/ so the re-sign covers it — the device loader refuses
+          # dlopen of unsigned code, and only standard code locations are
+          # re-signed.
+          cp ../../browserstack/bs-smoke.js \
+             ../../addon/crc-native/test-napi-addon.js \
+             "$P/testnode.app/"
+          mkdir -p "$P/testnode.app/Frameworks"
+          cp ../../../../crcnative.node "$P/testnode.app/Frameworks/"
+          mkdir -p Payload && cp -R "$P/testnode.app" Payload/
+          zip -qr testnode.ipa Payload
+          ( cd "$P" && zip -qr "$OLDPWD/testnodeUITests.zip" testnodeUITests-Runner.app )
+          ls -la testnode.ipa testnodeUITests.zip
+
+      - name: Run on BrowserStack (XCUITest)
+        env:
+          BROWSERSTACK_USER: ${{ secrets.BROWSERSTACK_USER }}
+          BROWSERSTACK_PW: ${{ secrets.BROWSERSTACK_PW }}
+          # Via env — see the Android leg.
+          DEVICES_INPUT: ${{ inputs.ios_devices }}
+        run: |
+          DEVICES="$DEVICES_INPUT"
+          [ -n "$DEVICES" ] || DEVICES="$DEFAULT_IOS_DEVICES"
+          ./tools/mobile-test/browserstack/run-bs-build.sh xcuitest \
+            tools/mobile-test/ios/testnode/testnode.ipa \
+            tools/mobile-test/ios/testnode/testnodeUITests.zip \
+            "$DEVICES" nodejs-mobile "sha-${{ github.sha }}"

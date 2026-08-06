@@ -1,0 +1,42 @@
+name: Fetch a Build artifact
+description: >
+  Download a combined artifact (nodejs-mobile-android[-lite] /
+  nodejs-mobile-ios[-lite]) from the Build run for this commit. Prefers the
+  explicit run id passed by the calling workflow_call; falls back to the
+  latest successful Build run for this SHA when dispatched standalone.
+  Requires actions:read and GH_TOKEN in the job.
+inputs:
+  name:
+    description: Artifact name to download
+    required: true
+  dest:
+    description: Directory to download into
+    required: true
+  build_run_id:
+    description: Build run id (empty = look up by commit)
+    required: false
+    default: ''
+  token:
+    description: Token with actions:read on this repository
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Download ${{ inputs.name }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ARTIFACT: ${{ inputs.name }}
+        DEST: ${{ inputs.dest }}
+        RUN_INPUT: ${{ inputs.build_run_id }}
+      run: |
+        set -euo pipefail
+        RUN="$RUN_INPUT"
+        [ -n "$RUN" ] || RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml \
+                --commit "$GITHUB_SHA" --status success --limit 1 --json databaseId -q '.[0].databaseId')
+        if [ -z "$RUN" ]; then
+          echo "::error::No successful Build run found for $GITHUB_SHA. Build runs on push to 'recipe', on pull_request against 'recipe', and on workflow_dispatch; dispatch/await Build for this SHA before running this workflow standalone."
+          exit 1
+        fi
+        echo "Fetching $ARTIFACT from Build run $RUN"
+        gh run download "$RUN" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT" --dir "$DEST"

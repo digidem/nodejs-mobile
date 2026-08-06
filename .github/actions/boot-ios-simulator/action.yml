@@ -1,0 +1,33 @@
+name: Boot an iPhone simulator
+description: >
+  Create and boot a simulator on the newest available iOS runtime with the
+  highest-numbered iPhone device type. Picking the *last* iPhone in simctl's
+  (unsorted) list can grab an old model the newest runtime doesn't support,
+  failing `simctl create` with SimError 403. The caller owns shutdown/delete
+  (an `if: always()` step using the udid output).
+inputs:
+  device_name:
+    description: Name for the created simulator
+    required: false
+    default: nodejs-mobile-sim
+outputs:
+  udid:
+    description: UDID of the booted simulator
+    value: ${{ steps.boot.outputs.udid }}
+runs:
+  using: composite
+  steps:
+    - name: Create + boot simulator
+      id: boot
+      shell: bash
+      env:
+        DEVICE_NAME: ${{ inputs.device_name }}
+      run: |
+        set -euo pipefail
+        RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "import json,sys; rs=sorted([x for x in json.load(sys.stdin)['runtimes'] if x.get('platform')=='iOS' and x.get('isAvailable')], key=lambda x:[int(n) for n in x['version'].split('.')]); print(rs[-1]['identifier'] if rs else '')")
+        DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "import json,sys,re; ds=sorted([x for x in json.load(sys.stdin)['devicetypes'] if re.match(r'iPhone \d', x['name'])], key=lambda x:int(re.match(r'iPhone (\d+)', x['name']).group(1))); print(ds[-1]['identifier'] if ds else '')")
+        echo "Using device=$DEVICE_TYPE runtime=$RUNTIME"
+        test -n "$DEVICE_TYPE" && test -n "$RUNTIME"
+        UDID=$(xcrun simctl create "$DEVICE_NAME" "$DEVICE_TYPE" "$RUNTIME")
+        xcrun simctl bootstatus "$UDID" -b
+        echo "udid=$UDID" >> "$GITHUB_OUTPUT"

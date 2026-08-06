@@ -1,0 +1,53 @@
+name: Materialize source tree
+description: >
+  Reconstruct the full nodejs-mobile source tree from the recipe
+  (scripts/prepare.sh: clone upstream @ pinned base + apply patches + overlay
+  mobile-src, verified byte-for-byte against expected-tree.txt) and replace the
+  workspace with it. Must run as the first step after actions/checkout of the
+  recipe branch.
+runs:
+  using: composite
+  steps:
+    # A release run materializes in ~15 jobs, each cloning nodejs/node from
+    # GitHub. Cache one shallow clone per base tag and let prepare.sh clone from
+    # it locally, to reduce the risk of network flakiness for large checkouts.
+    # Integrity is unchanged: prepare.sh still verifies the tree hash, and
+    # verify-patches.yml still reconstructs from a fresh GitHub clone on every
+    # push, so a poisoned cache cannot pass unnoticed.
+    - name: Read upstream base
+      id: base
+      shell: bash
+      run: echo "tag=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+    - name: Cache upstream clone
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.temp }}/upstream-${{ steps.base.outputs.tag }}
+        key: upstream-${{ steps.base.outputs.tag }}
+
+    - name: Reconstruct + swap into workspace
+      shell: bash
+      env:
+        BASE_TAG: ${{ steps.base.outputs.tag }}
+      run: |
+        set -euo pipefail
+        UP="$RUNNER_TEMP/upstream-$BASE_TAG"
+        if [ ! -d "$UP/.git" ]; then
+          git clone --depth 1 --branch "$BASE_TAG" https://github.com/nodejs/node.git "$UP"
+        fi
+        # file:// so git treats the shallow cache as a proper transport.
+        UPSTREAM_REPO="file://$UP" scripts/prepare.sh "$RUNNER_TEMP/matsrc"
+        # Replace the recipe checkout with the materialized tree — but keep this
+        # branch's local actions on disk: the runner re-reads action.yml from
+        # the workspace both for post steps (actions/cache's save above) and for
+        # any later `uses: ./.github/actions/*` step, so deleting them fails the
+        # job at its end. They stay untracked in the materialized repo and never
+        # reach a tree hash or a tag.
+        cp -R "$GITHUB_WORKSPACE/.github/actions" "$RUNNER_TEMP/local-actions-keep"
+        shopt -s dotglob
+        find "$GITHUB_WORKSPACE" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+        mv "$RUNNER_TEMP/matsrc"/* "$GITHUB_WORKSPACE"/
+        mkdir -p "$GITHUB_WORKSPACE/.github"
+        rm -rf "$GITHUB_WORKSPACE/.github/actions"
+        mv "$RUNNER_TEMP/local-actions-keep" "$GITHUB_WORKSPACE/.github/actions"
+        echo "Materialized $(git -C "$GITHUB_WORKSPACE" rev-parse 'HEAD^{tree}') into workspace"
