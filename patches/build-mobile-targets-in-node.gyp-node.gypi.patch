@@ -1,0 +1,189 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:25 +0000
+Subject: [PATCH] build: mobile targets in node.gyp / node.gypi
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The shape of the shipped artifacts: Android builds libnode as a shared
+library, iOS as a static library wrapped into a framework, and the
+NODE_MOBILE define marks both. cctest and the node executable don't
+exist on mobile targets; the snapshot stub partition keeps the iOS
+static archive self-contained without duplicate symbols.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+Co-authored-by: Andre Staltz <andre@staltz.com>
+Co-authored-by: Julia Samól <j.samol@papers.ch>
+---
+ node.gyp  | 45 ++++++++++++++++++++++++++++++++++++++-------
+ node.gypi | 22 ++++++++++++++++++----
+ 2 files changed, 56 insertions(+), 11 deletions(-)
+
+diff --git a/node.gyp b/node.gyp
+index 6387b94550..15edb2b099 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -64,6 +64,11 @@
+       'deps/acorn/acorn/dist/acorn.js',
+       'deps/acorn/acorn-walk/dist/walk.js',
+       'deps/minimatch/index.js',
++      # mobile: pure-JS WebAssembly polyfill, installed by
++      # internal/process/pre_execution when the engine ships no WebAssembly
++      # (iOS runs V8 jitless). Loaded lazily, so builds that never touch
++      # WebAssembly only pay its ~100 KB of source in the binary.
++      'deps/polywasm/polywasm.js',
+       '<@(node_builtin_shareable_builtins)',
+     ],
+     'node_sources': [
+@@ -774,8 +779,13 @@
+             }],
+           ],
+           }, {
+-          'sources': [
+-            'src/node_snapshot_stub.cc'
++          # nodejs-mobile patch: `conditions`>`not` added to wrap `sources`
++          'conditions': [
++            [ 'not (node_target_type=="static_library" and OS=="ios")', {
++              'sources': [
++                'src/node_snapshot_stub.cc'
++              ],
++            }],
+           ],
+         }],
+         [ 'OS in "linux freebsd openharmony" and '
+@@ -949,6 +959,12 @@
+             'src/node_snapshot_stub.cc',
+           ]
+         }],
++        # nodejs-mobile patch:
++        [ 'node_target_type=="static_library" and OS=="ios"', {
++          'sources': [
++            'src/node_snapshot_stub.cc',
++          ]
++        }],
+         [ 'node_shared_gtest=="false"', {
+           'dependencies': [
+             'deps/googletest/googletest.gyp:gtest_prod',
+@@ -1017,7 +1033,8 @@
+             '<@(node_quic_sources)',
+           ],
+         }],
+-        [ 'OS in "linux freebsd mac solaris openharmony" and '
++        # nodejs-mobile patch to mention iOS
++        [ 'OS in "linux freebsd mac ios solaris openharmony" and '
+           'target_arch=="x64" and '
+           'node_target_type=="executable"', {
+           'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
+@@ -1303,6 +1320,12 @@
+       'sources': [ '<@(node_cctest_sources)' ],
+ 
+       'conditions': [
++        # nodejs-mobile patch: added this whole `not` block
++        [ 'not (node_target_type=="static_library" and OS=="ios")', {
++          'sources': [
++            'src/node_snapshot_stub.cc',
++          ]
++        }],
+         [ 'node_shared_gtest=="false"', {
+           'dependencies': [
+             'deps/googletest/googletest.gyp:gtest',
+@@ -1360,8 +1383,9 @@
+         ['OS=="solaris"', {
+           'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
+         }],
+-        # Skip cctest while building shared lib node for Windows
+-        [ 'OS=="win" and node_shared=="true"', {
++        # Skip cctest while building shared lib node for Windows and Android
++        # (the only mobile target built --shared; iOS links libnode statically)
++        [ 'OS in ("win", "android") and node_shared=="true"', {
+           'type': 'none',
+         }],
+         [ 'node_shared=="true"', {
+@@ -1528,7 +1552,8 @@
+         [ 'node_shared_libuv=="false"', {
+           'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
+         }],
+-        [ 'OS in "linux mac openharmony"', {
++        # nodejs-mobile patch: add ios
++        [ 'OS in "linux mac ios openharmony"', {
+           'defines': ['NODE_JS2C_USE_STRING_LITERALS'],
+         }],
+         [ 'debug_node=="true"', {
+@@ -1566,7 +1591,7 @@
+       'defines': [ 'NODE_WANT_INTERNALS=1' ],
+ 
+       'sources': [
+-        'src/node_snapshot_stub.cc',
++        # nodejs-mobile patch: moved `node_snapshot_stub.cc` to the `not` below
+         'tools/snapshot/node_mksnapshot.cc',
+       ],
+ 
+@@ -1577,6 +1602,12 @@
+       },
+ 
+       'conditions': [
++        # nodejs-mobile patch: added this whole `not` block
++        [ 'not (node_target_type=="static_library" and OS=="ios")', {
++          'sources': [
++            'src/node_snapshot_stub.cc',
++          ]
++        }],
+         ['node_write_snapshot_as_array_literals=="true"', {
+           'defines': [ 'NODE_MKSNAPSHOT_USE_ARRAY_LITERALS=1' ],
+         }],
+diff --git a/node.gypi b/node.gypi
+index 6587270c9e..ffce5184cd 100644
+--- a/node.gypi
++++ b/node.gypi
+@@ -264,6 +264,11 @@
+         'NODE_PLATFORM="darwin"',
+       ],
+     }],
++    # nodejs-mobile patch: link CoreFoundation and Security frameworks when compiling for iOS
++    [ 'OS=="ios"', {
++      # linking Corefoundation and Security is needed for crypto functionality
++      'libraries': [ '-framework CoreFoundation -framework Security' ],
++    }],
+     [ 'OS=="freebsd"', {
+       'libraries': [
+         '-lutil',
+@@ -342,7 +347,7 @@
+         ],
+       },
+     }],
+-    [ 'coverage=="true" and node_shared=="false" and OS in "mac freebsd linux openharmony"', {
++    [ 'coverage=="true" and node_shared=="false" and OS in "mac ios freebsd linux openharmony"', {
+       'cflags!': [ '-O3' ],
+       'ldflags': [ '--coverage',
+                    '-g',
+@@ -390,11 +395,15 @@
+           'defines': [ 'OPENSSL_API_COMPAT=0x10100000L', ],
+           'dependencies': [
+             './deps/openssl/openssl.gyp:openssl',
+-
+-            # For tests
+-            './deps/openssl/openssl.gyp:openssl-cli',
+           ],
+           'conditions': [
++            [ 'OS not in "ios android"', {
++              'dependencies': [
++                # Not needed for iOS and Android, doesn't build
++                # For tests
++                './deps/openssl/openssl.gyp:openssl-cli',
++              ],
++            }],
+             # -force_load or --whole-archive are not applicable for
+             # the static library
+             [ 'force_load=="true"', {
+@@ -461,5 +470,10 @@
+     }, {
+       'defines': [ 'HAVE_QUIC=0' ]
+     }],
++    [ 'OS=="android" or OS=="ios"', {
++      'defines': [
++        'NODE_MOBILE',
++      ],
++    }],
+   ],
+ }

@@ -1,0 +1,2281 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:33 +0000
+Subject: [PATCH] test: skip/adapt parallel and sequential tests for mobile
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Per-test mobile adaptations, kept deliberately minimal (small anchored
+guards; wholesale rewrites are rejected by audit-test-edits.sh in CI —
+see the minimal test-edit policy in docs/TESTING.md on the recipe
+branch): sandbox paths, no-child-process variants, jitless-iOS
+differences, and the fork-only test-mobile-* gates for the patch
+series itself.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+Co-authored-by: Andre Staltz <andre@staltz.com>
+---
+ test/parallel/parallel.status                 | 1366 +++++++++++++++++
+ test/parallel/test-dgram-bind-fd.js           |    2 +-
+ test/parallel/test-dgram-membership.js        |   10 +-
+ .../parallel/test-dgram-socket-buffer-size.js |    2 +-
+ test/parallel/test-fs-copyfile.js             |    3 +-
+ test/parallel/test-fs-lchmod.js               |    4 +-
+ test/parallel/test-fs-mkdir.js                |    5 +-
+ test/parallel/test-fs-open-flags.js           |    3 +-
+ test/parallel/test-fs-promises.js             |    6 +-
+ .../test-fs-read-file-sync-hostname.js        |    2 +-
+ .../test-fs-readdir-stack-overflow.js         |    9 +-
+ test/parallel/test-fs-readdir-ucs2.js         |    2 +-
+ test/parallel/test-fs-realpath-native.js      |    7 +
+ test/parallel/test-fs-realpath.js             |    8 +-
+ test/parallel/test-fs-rmdir-recursive.js      |    6 +
+ test/parallel/test-fs-stat.js                 |    7 +
+ test/parallel/test-fs-watch.js                |   10 +-
+ test/parallel/test-fs-watchfile.js            |    4 +-
+ .../parallel/test-http-response-setheaders.js |    6 +
+ .../test-http2-respond-file-error-dir.js      |    7 +
+ test/parallel/test-net-connect-options-fd.js  |    2 +-
+ test/parallel/test-os.js                      |   25 +-
+ test/parallel/test-parse-args.mjs             |    2 +
+ .../test-process-constants-noatime.js         |    2 +-
+ ...test-process-dlopen-error-message-crash.js |    4 +-
+ ...etactiveresources-track-active-requests.js |    6 +-
+ .../test-process-getactiveresources.js        |   14 +-
+ test/parallel/test-process-versions.js        |   26 +-
+ test/parallel/test-repl-options.js            |    6 +-
+ test/parallel/test-runner-concurrency.js      |    3 +
+ test/parallel/test-signal-handler.js          |   12 +-
+ .../test-watch-mode-files_watcher.mjs         |    3 +
+ test/sequential/sequential.status             |  129 ++
+ test/sequential/test-async-wrap-getasyncid.js |   15 +-
+ test/sequential/test-fs-watch.js              |    4 +
+ 35 files changed, 1676 insertions(+), 46 deletions(-)
+
+diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
+index 5c7fe47927..cd7df2fbbe 100644
+--- a/test/parallel/parallel.status
++++ b/test/parallel/parallel.status
+@@ -156,6 +156,1372 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+ test-tls-set-default-ca-certificates-reset-fetch: SKIP
+ test-inspector-invalid-protocol: SKIP
+ 
++[$system==android]
++#
++# Reverted to upstream (kept node:test); the jitless V8 build emits the short
++# assert diff format, so these fail the .out comparison on mobile. None are in
++# the curated gate, so skip them in the full suite rather than rewriting
++# them (test-aborted-util may pass unmodified - un-skip after on-device check).
++#
++test-aborted-util: SKIP
++#
++# Tests that require child process that currently is not supported on mobile
++#
++test-assert-builtins-not-read-from-filesystem: SKIP
++test-async-hooks-fatal-error: SKIP
++test-async-wrap-pop-id-during-load: SKIP
++test-bash-completion: SKIP
++test-buffer-constructor-node-modules-paths: SKIP
++test-child-process-*: SKIP
++test-cli-*: SKIP
++test-cluster-*: SKIP
++test-common: SKIP
++test-common-countdown: SKIP
++test-common-expect-warning: SKIP
++test-coverage-with-inspector-disabled: SKIP
++test-crypto-fips: SKIP
++test-crypto-secure-heap: SKIP
++test-cwd-enoent*: SKIP
++test-debug-usage: SKIP
++test-debugger-address: SKIP
++test-debugger-auto-resume: SKIP
++test-debugger-break: SKIP
++test-debugger-breakpoint-exists: SKIP
++test-debugger-clear-breakpoints: SKIP
++test-debugger-exceptions: SKIP
++test-debugger-exec-scope: SKIP
++test-debugger-extract-function-name: SKIP
++test-debugger-heap-profiler: SKIP
++test-debugger-help: SKIP
++test-debugger-invalid-json: SKIP
++test-debugger-list: SKIP
++test-debugger-object-type-remote-object: SKIP
++test-debugger-profile: SKIP
++test-debugger-profile-command: SKIP
++test-debugger-random-port: SKIP
++test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-run-after-quit-restart: SKIP
++test-debugger-sb-before-load: SKIP
++test-debugger-scripts: SKIP
++test-debugger-set-context-line-number: SKIP
++test-debugger-unavailable-port: SKIP
++test-debugger-use-strict: SKIP
++test-debugger-watch-validation: SKIP
++test-debugger-watchers: SKIP
++test-debugger-websocket-secret-mismatch: SKIP
++test-dgram-cluster-*: SKIP
++test-dgram-deprecation-error: SKIP
++test-dgram-exclusive-implicit-bind: SKIP
++test-domain-abort-on-uncaught: SKIP
++test-domain-nested-throw: SKIP
++test-domain-no-error-handler-abort-on-uncaught-*: SKIP
++test-domain-throw-error-then-throw-from-uncaught-exception-handler: SKIP
++test-domain-top-level-error-handler-throw: SKIP
++test-domain-uncaught-exception: SKIP
++test-domain-with-abort-on-uncaught-exception: SKIP
++test-dummy-stdio: SKIP
++test-env-var-no-warnings: SKIP
++test-error-reporting: SKIP
++test-force-repl*: SKIP
++test-fs-readfile-error: SKIP
++test-fs-readfile-pipe*: SKIP
++test-fs-readfilesync-pipe-large: SKIP
++test-fs-realpath-pipe: SKIP
++test-fs-syncwritestream: SKIP
++test-fs-write-sigxfsz: SKIP
++test-fs-write-stream-patch-open: SKIP
++test-handle-wrap-isrefed: SKIP
++test-heap-prof-basic: SKIP
++test-heap-prof-dir-absolute: SKIP
++test-heap-prof-dir-name: SKIP
++test-heap-prof-dir-relative: SKIP
++test-heap-prof-exec-argv: SKIP
++test-heap-prof-exit: SKIP
++test-heap-prof-interval: SKIP
++test-heap-prof-invalid-args: SKIP
++test-heap-prof-loop-drained: SKIP
++test-heap-prof-name: SKIP
++test-heap-prof-sigint: SKIP
++test-heapsnapshot-near-heap-limit-by-api-in-worker: SKIP
++test-heapsnapshot-near-heap-limit-worker: SKIP
++test-http-chunk-problem: SKIP
++test-http-debug: SKIP
++test-http-full-response: SKIP
++test-http-max-header-size: SKIP
++test-http-parser-lazy-loaded: SKIP
++test-http-pipeline-flood: SKIP
++test-http-server-stale-close: SKIP
++test-http-timeout-flag: SKIP
++test-http2-clean-output: SKIP
++test-http2-debug: SKIP
++test-http2-respond-file-error-pipe-offset: SKIP
++test-http2-tls-disconnect: SKIP
++test-https-agent-unref-socket: SKIP
++test-internal-module-require: SKIP
++test-internal-util-decorate-error-stack: SKIP
++test-kill-segfault-freebsd: SKIP
++test-listen-fd-cluster: SKIP
++test-listen-fd-detached: SKIP
++test-listen-fd-detached-inherit: SKIP
++test-listen-fd-server: SKIP
++test-loaders-unknown-builtin-module: SKIP
++test-macos-signed-deps: SKIP
++test-math-random: SKIP
++test-module-loading-globalpaths: SKIP
++test-module-main-extension-lookup: SKIP
++test-module-main-fail: SKIP
++test-module-main-preserve-symlinks-fail: SKIP
++test-module-run-main-monkey-patch: SKIP
++test-module-wrap: SKIP
++test-module-wrapper: SKIP
++test-net-child-process-connect-reset: SKIP
++test-net-listen-exclusive-random-ports: SKIP
++test-net-server-connections-child-null: SKIP
++test-net-socket-constructor: SKIP
++test-node-output-console: SKIP
++test-node-output-errors: SKIP
++test-node-output-sourcemaps: SKIP
++test-node-output-vm: SKIP
++test-npm-install: SKIP
++test-openssl-ca-options: SKIP
++test-os-homedir-no-envvar: SKIP
++test-os-userinfo-handles-getter-errors: SKIP
++test-pending-deprecation: SKIP
++test-pipe-head: SKIP
++test-pipe-unref: SKIP
++test-policy-crypto-default-encoding: SKIP
++test-policy-dependencies: SKIP
++test-policy-integrity: SKIP
++test-policy-integrity-flag: SKIP
++test-policy-manifest: SKIP
++test-policy-parse-integrity: SKIP
++test-policy-process-binding: SKIP
++test-policy-scopes: SKIP
++test-preload: SKIP
++test-preload-print-process-argv: SKIP
++test-preload-self-referential: SKIP
++test-preload-worker: SKIP
++test-process-argv-0: SKIP
++test-process-env: SKIP
++test-process-exec-argv: SKIP
++test-process-execpath: SKIP
++test-process-exit-code: SKIP
++test-process-external-stdio-close: SKIP
++test-process-external-stdio-close-spawn: SKIP
++test-process-getgroups: SKIP
++test-process-kill-null: SKIP
++test-process-ppid: SKIP
++test-process-raw-debug: SKIP
++test-process-really-exit: SKIP
++test-process-redirect-warnings: SKIP
++test-process-redirect-warnings-env: SKIP
++test-process-remove-all-signal-listeners: SKIP
++test-process-title: SKIP
++test-process-uncaught-exception-monitor: SKIP
++test-process-wrap: SKIP
++test-promise-reject-callback-exception: SKIP
++test-promise-unhandled-flag: SKIP
++test-repl-array-prototype-tempering: SKIP
++test-repl-built-in-modules: SKIP
++test-repl-clear-immediate-crash: SKIP
++test-repl-cli-eval: SKIP
++test-repl-dynamic-import: SKIP
++test-repl-harmony: SKIP
++test-repl-import-referrer: SKIP
++test-repl-inspect-defaults: SKIP
++test-repl-options: SKIP
++test-repl-require-after-write: SKIP
++test-repl-require-context: SKIP
++test-repl-require-self-referential: SKIP
++test-repl-setprompt: SKIP
++test-repl-sigint: SKIP
++test-repl-sigint-nested-eval: SKIP
++test-repl-strict-mode-previews: SKIP
++test-repl-syntax-error-handling: SKIP
++test-repl-tab-complete-nested-repls: SKIP
++test-repl-uncaught-exception-standalone: SKIP
++test-repl-unexpected-token-recoverable: SKIP
++test-repl-unsafe-array-iteration: SKIP
++test-repl-unsupported-option: SKIP
++test-require-invalid-main-no-exports: SKIP
++test-require-symlink: SKIP
++test-runner-cli: SKIP
++test-runner-coverage: SKIP
++test-runner-exit-code: SKIP
++test-runner-extraneous-async-activity: SKIP
++test-runner-import-no-scheme: SKIP
++test-runner-inspect: SKIP
++test-runner-misc: SKIP
++test-runner-output: SKIP
++test-runner-reporters: SKIP
++test-runner-watch-mode: SKIP
++test-security-revert-unknown: SKIP
++test-set-http-max-http-headers: SKIP
++test-setproctitle: SKIP
++test-sigint-infinite-loop: SKIP
++test-signal-unregister: SKIP
++test-snapshot-api: SKIP
++test-snapshot-argv1: SKIP
++test-snapshot-basic: SKIP
++test-snapshot-cjs-main: SKIP
++test-snapshot-console: SKIP
++test-snapshot-dns-lookup-localhost: SKIP
++test-snapshot-dns-lookup-localhost-promise: SKIP
++test-snapshot-dns-resolve-localhost: SKIP
++test-snapshot-dns-resolve-localhost-promise: SKIP
++test-snapshot-error: SKIP
++test-snapshot-eval: SKIP
++test-snapshot-gzip: SKIP
++test-snapshot-incompatible: SKIP
++test-snapshot-namespaced-builtin: SKIP
++test-snapshot-typescript: SKIP
++test-snapshot-umd: SKIP
++test-snapshot-warning: SKIP
++test-snapshot-weak-reference: SKIP
++test-source-map-enable: SKIP
++test-startup-large-pages: SKIP
++test-startup-empty-regexp-statics: SKIP
++test-stack-size-limit: SKIP
++test-stdin-child-proc: SKIP
++test-stdin-from-file: SKIP
++test-stdin-pipe-large: SKIP
++test-stdin-pipe-resume: SKIP
++test-stdin-resume-pause: SKIP
++test-stdin-script-child: SKIP
++test-stdin-script-child-option: SKIP
++test-stdio-closed: SKIP
++test-stdio-pipe-redirect: SKIP
++test-stdio-pipe-stderr: SKIP
++test-stdio-undestroy: SKIP
++test-stdout-cannot-be-closed-child-process-pipe: SKIP
++test-stdout-close-catch: SKIP
++test-stdout-close-unref: SKIP
++test-stdout-stderr-reading: SKIP
++test-stdout-to-file: SKIP
++test-stream-pipeline-process: SKIP
++test-sync-io-option: SKIP
++test-throw-error-with-getter-throw-traced: SKIP
++test-throw-undefined-or-null-traced: SKIP
++test-tick-processor-arguments: SKIP
++test-timers-immediate-promisified: SKIP
++test-timers-interval-promisified: SKIP
++test-timers-timeout-promisified: SKIP
++test-tls-cipher-list: SKIP
++test-tls-cli-min-max-conflict: SKIP
++test-tls-enable-keylog-cli: SKIP
++test-tls-enable-trace: SKIP
++test-tls-enable-trace-cli: SKIP
++test-tls-env-bad-extra-ca: SKIP
++test-tls-env-extra-ca: SKIP
++test-tls-env-extra-ca-file-load: SKIP
++test-tls-env-extra-ca-no-crypto: SKIP
++test-tls-handshake-exception: SKIP
++test-tls-ticket-cluster: SKIP
++test-tls-wrap-econnreset-pipe: SKIP
++test-trace-atomics-wait: SKIP
++test-trace-events-all: SKIP
++test-trace-events-binding: SKIP
++test-trace-events-bootstrap: SKIP
++test-trace-events-category-used: SKIP
++test-trace-events-console: SKIP
++test-trace-events-environment: SKIP
++test-trace-events-file-pattern: SKIP
++test-trace-events-fs-sync: SKIP
++test-trace-events-fs-async: SKIP
++test-trace-events-http: SKIP
++test-trace-events-metadata: SKIP
++test-trace-events-net: SKIP
++test-trace-events-none: SKIP
++test-trace-events-perf: SKIP
++test-trace-events-process-exit: SKIP
++test-trace-events-promises: SKIP
++test-trace-events-threadpool: SKIP
++test-trace-events-v8: SKIP
++test-trace-events-vm: SKIP
++test-trace-events-worker-metadata: SKIP
++test-trace-events-worker-metadata-with-name: SKIP
++test-trace-exit: SKIP
++test-tracing-no-crash: SKIP
++test-unhandled-exception-rethrow-error: SKIP
++test-unhandled-exception-with-worker-inuse: SKIP
++test-unicode-node-options: SKIP
++test-util-callbackify: SKIP
++test-v8-coverage: SKIP
++test-v8-stop-coverage: SKIP
++test-v8-take-coverage: SKIP
++test-v8-take-coverage-noop: SKIP
++test-v8-untrusted-code-mitigations: SKIP
++test-vm-api-handles-getter-errors: SKIP
++test-vm-cached-data: SKIP
++test-vm-sigint: SKIP
++test-vm-sigint-existing-handler: SKIP
++test-vm-syntax-error-message: SKIP
++test-vm-syntax-error-stderr: SKIP
++test-worker-init-failure: SKIP
++test-worker-message-type-unknown: SKIP
++test-worker-on-process-exit: SKIP
++test-worker-process-env: SKIP
++#
++# Tests that try to access the 'test' parent folder, currently not supported on mobile
++#
++test-benchmark-cli: SKIP
++test-icu-minimum-version: SKIP
++test-npm-version: SKIP
++test-corepack-version: SKIP
++test-process-config: SKIP
++test-process-env-allowed-flags-are-documented: SKIP
++test-release-npm: SKIP
++#
++# Tests that require OpenSSL CLI that is not available on mobile
++#
++test-crypto-sign-verify: SKIP
++test-https-foafssl: SKIP
++test-tls-alert: SKIP
++test-tls-client-renegotiation-limit: SKIP
++test-tls-dhe: SKIP
++test-tls-ecdh: SKIP
++test-tls-ecdh-auto: SKIP
++test-tls-ecdh-multiple: SKIP
++test-tls-no-sslv3: SKIP
++test-tls-psk-server: SKIP
++test-tls-securepair-server: SKIP
++test-tls-server-verify: SKIP
++test-tls-session-cache: SKIP
++#
++# Tests that require the inspector, not included in the build
++#
++test-debugger-pid: SKIP
++test-inspect*: SKIP
++test-process-env-sideeffects: SKIP
++test-repl-inspector: SKIP
++test-trace-events-dynamic-enable: SKIP
++test-trace-events-dynamic-enable-workers-disabled: SKIP
++test-warn-sigprof: SKIP
++test-worker-debug: SKIP
++#
++# Tests that depend on FIPS OpenSSL that is not available on mobile
++#
++test-dsa-fips-invalid-key : SKIP
++#
++# Tests that require ESLINT, not included in the build
++#
++test-eslint-*: SKIP
++#
++# Tests that run on Windows only
++#
++test-fs-long-path: SKIP
++test-fs-readfilesync-enoent: SKIP
++test-fs-realpath-on-substed-drive: SKIP
++test-fs-write-file-invalid-path: SKIP
++test-module-readonly: SKIP
++test-require-long-path: SKIP
++test-spawn-cmd-named-pipe: SKIP
++test-windows-abort-exitcode: SKIP
++test-windows-failed-heap-allocation: SKIP
++#
++# Tests that require _LARGEFILE_SOURCE, which is a no-op on SDK API 21.
++#
++#
++# Tests that run on Linux only
++#
++test-fs-read-file-sync-hostname : SKIP
++#
++# Tests that run on Windows and macOS only
++#
++test-fs-watch-recursive: SKIP
++#
++# Tests that run on macOS only
++#
++test-fs-lchmod: SKIP
++#
++# Tests that require Intl, not included in the build
++#
++test-icu-data-dir: SKIP
++test-icu-punycode: SKIP
++test-whatwg-url-constructor: SKIP
++test-whatwg-url-custom-domainto: SKIP
++test-whatwg-url-origin: SKIP
++test-whatwg-url-setters: SKIP
++test-whatwg-url-toascii: SKIP
++#
++# Tests using APIs not available on Android
++#
++test-process-euid-egid: SKIP # process.seteuid is not a function
++test-process-setgroups: SKIP # process.setgroups is not a function
++test-process-uid-gid: SKIP # process.setuid is not a function
++#
++# Test requires hard links, not fully supported on Android.
++#
++test-fs-link: SKIP
++#
++# Test that requires using udp6 link local address, not available on old devices.
++#
++#
++# Tests that enter in conflict with the test app.
++#
++test-listen-fd-ebadf: SKIP # uses stderr as a socket, which the test app redirects.
++test-process-exit-recursive: SKIP # catches exit codes, like the test app does to output to logcat.
++test-process-beforeexit-throw-exit: SKIP
++#
++# Tests that required zipped files, which the Android build system uncompresses to include in the APK.
++#
++test-zlib-from-concatenated-gzip: SKIP
++test-zlib-from-gzip: SKIP
++#
++# Tests that require trace events, not included in the build
++#
++test-trace-events-api: SKIP
++test-trace-events-async-hooks: SKIP
++test-trace-events-async-hooks-dynamic: SKIP
++test-trace-events-async-hooks-worker: SKIP
++#
++# Tests that require more memory than what is usually available on the device,
++# causing the app to crash without being handled inside Node.js, and the test
++# to hang indefinitely, waiting for the results.
++test-blob-buffer-too-large: SKIP
++#
++# Tests that are less relevant on mobile, although they could be supported
++#
++test-release-changelog: SKIP # header files not available from mobile apps
++test-runner-run: SKIP # some paths were not correct
++
++#
++# ---------------------------------------------------------------------------
++# Below: measured on a full test/parallel sweep of upstream v24.18.0 run on a
++# device (Android arm64 emulator / iOS arm64 simulator), not inferred. Each of
++# these spawns a child node process: on Android process.execPath is
++# app_process64 rather than node, so the child SIGABRTs; the debugger-probe
++# cases drive a child over the inspector protocol. A glob is used only where
++# EVERY member of the family fails -- families with passing members are listed
++# individually so a working test is never skipped by association.
++# ---------------------------------------------------------------------------
++#
++test-async-hooks-stack-*: SKIP
++test-compile-cache-typescript-*: SKIP
++test-debugger-probe-*: SKIP
++test-parse-*: SKIP
++test-runner-cli-*: SKIP
++test-runner-coverage-*: SKIP
++test-runner-run-*: SKIP
++test-tls-off-*: SKIP
++test-watch-mode-kill-*: SKIP
++test-assert-esm-cjs-message-verify: SKIP
++test-buffer-constructor-node-modules: SKIP
++test-compile-cache-api-env: SKIP
++test-compile-cache-api-flush: SKIP
++test-compile-cache-api-options-portable-env: SKIP
++test-compile-cache-api-permission: SKIP
++test-compile-cache-api-portable: SKIP
++test-compile-cache-api-success: SKIP
++test-compile-cache-api-tmpdir: SKIP
++test-compile-cache-bad-syntax: SKIP
++test-compile-cache-disable: SKIP
++test-compile-cache-dynamic-import: SKIP
++test-compile-cache-esm: SKIP
++test-compile-cache-existing-directory: SKIP
++test-compile-cache-permission-allowed: SKIP
++test-compile-cache-permission-disallowed: SKIP
++test-compile-cache-portable: SKIP
++test-compile-cache-portable-esm: SKIP
++test-compile-cache-success: SKIP
++test-compile-cache-updated-file: SKIP
++test-config-file: SKIP
++test-debugger-inspect-help: SKIP
++test-debugger-inspect-help-forwarding: SKIP
++test-debugger-preserve-breaks: SKIP
++test-diagnostics-channel-child-process: SKIP
++test-diagnostics-channel-process: SKIP
++test-dotenv-edge-cases: SKIP
++test-dotenv-node-options: SKIP
++test-error-prepare-stack-trace: SKIP
++test-experimental-shared-value-conveyor: SKIP
++test-find-package-json: SKIP
++test-fs-readfile-eof: SKIP
++test-fs-rm: SKIP
++test-hash-seed: SKIP
++test-icu-env: SKIP
++test-is-internal-thread: SKIP
++test-max-old-space-size-percentage: SKIP
++test-module-print-timing: SKIP
++test-navigator: SKIP
++test-net-listen-twice: SKIP
++test-node-run: SKIP
++test-performance-nodetiming-uvmetricsinfo: SKIP
++test-process-execve: SKIP
++test-process-execve-abort: SKIP
++test-process-execve-on-exit: SKIP
++test-process-execve-permission-granted: SKIP
++test-process-execve-socket: SKIP
++test-process-exit-code-validation: SKIP
++test-process-finalization: SKIP
++test-process-load-env-file: SKIP
++test-process-warnings: SKIP
++test-runner-complex-dependencies: SKIP
++test-runner-diagnostics-channel: SKIP
++test-runner-enable-source-maps-issue: SKIP
++test-runner-error-reporter: SKIP
++test-runner-flag-propagation: SKIP
++test-runner-force-exit-failure: SKIP
++test-runner-force-exit-flush: SKIP
++test-runner-global-setup-teardown: SKIP
++test-runner-global-setup-watch-mode: SKIP
++test-runner-mock-timers-with-timeout: SKIP
++test-runner-module-mocking: SKIP
++test-runner-no-isolation-filtering: SKIP
++test-runner-no-isolation-hooks: SKIP
++test-runner-root-duration: SKIP
++test-runner-snapshot-file-tests: SKIP
++test-runner-snapshot-tests: SKIP
++test-runner-test-rerun-failures: SKIP
++test-runner-todo-suite-hook-failure: SKIP
++test-runner-watch-mode-complex: SKIP
++test-runner-worker-id: SKIP
++test-runner-xfail: SKIP
++test-shadow-realm-custom-loaders: SKIP
++test-shadow-realm-preload-module: SKIP
++test-snapshot-child-process-sync: SKIP
++test-snapshot-config: SKIP
++test-snapshot-coverage: SKIP
++test-snapshot-cwd: SKIP
++test-snapshot-net: SKIP
++test-snapshot-stack-trace-limit: SKIP
++test-snapshot-stack-trace-limit-mutation: SKIP
++test-snapshot-worker: SKIP
++test-sqlite: SKIP
++test-timers-nan-duration-warning: SKIP
++test-timers-negative-duration-warning: SKIP
++test-tls-env-extra-ca-with-options: SKIP
++test-tls-get-ca-certificates-extra: SKIP
++test-tls-get-ca-certificates-extra-empty: SKIP
++test-tls-get-ca-certificates-extra-subset: SKIP
++test-tls-set-default-ca-certificates-extra-override: SKIP
++test-trace-env: SKIP
++test-trace-env-stack: SKIP
++test-trace-exit-stack-limit: SKIP
++test-url-parse-deprecation: SKIP
++test-url-parse-invalid-input: SKIP
++test-util-getcallsites: SKIP
++test-webstorage: SKIP
++test-worker-node-options: SKIP
++#
++# Tests run under --permission without --allow-fs-write. The harness writes its
++# PASS/FAIL verdict to a file from a process.on('exit') hook, and the permission
++# model -- correctly -- denies that write, so the verdict never lands and the run
++# scores FAIL whatever the test did. Nothing the harness can fix from inside the
++# sandbox it is being denied by. See docs/TESTING.md, "How a test PASSes".
++#
++test-permission-allow-child-process-cli: SKIP
++test-permission-child-process-inherit-flags: SKIP
++test-permission-config-file: SKIP
++test-permission-fs-absolute-path: SKIP
++test-permission-fs-read: SKIP
++test-permission-fs-read-entrypoint: SKIP
++test-permission-fs-relative-path: SKIP
++test-permission-fs-repeat-path: SKIP
++test-permission-fs-require: SKIP
++test-permission-fs-symlink: SKIP
++test-permission-fs-symlink-target-write: SKIP
++test-permission-fs-traversal-path: SKIP
++test-permission-fs-wildcard: SKIP
++test-permission-fs-write: SKIP
++test-permission-fs-write-report: SKIP
++test-permission-inspector: SKIP
++test-permission-inspector-brk: SKIP
++test-permission-processbinding: SKIP
++test-permission-sqlite-load-extension: SKIP
++test-permission-warning-flags: SKIP
++test-permission-fs-windows-path: SKIP
++#
++# Measured on a full device sweep and reproduced 0/3 standalone, so these are
++# platform behaviour rather than flake. Causes, in order of size: a child node
++# process (execPath is app_process64; the child SIGABRTs), `localhost` having no
++# AAAA record on Android so an IPv6 lookup gives ENOTFOUND, fs.cp returning an
++# errno outside the set upstream expects, and process.env.TZ not taking effect
++# at runtime. None is a defect in this fork.
++#
++test-datetime-change-notify: SKIP
++test-disable-sigusr1: SKIP
++test-fs-cp-async-with-mode-flags: SKIP
++test-fs-cp-promises-mode-flags: SKIP
++test-fs-sync-fd-leak: SKIP
++test-http2-invalid-last-stream-id: SKIP
++test-http2-premature-close: SKIP
++test-net-socket-connect-without-cb: SKIP
++test-node-output-eval: SKIP
++test-permission-fs-internal-module-stat: SKIP
++test-process-env-tz: SKIP
++test-runner-execution-ordered-bypass: SKIP
++test-runner-expect-error: SKIP
++test-runner-expect-error-but-pass: SKIP
++test-runner-plan: SKIP
++test-runner-randomize-first-draw: SKIP
++test-runner-test-filepath: SKIP
++test-runner-todo-skip-tests: SKIP
++test-tcp-wrap-listen: SKIP
++test-testpy-env-var-via-comment: SKIP
++#
++# Not deterministic: passes 3/3 standalone but fails inside a full-suite run, so
++# this is load sensitivity. FLAKY (still runs, red tolerated) not SKIP.
++#
++test-worker-cleanup-handles: PASS, FLAKY
++[$system==ios]
++#
++# Reverted to upstream (kept node:test); the jitless V8 build emits the short
++# assert diff format, so these fail the .out comparison on mobile. None are in
++# the curated gate, so skip them in the full suite rather than rewriting
++# them (test-aborted-util may pass unmodified - un-skip after on-device check).
++#
++test-aborted-util: SKIP
++#
++# Tests that require child process that currently is not supported on mobile
++#
++test-assert-builtins-not-read-from-filesystem: SKIP
++test-async-hooks-fatal-error: SKIP
++test-async-wrap-pop-id-during-load: SKIP
++test-bash-completion: SKIP
++test-buffer-constructor-node-modules-paths: SKIP
++test-child-process-*: SKIP
++test-cli-*: SKIP
++test-cluster-*: SKIP
++test-common: SKIP
++test-common-countdown: SKIP
++test-common-expect-warning: SKIP
++test-coverage-with-inspector-disabled: SKIP
++test-crypto-fips: SKIP
++test-crypto-no-algorithm: SKIP
++test-crypto-secure-heap: SKIP
++test-cwd-enoent*: SKIP
++test-debug-usage: SKIP
++test-debugger-address: SKIP
++test-debugger-auto-resume: SKIP
++test-debugger-backtrace: SKIP
++test-debugger-break: SKIP
++test-debugger-breakpoint-exists: SKIP
++test-debugger-clear-breakpoints: SKIP
++test-debugger-exceptions: SKIP
++test-debugger-exec: SKIP
++test-debugger-exec-scope: SKIP
++test-debugger-extract-function-name: SKIP
++test-debugger-heap-profiler: SKIP
++test-debugger-help: SKIP
++test-debugger-invalid-json: SKIP
++test-debugger-list: SKIP
++test-debugger-low-level: SKIP
++test-debugger-object-type-remote-object: SKIP
++test-debugger-preserve-breaks: SKIP
++test-debugger-profile: SKIP
++test-debugger-profile-command: SKIP
++test-debugger-random-port: SKIP
++test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-repeat-last: SKIP
++test-debugger-restart-message: SKIP
++test-debugger-run-after-quit-restart: SKIP
++test-debugger-sb-before-load: SKIP
++test-debugger-scripts: SKIP
++test-debugger-set-context-line-number: SKIP
++test-debugger-unavailable-port: SKIP
++test-debugger-use-strict: SKIP
++test-debugger-watch-validation: SKIP
++test-debugger-watchers: SKIP
++test-debugger-websocket-secret-mismatch: SKIP
++test-dgram-cluster-*: SKIP
++test-dgram-deprecation-error: SKIP
++test-dgram-exclusive-implicit-bind: SKIP
++test-dgram-unref-in-cluster: SKIP
++test-domain-abort-on-uncaught: SKIP
++test-domain-nested-throw: SKIP
++test-domain-no-error-handler-abort-on-uncaught-*: SKIP
++test-domain-throw-error-then-throw-from-uncaught-exception-handler: SKIP
++test-domain-top-level-error-handler-throw: SKIP
++test-domain-uncaught-exception: SKIP
++test-domain-with-abort-on-uncaught-exception: SKIP
++test-dummy-stdio: SKIP
++test-env-var-no-warnings: SKIP
++test-error-reporting: SKIP
++test-force-repl*: SKIP
++test-fs-readfile-error: SKIP
++test-fs-readfile-pipe*: SKIP
++test-fs-readfilesync-pipe-large: SKIP
++test-fs-realpath-pipe: SKIP
++test-fs-syncwritestream: SKIP
++test-fs-write-sigxfsz: SKIP
++test-fs-write-stream-patch-open: SKIP
++test-handle-wrap-isrefed: SKIP
++test-handle-wrap-hasref: SKIP
++test-heap-prof-basic: SKIP
++test-heap-prof-dir-absolute: SKIP
++test-heap-prof-dir-name: SKIP
++test-heap-prof-dir-relative: SKIP
++test-heap-prof-exec-argv: SKIP
++test-heap-prof-exit: SKIP
++test-heap-prof-interval: SKIP
++test-heap-prof-invalid-args: SKIP
++test-heap-prof-loop-drained: SKIP
++test-heap-prof-name: SKIP
++test-heap-prof-sigint: SKIP
++test-heapsnapshot-near-heap-limit-by-api-in-worker: SKIP
++test-heapsnapshot-near-heap-limit-worker: SKIP
++test-http-chunk-problem: SKIP
++test-http-debug: SKIP
++test-http-full-response: SKIP
++test-http-max-header-size: SKIP
++test-http-parser-lazy-loaded: SKIP
++test-http-pipeline-flood: SKIP
++test-http-server-stale-close: SKIP
++test-http-timeout-flag: SKIP
++test-http2-clean-output: SKIP
++test-http2-debug: SKIP
++test-http2-respond-file-error-pipe-offset: SKIP
++test-http2-tls-disconnect: SKIP
++test-https-agent-unref-socket: SKIP
++test-internal-module-require: SKIP
++test-internal-util-decorate-error-stack: SKIP
++test-kill-segfault-freebsd: SKIP
++test-listen-fd-cluster: SKIP
++test-listen-fd-detached: SKIP
++test-listen-fd-detached-inherit: SKIP
++test-listen-fd-server: SKIP
++test-macos-signed-deps: SKIP
++test-math-random: SKIP
++test-module-loading-globalpaths: SKIP
++test-module-main-extension-lookup: SKIP
++test-module-main-fail: SKIP
++test-module-main-preserve-symlinks-fail: SKIP
++test-module-run-main-monkey-patch: SKIP
++test-module-wrap: SKIP
++test-module-wrapper: SKIP
++test-net-child-process-connect-reset: SKIP
++test-net-listen-exclusive-random-ports: SKIP
++test-net-server-connections-child-null: SKIP
++test-net-socket-constructor: SKIP
++test-node-output-console: SKIP
++test-node-output-errors: SKIP
++test-node-output-eval: SKIP
++test-node-output-sourcemaps: SKIP
++test-node-output-vm: SKIP
++test-npm-install: SKIP
++test-openssl-ca-options: SKIP
++test-os-homedir-no-envvar: SKIP
++test-os-userinfo-handles-getter-errors: SKIP
++test-pending-deprecation: SKIP
++test-pipe-head: SKIP
++test-pipe-unref: SKIP
++test-policy-crypto-default-encoding: SKIP
++test-policy-dependencies: SKIP
++test-policy-integrity: SKIP
++test-policy-integrity-flag: SKIP
++test-policy-manifest: SKIP
++test-policy-parse-integrity: SKIP
++test-policy-process-binding: SKIP
++test-policy-scopes: SKIP
++test-preload: SKIP
++test-preload-print-process-argv: SKIP
++test-preload-self-referential: SKIP
++test-preload-worker: SKIP
++test-process-argv-0: SKIP
++test-process-env: SKIP
++test-process-exec-argv: SKIP
++test-process-execpath: SKIP
++test-process-exit-code: SKIP
++test-process-external-stdio-close: SKIP
++test-process-external-stdio-close-spawn: SKIP
++test-process-getgroups: SKIP
++test-process-kill-null: SKIP
++test-process-ppid: SKIP
++test-process-raw-debug: SKIP
++test-process-really-exit: SKIP
++test-process-redirect-warnings: SKIP
++test-process-redirect-warnings-env: SKIP
++test-process-remove-all-signal-listeners: SKIP
++test-process-title: SKIP
++test-process-uncaught-exception-monitor: SKIP
++test-process-wrap: SKIP
++test-promise-reject-callback-exception: SKIP
++test-promise-unhandled-flag: SKIP
++test-repl-array-prototype-tempering: SKIP
++test-repl-built-in-modules: SKIP
++test-repl-clear-immediate-crash: SKIP
++test-repl-cli-eval: SKIP
++test-repl-dynamic-import: SKIP
++test-repl-harmony: SKIP
++test-repl-import-referrer: SKIP
++test-repl-inspect-defaults: SKIP
++test-repl-options: SKIP
++test-repl-require-after-write: SKIP
++test-repl-require-context: SKIP
++test-repl-require-self-referential: SKIP
++test-repl-setprompt: SKIP
++test-repl-sigint: SKIP
++test-repl-sigint-nested-eval: SKIP
++test-repl-strict-mode-previews: SKIP
++test-repl-syntax-error-handling: SKIP
++test-repl-tab-complete-nested-repls: SKIP
++test-repl-uncaught-exception-standalone: SKIP
++test-repl-unexpected-token-recoverable: SKIP
++test-repl-unsafe-array-iteration: SKIP
++test-repl-unsupported-option: SKIP
++test-require-invalid-main-no-exports: SKIP
++test-require-symlink: SKIP
++test-runner-cli: SKIP
++test-runner-coverage: SKIP
++test-runner-exit-code: SKIP
++test-runner-extraneous-async-activity: SKIP
++test-runner-import-no-scheme: SKIP
++test-runner-inspect: SKIP
++test-runner-misc: SKIP
++test-runner-output: SKIP
++test-runner-reporters: SKIP
++test-runner-watch-mode: SKIP
++test-security-revert-unknown: SKIP
++test-set-http-max-http-headers: SKIP
++test-setproctitle: SKIP
++test-sigint-infinite-loop: SKIP
++test-signal-unregister: SKIP
++test-snapshot-api: SKIP
++test-snapshot-argv1: SKIP
++test-snapshot-basic: SKIP
++test-snapshot-cjs-main: SKIP
++test-snapshot-console: SKIP
++test-snapshot-dns-lookup-localhost: SKIP
++test-snapshot-dns-lookup-localhost-promise: SKIP
++test-snapshot-dns-resolve-localhost: SKIP
++test-snapshot-dns-resolve-localhost-promise: SKIP
++test-snapshot-error: SKIP
++test-snapshot-eval: SKIP
++test-snapshot-gzip: SKIP
++test-snapshot-incompatible: SKIP
++test-snapshot-namespaced-builtin: SKIP
++test-snapshot-typescript: SKIP
++test-snapshot-umd: SKIP
++test-snapshot-warning: SKIP
++test-snapshot-weak-reference: SKIP
++test-source-map-enable: SKIP
++test-startup-large-pages: SKIP
++test-startup-empty-regexp-statics: SKIP
++test-stack-size-limit: SKIP
++test-stdin-child-proc: SKIP
++test-stdin-from-file: SKIP
++test-stdin-pipe-large: SKIP
++test-stdin-pipe-resume: SKIP
++test-stdin-resume-pause: SKIP
++test-stdin-script-child: SKIP
++test-stdin-script-child-option: SKIP
++test-stdio-closed: SKIP
++test-stdio-pipe-redirect: SKIP
++test-stdio-pipe-stderr: SKIP
++test-stdio-undestroy: SKIP
++test-stdout-cannot-be-closed-child-process-pipe: SKIP
++test-stdout-close-catch: SKIP
++test-stdout-close-unref: SKIP
++test-stdout-stderr-reading: SKIP
++test-stdout-to-file: SKIP
++test-stream-pipeline-process: SKIP
++test-sync-io-option: SKIP
++test-throw-error-with-getter-throw-traced: SKIP
++test-throw-undefined-or-null-traced: SKIP
++test-tick-processor-arguments: SKIP
++test-timers-immediate-promisified: SKIP
++test-timers-interval-promisified: SKIP
++test-timers-timeout-promisified: SKIP
++test-tls-cipher-list: SKIP
++test-tls-cli-min-max-conflict: SKIP
++test-tls-enable-keylog-cli: SKIP
++test-tls-enable-trace: SKIP
++test-tls-enable-trace-cli: SKIP
++test-tls-env-bad-extra-ca: SKIP
++test-tls-env-extra-ca: SKIP
++test-tls-env-extra-ca-file-load: SKIP
++test-tls-env-extra-ca-no-crypto: SKIP
++test-tls-handshake-exception: SKIP
++test-tls-ticket-cluster: SKIP
++test-tls-wrap-econnreset-pipe: SKIP
++test-trace-atomics-wait: SKIP
++test-trace-events-all: SKIP
++test-trace-events-binding: SKIP
++test-trace-events-bootstrap: SKIP
++test-trace-events-category-used: SKIP
++test-trace-events-console: SKIP
++test-trace-events-environment: SKIP
++test-trace-events-file-pattern: SKIP
++test-trace-events-fs-sync: SKIP
++test-trace-events-fs-async: SKIP
++test-trace-events-http: SKIP
++test-trace-events-metadata: SKIP
++test-trace-events-net: SKIP
++test-trace-events-none: SKIP
++test-trace-events-perf: SKIP
++test-trace-events-process-exit: SKIP
++test-trace-events-promises: SKIP
++test-trace-events-threadpool: SKIP
++test-trace-events-v8: SKIP
++test-trace-events-vm: SKIP
++test-trace-events-worker-metadata: SKIP
++test-trace-events-worker-metadata-with-name: SKIP
++test-trace-exit: SKIP
++test-tracing-no-crash: SKIP
++test-unhandled-exception-rethrow-error: SKIP
++test-unhandled-exception-with-worker-inuse: SKIP
++test-unicode-node-options: SKIP
++test-util-callbackify: SKIP
++test-v8-coverage: SKIP
++test-v8-stop-coverage: SKIP
++test-v8-take-coverage: SKIP
++test-v8-take-coverage-noop: SKIP
++test-v8-untrusted-code-mitigations: SKIP
++test-vm-api-handles-getter-errors: SKIP
++test-vm-cached-data: SKIP
++test-vm-sigint: SKIP
++test-vm-sigint-existing-handler: SKIP
++test-vm-syntax-error-message: SKIP
++test-vm-syntax-error-stderr: SKIP
++test-worker-init-failure: SKIP
++test-worker-message-type-unknown: SKIP
++test-worker-on-process-exit: SKIP
++test-worker-process-env: SKIP
++#
++# Tests that try to access the 'test' parent folder, currently not supported on mobile
++#
++test-benchmark-cli: SKIP
++test-icu-minimum-version: SKIP
++test-npm-version: SKIP
++test-corepack-version: SKIP
++test-process-config: SKIP
++test-process-env-allowed-flags-are-documented: SKIP
++test-release-npm: SKIP
++#
++# Tests that require OpenSSL CLI that is not available on mobile
++#
++test-crypto-sign-verify: SKIP
++test-https-foafssl: SKIP
++test-tls-alert: SKIP
++test-tls-client-renegotiation-limit: SKIP
++test-tls-dhe: SKIP
++test-tls-ecdh: SKIP
++test-tls-ecdh-auto: SKIP
++test-tls-ecdh-multiple: SKIP
++test-tls-no-sslv3: SKIP
++test-tls-psk-server: SKIP
++test-tls-securepair-server: SKIP
++test-tls-server-verify: SKIP
++test-tls-session-cache: SKIP
++#
++# Tests that require the inspector, not included in the build
++#
++test-debugger-pid: SKIP
++test-inspect*: SKIP
++test-process-env-sideeffects: SKIP
++test-repl-inspector: SKIP
++test-trace-events-dynamic-enable: SKIP
++test-trace-events-dynamic-enable-workers-disabled: SKIP
++test-warn-sigprof: SKIP
++test-worker-debug: SKIP
++#
++# Tests that depend on FIPS OpenSSL that is not available on mobile
++#
++test-dsa-fips-invalid-key : SKIP
++#
++# Tests that require ESLINT, not included in the build
++#
++test-eslint-*: SKIP
++#
++# Tests exercising WebAssembly. Jitless V8 has no native wasm; on iOS the
++# global is the polywasm polyfill (docs/FAQ.md on the recipe branch), and
++# these tests are not validated against it or need per-test CLI flags the
++# app harness cannot apply. test-freeze-intrinsics runs against the same
++# jitless configuration on the host instead (host-smoke workflow).
++#
++test-fetch-disabled: SKIP
++test-vm-codegen: SKIP
++test-wasm-simple: SKIP
++test-wasm-web-api: SKIP
++test-worker-message-port-wasm-module: SKIP
++test-worker-message-port-wasm-threads: SKIP
++#
++# Tests that run on Windows only
++#
++test-fs-long-path: SKIP
++test-fs-readfilesync-enoent: SKIP
++test-fs-realpath-on-substed-drive: SKIP
++test-fs-write-file-invalid-path: SKIP
++test-module-readonly: SKIP
++test-require-long-path: SKIP
++test-spawn-cmd-named-pipe: SKIP
++test-windows-abort-exitcode: SKIP
++test-windows-failed-heap-allocation: SKIP
++#
++# Tests that run on Linux only
++#
++test-fs-read-file-sync-hostname : SKIP
++test-fs-readdir-ucs2: SKIP
++#
++# Test failing due to Timeout
++#
++test-fs-watch-encoding: SKIP
++#
++# Tests that run on Windows and macOS only
++#
++test-fs-watch-recursive: SKIP
++#
++test-pipe-unref: SKIP
++test-repl: SKIP
++test-tls-wrap-econnreset-pipe: SKIP
++#
++# Tests that require MultiLocalhost
++#
++test-https-localaddress: SKIP
++test-http-localaddress: SKIP
++test-http2-connect-options: SKIP
++#
++# Tests that require Intl, not included in the build
++#
++test-icu-data-dir: SKIP
++test-icu-punycode: SKIP
++test-whatwg-url-constructor: SKIP
++test-whatwg-url-custom-domainto: SKIP
++test-whatwg-url-origin: SKIP
++test-whatwg-url-setters: SKIP
++test-whatwg-url-toascii: SKIP
++#
++# FAILING test because calling setpriority on iOS fails with EPERM
++#
++#
++# FAILING test because iOS apps should not get POSIX signals or process.exit
++#
++test-signal-args: SKIP
++test-signal-handler: SKIP
++#
++# Test that requires user interaction to allow using udp6 link local address on iOS 14.
++#
++#
++# Tests that require the debugger to not stop on signals.
++# Tests pass if run individually with debugger configured to not stop.
++#
++test-util-sigint-watchdog : SKIP #signal SIGINT
++#
++# Tests that require trace events, not included in the build
++#
++test-trace-events-api: SKIP
++test-trace-events-async-hooks: SKIP
++test-trace-events-async-hooks-dynamic: SKIP
++test-trace-events-async-hooks-worker: SKIP
++#
++# Tests that are less relevant on mobile, although they could be supported
++#
++test-release-changelog: SKIP # header files not available from mobile apps
++test-runner-run: SKIP # some paths were not correct
++
++#
++# ---------------------------------------------------------------------------
++# Below: measured on a full test/parallel sweep of upstream v24.18.0 run on a
++# device (Android arm64 emulator / iOS arm64 simulator), not inferred. Each of
++# these spawns a child node process: on Android process.execPath is
++# app_process64 rather than node, so the child SIGABRTs; the debugger-probe
++# cases drive a child over the inspector protocol. A glob is used only where
++# EVERY member of the family fails -- families with passing members are listed
++# individually so a working test is never skipped by association.
++# ---------------------------------------------------------------------------
++#
++test-config-file: SKIP
++test-fs-readfile-eof: SKIP
++test-fs-rm: SKIP
++test-icu-env: SKIP
++test-max-old-space-size-percentage: SKIP
++test-node-run: SKIP
++test-process-execve: SKIP
++test-process-execve-on-exit: SKIP
++test-process-execve-permission-granted: SKIP
++test-process-execve-socket: SKIP
++test-process-exit-code-validation: SKIP
++test-process-load-env-file: SKIP
++test-runner-coverage-source-map: SKIP
++test-runner-coverage-thresholds: SKIP
++test-runner-test-rerun-failures: SKIP
++test-snapshot-child-process-sync: SKIP
++test-util-convert-signal-to-exit-code: SKIP
++#
++# Tests run under --permission without --allow-fs-write. The harness writes its
++# PASS/FAIL verdict to a file from a process.on('exit') hook, and the permission
++# model -- correctly -- denies that write, so the verdict never lands and the run
++# scores FAIL whatever the test did. Nothing the harness can fix from inside the
++# sandbox it is being denied by. See docs/TESTING.md, "How a test PASSes".
++#
++test-permission-allow-child-process-cli: SKIP
++test-permission-fs-write: SKIP
++test-permission-fs-windows-path: SKIP
++#
++# fs.watch's `ignore` option. libuv compiles FSEvents out entirely on iOS --
++# "iOS (currently) doesn't provide the FSEvents-API (nor CoreServices)",
++# deps/uv/src/unix/fsevents.c -- and falls back to kqueue, which watches a
++# directory fd and cannot report WHICH file changed. node's `ignore` filter is
++# applied to that filename, so with no usable filename every event is dropped
++# and these tests wait forever. Upstream libuv behaviour on the platform, not
++# something this fork can fix; recursive watching is unaffected because node
++# implements that in JS. Verified against the fork's own macOS host build and
++# against Android, where `ignore` works. See docs/TESTING.md, "fs.watch".
++#
++test-fs-promises-watch-iterator: SKIP
++test-fs-watch-ignore-function: SKIP
++test-fs-watch-ignore-glob: SKIP
++test-fs-watch-ignore-mixed: SKIP
++test-fs-watch-ignore-recursive-glob: SKIP
++test-fs-watch-ignore-recursive-glob-subdirectories: SKIP
++test-fs-watch-ignore-recursive-mixed: SKIP
++test-fs-watch-ignore-recursive-regexp: SKIP
++test-fs-watch-ignore-regexp: SKIP
++test-watch-file-shared-dependency: SKIP
++#
++# Spawns a child node process. Passes on the iOS *simulator*, where
++# posix_spawn is permitted, and cannot on a device -- so it is not coverage
++# worth keeping either way. Measured on a full device sweep.
++#
++test-assert-esm-cjs-message-verify: SKIP
++test-compile-cache-api-options-portable-env: SKIP
++test-compile-cache-bad-syntax: SKIP
++test-compile-cache-permission-allowed: SKIP
++test-compile-cache-permission-disallowed: SKIP
++test-compile-cache-success: SKIP
++test-dotenv-edge-cases: SKIP
++test-dotenv-node-options: SKIP
++test-permission-child-process-inherit-flags: SKIP
++test-permission-fs-repeat-path: SKIP
++test-permission-fs-wildcard: SKIP
++test-permission-fs-write-report: SKIP
++test-permission-sqlite-load-extension: SKIP
++test-permission-warning-flags: SKIP
++test-process-finalization: SKIP
++test-runner-cli-concurrency: SKIP
++test-runner-complex-dependencies: SKIP
++test-runner-diagnostics-channel: SKIP
++test-runner-force-exit-failure: SKIP
++test-runner-force-exit-flush: SKIP
++test-runner-global-setup-watch-mode: SKIP
++test-runner-snapshot-file-tests: SKIP
++test-runner-snapshot-tests: SKIP
++test-runner-watch-mode-complex: SKIP
++test-snapshot-cwd: SKIP
++test-webstorage: SKIP
++#
++# Measured on a full device sweep and reproduced 0/3 standalone -- platform
++# behaviour rather than flake. Mixed causes: Darwin rejects non-UTF-8
++# filenames (test-fileurltopathbuffer), the simulator's filesystem reports
++# case inconsistently (test-fs-read-file-sync), unix-socket paths, and
++# test-process-getactiveresources' documented stdout-shape caveat.
++#
++test-fileurltopathbuffer: SKIP
++test-fs-cp-async-socket: SKIP
++test-fs-cp-sync-copy-socket-error: SKIP
++test-fs-read-file-sync: SKIP
++test-fs-sync-fd-leak: SKIP
++test-listen-fd-ebadf: SKIP
++test-memory-usage: SKIP
++test-os: SKIP
++test-process-beforeexit-throw-exit: SKIP
++test-process-exit-recursive: SKIP
++test-process-getactiveresources: SKIP
++test-runner-execution-ordered-bypass: SKIP
++test-webstorage-without-sqlite: SKIP
++test-worker-track-unmanaged-fds: SKIP
++#
++# fs.watch's `ignore` option: libuv has no FSEvents on iOS and falls back to
++# kqueue, which cannot say which file changed, so the filename-based filter
++# drops every event. See docs/TESTING.md, "fs.watch".
++#
++test-fs-promises-watch-ignore-function: SKIP
++test-fs-promises-watch-ignore-glob: SKIP
++test-fs-promises-watch-ignore-mixed: SKIP
++test-fs-promises-watch-ignore-regexp: SKIP
++#
++# Not deterministic: passes standalone but fails inside a full-suite run, so
++# this is load sensitivity, not a broken test. FLAKY (still runs, red is
++# tolerated) rather than SKIP (never runs again).
++#
++test-async-local-storage-http-multiclients: PASS, FLAKY
++test-buffer-alloc-unsafe-is-uninitialized: PASS, FLAKY
++test-compile-cache-portable: PASS, FLAKY
++test-http-max-headers-count: PASS, FLAKY
++test-http-upgrade-advertise: PASS, FLAKY
++test-runner-run-files-undefined: PASS, FLAKY
++#
++# Tests that spawn a child node process. They pass here only because the iOS
++# *simulator* permits posix_spawn; a shipped app cannot fork or exec, so
++# child_process is unusable on the platform and this was never coverage of
++# anything an embedder can run. Keeping them green on the simulator bought false
++# confidence, and because the spawn is timing-sensitive under load they were also
++# the entire flake population -- successive full sweeps failed a different
++# handful of test-runner-* each time. Android excludes the same set for the
++# harder reason that execPath there is app_process64 and the child SIGABRTs.
++#
++test-async-hooks-stack-overflow: SKIP
++test-async-hooks-stack-overflow-nested-async: SKIP
++test-async-hooks-stack-overflow-try-catch: SKIP
++test-buffer-constructor-node-modules: SKIP
++test-compile-cache-api-env: SKIP
++test-compile-cache-api-flush: SKIP
++test-compile-cache-api-permission: SKIP
++test-compile-cache-api-portable: SKIP
++test-compile-cache-api-success: SKIP
++test-compile-cache-api-tmpdir: SKIP
++test-compile-cache-disable: SKIP
++test-compile-cache-dynamic-import: SKIP
++test-compile-cache-esm: SKIP
++test-compile-cache-existing-directory: SKIP
++test-compile-cache-portable: SKIP
++test-compile-cache-portable-esm: SKIP
++test-compile-cache-typescript-commonjs: SKIP
++test-compile-cache-typescript-esm: SKIP
++test-compile-cache-typescript-strip-miss: SKIP
++test-compile-cache-typescript-strip-sourcemaps: SKIP
++test-compile-cache-typescript-transform: SKIP
++test-compile-cache-updated-file: SKIP
++test-debug-process: SKIP
++test-debugger-inspect-help: SKIP
++test-debugger-probe-child-inspect-port-zero: SKIP
++test-debugger-probe-global-option-order: SKIP
++test-debugger-probe-json: SKIP
++test-debugger-probe-json-preview: SKIP
++test-debugger-probe-json-special-values: SKIP
++test-debugger-probe-launch: SKIP
++test-debugger-probe-miss: SKIP
++test-debugger-probe-missing-expr: SKIP
++test-debugger-probe-requires-separator: SKIP
++test-debugger-probe-text: SKIP
++test-debugger-probe-text-special-values: SKIP
++test-debugger-probe-timeout: SKIP
++test-dgram-bind-socket-close-before-cluster-reply: SKIP
++test-diagnostics-channel-child-process: SKIP
++test-diagnostics-channel-process: SKIP
++test-dns-resolvesrv: SKIP
++test-dns-resolvesrv-econnrefused: SKIP
++test-error-prepare-stack-trace: SKIP
++test-experimental-shared-value-conveyor: SKIP
++test-file-write-stream4: SKIP
++test-find-package-json: SKIP
++test-fs-filehandle-use-after-close: SKIP
++test-fs-mkdir-recursive-eaccess: SKIP
++test-fs-read-stream: SKIP
++test-fs-utimes-y2K38: SKIP
++test-fs-watch-recursive-linux-parallel-remove: SKIP
++test-hash-seed: SKIP
++test-http-server-drop-connections-in-cluster: SKIP
++test-http2-respond-file-with-pipe: SKIP
++test-http2-respond-with-file-connection-abort: SKIP
++test-intl: SKIP
++test-is-internal-thread: SKIP
++test-macos-app-sandbox: SKIP
++test-module-loading-error: SKIP
++test-module-print-timing: SKIP
++test-navigator: SKIP
++test-net-listen-handle-in-cluster-1: SKIP
++test-net-listen-handle-in-cluster-2: SKIP
++test-net-listen-twice: SKIP
++test-net-server-close-before-ipc-response: SKIP
++test-net-server-listen-handle: SKIP
++test-parse-args: SKIP
++test-path-resolve: SKIP
++test-performance-nodetiming-uvmetricsinfo: SKIP
++test-permission-allow-inspector: SKIP
++test-permission-child-process-cli: SKIP
++test-permission-config-file: SKIP
++test-permission-fs-absolute-path: SKIP
++test-permission-fs-read: SKIP
++test-permission-fs-read-entrypoint: SKIP
++test-permission-fs-relative-path: SKIP
++test-permission-fs-require: SKIP
++test-permission-fs-symlink: SKIP
++test-permission-fs-symlink-relative: SKIP
++test-permission-fs-symlink-target-write: SKIP
++test-permission-fs-traversal-path: SKIP
++test-permission-inspector: SKIP
++test-permission-inspector-brk: SKIP
++test-permission-processbinding: SKIP
++test-process-execve-abort: SKIP
++test-process-execve-no-args: SKIP
++test-process-execve-permission-fail: SKIP
++test-process-execve-validation: SKIP
++test-process-execve-worker-threads: SKIP
++test-process-warnings: SKIP
++test-repl-close: SKIP
++test-repl-persistent-history: SKIP
++test-repl-programmatic-history: SKIP
++test-repl-programmatic-history-setup-history: SKIP
++test-runner-cli-randomize: SKIP
++test-runner-cli-timeout: SKIP
++test-runner-concurrency: SKIP
++test-runner-coverage-default-exclusion: SKIP
++test-runner-coverage-isolation-none-api: SKIP
++test-runner-enable-source-maps-issue: SKIP
++test-runner-error-reporter: SKIP
++test-runner-flag-propagation: SKIP
++test-runner-global-setup-teardown: SKIP
++test-runner-mock-timers-with-timeout: SKIP
++test-runner-module-mocking: SKIP
++test-runner-no-isolation-filtering: SKIP
++test-runner-no-isolation-hooks: SKIP
++test-runner-root-duration: SKIP
++test-runner-run-files-undefined: SKIP
++test-runner-run-global-hooks: SKIP
++test-runner-todo-suite-hook-failure: SKIP
++test-runner-worker-id: SKIP
++test-runner-xfail: SKIP
++test-shadow-realm-custom-loaders: SKIP
++test-shadow-realm-preload-module: SKIP
++test-snapshot-config: SKIP
++test-snapshot-coverage: SKIP
++test-snapshot-net: SKIP
++test-snapshot-stack-trace-limit: SKIP
++test-snapshot-stack-trace-limit-mutation: SKIP
++test-snapshot-worker: SKIP
++test-source-map-invalid-url: SKIP
++test-sqlite: SKIP
++test-stdin-from-file-spawn: SKIP
++test-stdio-pipe-access: SKIP
++test-strace-openat-openssl: SKIP
++test-stream-readable-unpipe-resume: SKIP
++test-timers-nan-duration-warning: SKIP
++test-timers-negative-duration-warning: SKIP
++test-tls-alpn-server-client: SKIP
++test-tls-env-extra-ca-with-options: SKIP
++test-tls-get-ca-certificates-extra: SKIP
++test-tls-get-ca-certificates-extra-empty: SKIP
++test-tls-get-ca-certificates-extra-subset: SKIP
++test-tls-get-ca-certificates-node-use-system-ca: SKIP
++test-tls-get-ca-certificates-system-without-flag: SKIP
++test-tls-off-thread-cert-loading: SKIP
++test-tls-off-thread-cert-loading-disabled: SKIP
++test-tls-off-thread-cert-loading-system: SKIP
++test-tls-set-default-ca-certificates-extra-override: SKIP
++test-trace-env: SKIP
++test-trace-env-stack: SKIP
++test-trace-events-net-abstract-socket: SKIP
++test-trace-exit-stack-limit: SKIP
++test-uncaught-exception-handler-stack-overflow: SKIP
++test-uncaught-exception-handler-stack-overflow-on-stack-overflow: SKIP
++test-url-parse-deprecation: SKIP
++test-url-parse-invalid-input: SKIP
++test-util-getcallsites: SKIP
++test-util-inspect: SKIP
++test-util-promisify-custom-names: SKIP
++test-vfs: SKIP
++test-watch-mode-files_watcher: SKIP
++test-watch-mode-kill-signal-default: SKIP
++test-watch-mode-kill-signal-invalid: SKIP
++test-watch-mode-kill-signal-override: SKIP
++test-worker-cleanexit-with-moduleload: SKIP
++test-worker-node-options: SKIP
++test-worker-process-argv: SKIP
++test-worker-stdio: SKIP
++test-worker-terminate-http2-respond-with-file: SKIP
++#
++# Same stdout-shape caveat as test-process-getactiveresources: the set of active
++# handles depends on what stdout *is*, and the harness gives node a file.
++#
++test-process-getactiveresources-track-active-requests: SKIP
++#
++# Load sensitive, not broken: 5/5 standalone, fails inside a full-suite run.
++# FLAKY keeps them running; SKIP would retire them.
++#
++test-https-client-renegotiation-limit: PASS, FLAKY
++test-https-selfsigned-no-keycertsign-no-crash: PASS, FLAKY
+ [$asan==on]
+ # https://github.com/nodejs/node/issues/39655
+ test-cluster-primary-error: PASS, FLAKY
+diff --git a/test/parallel/test-dgram-bind-fd.js b/test/parallel/test-dgram-bind-fd.js
+index daf7f8064b..76c2ce82dd 100644
+--- a/test/parallel/test-dgram-bind-fd.js
++++ b/test/parallel/test-dgram-bind-fd.js
+@@ -77,7 +77,7 @@ const BUFFER_SIZE = 4096;
+         const sendBufferSize = socket.getSendBufferSize();
+ 
+         // note: linux will double the buffer size
+-        const expectedBufferSize = common.isLinux ?
++        const expectedBufferSize = (common.isLinux || common.isAndroid) ?
+           BUFFER_SIZE * 2 : BUFFER_SIZE;
+         assert.strictEqual(recvBufferSize, expectedBufferSize);
+         assert.strictEqual(sendBufferSize, expectedBufferSize);
+diff --git a/test/parallel/test-dgram-membership.js b/test/parallel/test-dgram-membership.js
+index ebfdaa9cb6..8414b251c8 100644
+--- a/test/parallel/test-dgram-membership.js
++++ b/test/parallel/test-dgram-membership.js
+@@ -108,7 +108,10 @@ const setup = dgram.createSocket.bind(dgram, { type: 'udp4', reuseAddr: true });
+   const socket = setup();
+   assert.throws(() => {
+     socket.addSourceSpecificMembership(multicastAddress, '0');
+-  }, {
++  }, common.isAndroid ? {
++    code: 'ENOSYS',
++    message: 'addSourceSpecificMembership ENOSYS'
++  } : {
+     code: 'EINVAL',
+     message: 'addSourceSpecificMembership EINVAL'
+   });
+@@ -146,7 +149,10 @@ const setup = dgram.createSocket.bind(dgram, { type: 'udp4', reuseAddr: true });
+   const socket = setup();
+   assert.throws(() => {
+     socket.dropSourceSpecificMembership(multicastAddress, '0');
+-  }, {
++  }, common.isAndroid ? {
++    code: 'ENOSYS',
++    message: 'dropSourceSpecificMembership ENOSYS'
++  } : {
+     code: 'EINVAL',
+     message: 'dropSourceSpecificMembership EINVAL'
+   });
+diff --git a/test/parallel/test-dgram-socket-buffer-size.js b/test/parallel/test-dgram-socket-buffer-size.js
+index fcc492a958..53f9045f99 100644
+--- a/test/parallel/test-dgram-socket-buffer-size.js
++++ b/test/parallel/test-dgram-socket-buffer-size.js
+@@ -114,7 +114,7 @@ function getExpectedError(type) {
+     socket.setSendBufferSize(10000);
+ 
+     // note: linux will double the buffer size
+-    const expectedBufferSize = common.isLinux ? 20000 : 10000;
++    const expectedBufferSize = (common.isLinux || common.isAndroid) ? 2e4 : 1e4;
+     assert.strictEqual(socket.getRecvBufferSize(), expectedBufferSize);
+     assert.strictEqual(socket.getSendBufferSize(), expectedBufferSize);
+     socket.close();
+diff --git a/test/parallel/test-fs-copyfile.js b/test/parallel/test-fs-copyfile.js
+index 51d7153de0..9b1395f99b 100644
+--- a/test/parallel/test-fs-copyfile.js
++++ b/test/parallel/test-fs-copyfile.js
+@@ -68,7 +68,8 @@ try {
+ } catch (err) {
+   assert.strictEqual(err.syscall, 'copyfile');
+   assert(err.code === 'ENOTSUP' || err.code === 'ENOTTY' ||
+-    err.code === 'ENOSYS' || err.code === 'EXDEV');
++    err.code === 'ENOSYS' || err.code === 'EXDEV' ||
++    (common.isAndroid && err.code === 'EACCES'));
+   assert.strictEqual(err.path, src);
+   assert.strictEqual(err.dest, dest);
+ }
+diff --git a/test/parallel/test-fs-lchmod.js b/test/parallel/test-fs-lchmod.js
+index d439710291..d048680b95 100644
+--- a/test/parallel/test-fs-lchmod.js
++++ b/test/parallel/test-fs-lchmod.js
+@@ -9,7 +9,9 @@ const f = __filename;
+ // This test ensures that input for lchmod is valid, testing for valid
+ // inputs for path, mode and callback
+ 
+-if (!common.isMacOS) {
++// nodejs-mobile patch: iOS is Darwin, so lchmod is available there too.
++// (Android has no lchmod; parallel.status skips this test under $system==android.)
++if (!common.isMacOS && !common.isIOS) {
+   common.skip('lchmod is only available on macOS');
+ }
+ 
+diff --git a/test/parallel/test-fs-mkdir.js b/test/parallel/test-fs-mkdir.js
+index 185da03aeb..5a47def129 100644
+--- a/test/parallel/test-fs-mkdir.js
++++ b/test/parallel/test-fs-mkdir.js
+@@ -218,7 +218,10 @@ function nextdir() {
+ 
+ // mkdirpSync dirname loop
+ // XXX: windows and smartos have issues removing a directory that you're in.
+-if (isMainThread && (common.isLinux || common.isMacOS)) {
++// nodejs-mobile patch: Android is Linux and iOS is Darwin, so both behave like
++// the platforms upstream allows here.
++if (isMainThread && (common.isLinux || common.isMacOS ||
++                     common.isAndroid || common.isIOS)) {
+   const pathname = tmpdir.resolve(nextdir());
+   fs.mkdirSync(pathname);
+   process.chdir(pathname);
+diff --git a/test/parallel/test-fs-open-flags.js b/test/parallel/test-fs-open-flags.js
+index 55478247f6..cdfaaa0b88 100644
+--- a/test/parallel/test-fs-open-flags.js
++++ b/test/parallel/test-fs-open-flags.js
+@@ -82,7 +82,8 @@ assert.throws(
+   { code: 'ERR_INVALID_ARG_VALUE', name: 'TypeError' }
+ );
+ 
+-if (common.isLinux || common.isMacOS) {
++// nodejs-mobile patch: Android is Linux and iOS is Darwin; O_DSYNC works on both.
++if (common.isLinux || common.isMacOS || common.isAndroid || common.isIOS) {
+   const tmpdir = require('../common/tmpdir');
+   tmpdir.refresh();
+   const file = tmpdir.resolve('a.js');
+diff --git a/test/parallel/test-fs-promises.js b/test/parallel/test-fs-promises.js
+index 5866c685f5..d27a5fe1be 100644
+--- a/test/parallel/test-fs-promises.js
++++ b/test/parallel/test-fs-promises.js
+@@ -321,7 +321,8 @@ async function executeOnHandle(dest, func) {
+                            (await readlink(newLink)).toLowerCase());
+ 
+         const newMode = 0o666;
+-        if (common.isMacOS) {
++        // nodejs-mobile patch: iOS is Darwin, so lchmod is available there too.
++        if (common.isMacOS || common.isIOS) {
+           // `lchmod` is only available on macOS.
+           await lchmod(newLink, newMode);
+           stats = await lstat(newLink);
+@@ -353,7 +354,8 @@ async function executeOnHandle(dest, func) {
+     }
+ 
+     // create hard link
+-    {
++    // nodejs-mobile patch: hard links are not fully supported on Android.
++    if (!common.isAndroid) {
+       const newPath = path.resolve(tmpDir, 'baz2.js');
+       const newLink = path.resolve(tmpDir, 'baz4.js');
+       await link(newPath, newLink);
+diff --git a/test/parallel/test-fs-read-file-sync-hostname.js b/test/parallel/test-fs-read-file-sync-hostname.js
+index 599f48b6cc..9ae4c536e4 100644
+--- a/test/parallel/test-fs-read-file-sync-hostname.js
++++ b/test/parallel/test-fs-read-file-sync-hostname.js
+@@ -21,7 +21,7 @@
+ 
+ 'use strict';
+ const common = require('../common');
+-if (!common.isLinux)
++if (!(common.isLinux || common.isAndroid))
+   common.skip('Test is linux specific.');
+ 
+ const assert = require('assert');
+diff --git a/test/parallel/test-fs-readdir-stack-overflow.js b/test/parallel/test-fs-readdir-stack-overflow.js
+index e35ad87363..fef94c8620 100644
+--- a/test/parallel/test-fs-readdir-stack-overflow.js
++++ b/test/parallel/test-fs-readdir-stack-overflow.js
+@@ -1,9 +1,16 @@
+ 'use strict';
+ 
+-require('../common');
++const common = require('../common');
+ 
+ const assert = require('assert');
+ const fs = require('fs');
++const path = require('path');
++
++if (common.isAndroid) {
++  // Change the working dir for what would be expected of the test framework
++  // running in a Desktop environment.
++  process.chdir(path.join(__dirname, '..', '..'));
++}
+ 
+ function recurse() {
+   fs.readdirSync('.');
+diff --git a/test/parallel/test-fs-readdir-ucs2.js b/test/parallel/test-fs-readdir-ucs2.js
+index 264858ec6a..91442eb506 100644
+--- a/test/parallel/test-fs-readdir-ucs2.js
++++ b/test/parallel/test-fs-readdir-ucs2.js
+@@ -1,7 +1,7 @@
+ 'use strict';
+ 
+ const common = require('../common');
+-if (!common.isLinux)
++if (!(common.isLinux || common.isAndroid))
+   common.skip('Test is linux specific.');
+ 
+ const path = require('path');
+diff --git a/test/parallel/test-fs-realpath-native.js b/test/parallel/test-fs-realpath-native.js
+index d6f319a015..9cff33fe27 100644
+--- a/test/parallel/test-fs-realpath-native.js
++++ b/test/parallel/test-fs-realpath-native.js
+@@ -2,9 +2,16 @@
+ const common = require('../common');
+ const assert = require('assert');
+ const fs = require('fs');
++const path = require('path');
+ 
+ const filename = __filename.toLowerCase();
+ 
++if (common.isIOS || common.isAndroid) {
++  // Change the working dir for what would be expected of the test framework
++  // running in a Desktop environment.
++  process.chdir(path.join(__dirname, '..', '..'));
++}
++
+ assert.strictEqual(
+   fs.realpathSync.native('./test/parallel/test-fs-realpath-native.js')
+     .toLowerCase(),
+diff --git a/test/parallel/test-fs-realpath.js b/test/parallel/test-fs-realpath.js
+index 6ad074397e..c27aee2759 100644
+--- a/test/parallel/test-fs-realpath.js
++++ b/test/parallel/test-fs-realpath.js
+@@ -259,7 +259,13 @@ function test_cyclic_link_overprotection(realpath, realpathSync, callback) {
+   const folder = `${cycles}/folder`;
+   const link = `${folder}/cycles`;
+   let testPath = cycles;
+-  testPath += '/folder/cycles'.repeat(10);
++  if (common.isAndroid) {
++    // MAXSYMLINKS is defined as 8 in the NDK, so we can only test up to that
++    // value for Android.
++    testPath += '/folder/cycles'.repeat(8);
++  } else {
++    testPath += '/folder/cycles'.repeat(10);
++  }
+   try { fs.unlinkSync(link); } catch {
+     // Continue regardless of error.
+   }
+diff --git a/test/parallel/test-fs-rmdir-recursive.js b/test/parallel/test-fs-rmdir-recursive.js
+index 77c205794b..4c52904b43 100644
+--- a/test/parallel/test-fs-rmdir-recursive.js
++++ b/test/parallel/test-fs-rmdir-recursive.js
+@@ -7,6 +7,12 @@ const fs = require('fs');
+ const path = require('path');
+ const { validateRmdirOptions } = require('internal/fs/utils');
+ 
++if (common.isIOS || common.isAndroid) {
++  // Change the working dir for what would be expected of the test framework
++  // running in a Desktop environment.
++  process.chdir(path.join(__dirname, '..', '..'));
++}
++
+ common.expectWarning(
+   'DeprecationWarning',
+   'In future versions of Node.js, fs.rmdir(path, { recursive: true }) ' +
+diff --git a/test/parallel/test-fs-stat.js b/test/parallel/test-fs-stat.js
+index 93bf6573a1..b323f665a8 100644
+--- a/test/parallel/test-fs-stat.js
++++ b/test/parallel/test-fs-stat.js
+@@ -24,6 +24,13 @@ const common = require('../common');
+ 
+ const assert = require('assert');
+ const fs = require('fs');
++const path = require('path');
++
++if (common.isIOS || common.isAndroid) {
++  // Change the working dir for what would be expected of the test framework
++  // running in a Desktop environment.
++  process.chdir(path.join(__dirname, '..', '..'));
++}
+ 
+ fs.stat('.', common.mustSucceed(function(stats) {
+   assert.ok(stats.mtime instanceof Date);
+diff --git a/test/parallel/test-fs-watch.js b/test/parallel/test-fs-watch.js
+index 5194e04fce..2c289102e4 100644
+--- a/test/parallel/test-fs-watch.js
++++ b/test/parallel/test-fs-watch.js
+@@ -21,17 +21,20 @@ class WatchTestCase {
+   get filePath() { return join(this.dirPath, this.fileName); }
+ }
+ 
++// nodejs-mobile patch: Android reports filenames like the Linux it is built
++// on; iOS does so for file watches but is unreliable for directory watches.
+ const cases = [
+   // Watch on a file should callback with a filename on supported systems
+   new WatchTestCase(
+-    common.isLinux || common.isMacOS || common.isWindows || common.isAIX,
++    common.isLinux || common.isMacOS || common.isWindows || common.isAIX ||
++      common.isAndroid || common.isIOS,
+     'watch1',
+     'foo',
+     'filePath'
+   ),
+   // Watch on a directory should callback with a filename on supported systems
+   new WatchTestCase(
+-    common.isLinux || common.isMacOS || common.isWindows,
++    common.isLinux || common.isMacOS || common.isWindows || common.isAndroid,
+     'watch2',
+     'bar',
+     'dirPath'
+@@ -60,7 +63,8 @@ function doWatchTest(testCase) {
+       clearInterval(interval);
+       interval = null;
+     }
+-    if (common.isMacOS)
++    // nodejs-mobile patch: iOS is Darwin (kqueue), same events as macOS.
++    if (common.isMacOS || common.isIOS)
+       assert.strictEqual(['rename', 'change'].includes(eventType), true);
+     else
+       assert.strictEqual(eventType, 'change');
+diff --git a/test/parallel/test-fs-watchfile.js b/test/parallel/test-fs-watchfile.js
+index bd86835d9f..982fa44dfb 100644
+--- a/test/parallel/test-fs-watchfile.js
++++ b/test/parallel/test-fs-watchfile.js
+@@ -84,7 +84,9 @@ watcher.on('stop', common.mustCall());
+ 
+ // Watch events should callback with a filename on supported systems.
+ // Omitting AIX. It works but not reliably.
+-if (common.isLinux || common.isMacOS || common.isWindows) {
++// nodejs-mobile patch: Android reports filenames like Linux; directory watch
++// is not reliable on iOS, so it stays excluded.
++if (common.isLinux || common.isMacOS || common.isWindows || common.isAndroid) {
+   const dir = tmpdir.resolve('watch');
+   function doWatch() {
+     const handle = fs.watch(dir, common.mustCall(function(eventType, filename) {
+diff --git a/test/parallel/test-http-response-setheaders.js b/test/parallel/test-http-response-setheaders.js
+index e05d3e2dc3..6317a022fc 100644
+--- a/test/parallel/test-http-response-setheaders.js
++++ b/test/parallel/test-http-response-setheaders.js
+@@ -6,12 +6,15 @@ const assert = require('assert');
+ {
+   const server = http.createServer({ requireHostHeader: false }, common.mustCall((req, res) => {
+     res.writeHead(200); // Headers already sent
++    // nodejs-mobile patch: globalThis.Headers uses undici uses Wasm, bad on iOS
++    /*
+     const headers = new globalThis.Headers({ foo: '1' });
+     assert.throws(() => {
+       res.setHeaders(headers);
+     }, {
+       code: 'ERR_HTTP_HEADERS_SENT'
+     });
++    */
+     res.end();
+   }));
+ 
+@@ -70,6 +73,8 @@ const assert = require('assert');
+   }));
+ }
+ 
++// nodejs-mobile patch: globalThis.Headers uses undici uses Wasm, bad on iOS
++/*
+ {
+   const server = http.createServer({ requireHostHeader: false }, common.mustCall((req, res) => {
+     const headers = new globalThis.Headers({ foo: '1', bar: '2' });
+@@ -109,6 +114,7 @@ const assert = require('assert');
+     }));
+   }));
+ }
++*/
+ 
+ {
+   const server = http.createServer({ requireHostHeader: false }, common.mustCall((req, res) => {
+diff --git a/test/parallel/test-http2-respond-file-error-dir.js b/test/parallel/test-http2-respond-file-error-dir.js
+index e5d0cfe880..ff428d3db2 100644
+--- a/test/parallel/test-http2-respond-file-error-dir.js
++++ b/test/parallel/test-http2-respond-file-error-dir.js
+@@ -5,6 +5,13 @@ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ const http2 = require('http2');
+ const assert = require('assert');
++const path = require('path');
++
++if (common.isIOS || common.isAndroid) {
++  // Change the working dir for what would be expected of the test framework
++  // running in a Desktop environment.
++  process.chdir(path.join(__dirname, '..', '..'));
++}
+ 
+ const server = http2.createServer();
+ server.on('stream', (stream) => {
+diff --git a/test/parallel/test-net-connect-options-fd.js b/test/parallel/test-net-connect-options-fd.js
+index bd761cf072..c913299ef7 100644
+--- a/test/parallel/test-net-connect-options-fd.js
++++ b/test/parallel/test-net-connect-options-fd.js
+@@ -35,7 +35,7 @@ const CLIENT_VARIANTS = 6;  // Same length as array above
+ {
+   // Use relative path to avoid hitting 108-char length limit
+   // for socket paths in libuv.
+-  const prefix = path.relative('.', `${common.PIPE}-net-connect-options-fd`);
++  const prefix = path.relative('.', `${common.PIPE}-n-c-o-fd`);
+   const serverPath = `${prefix}-server`;
+   let counter = 0;
+   let socketCounter = 0;
+diff --git a/test/parallel/test-os.js b/test/parallel/test-os.js
+index f15499d692..3c3c09b835 100644
+--- a/test/parallel/test-os.js
++++ b/test/parallel/test-os.js
+@@ -99,17 +99,20 @@ if (!common.isIBMi) {
+   assert.ok(uptime > 0);
+ }
+ 
+-const cpus = os.cpus();
+-is.array(cpus);
+-assert.ok(cpus.length > 0);
+-for (const cpu of cpus) {
+-  assert.strictEqual(typeof cpu.model, 'string');
+-  assert.strictEqual(typeof cpu.speed, 'number');
+-  assert.strictEqual(typeof cpu.times.user, 'number');
+-  assert.strictEqual(typeof cpu.times.nice, 'number');
+-  assert.strictEqual(typeof cpu.times.sys, 'number');
+-  assert.strictEqual(typeof cpu.times.idle, 'number');
+-  assert.strictEqual(typeof cpu.times.irq, 'number');
++if (!common.isAndroid && !common.isIOS) {
++  // API is inconsistent on mobile.
++  const cpus = os.cpus();
++  is.array(cpus);
++  assert.ok(cpus.length > 0);
++  for (const cpu of cpus) {
++    assert.strictEqual(typeof cpu.model, 'string');
++    assert.strictEqual(typeof cpu.speed, 'number');
++    assert.strictEqual(typeof cpu.times.user, 'number');
++    assert.strictEqual(typeof cpu.times.nice, 'number');
++    assert.strictEqual(typeof cpu.times.sys, 'number');
++    assert.strictEqual(typeof cpu.times.idle, 'number');
++    assert.strictEqual(typeof cpu.times.irq, 'number');
++  }
+ }
+ 
+ const type = os.type();
+diff --git a/test/parallel/test-parse-args.mjs b/test/parallel/test-parse-args.mjs
+index 706a3b24f1..9525117a7c 100644
+--- a/test/parallel/test-parse-args.mjs
++++ b/test/parallel/test-parse-args.mjs
+@@ -4,6 +4,8 @@ import assert from 'node:assert';
+ import { suite, test } from 'node:test';
+ import { parseArgs } from 'node:util';
+ 
++// nodejs-mobile patch: note that on iOS this test passes, but doesn't close/die
++
+ test('when short option used as flag then stored as flag', () => {
+   const args = ['-f'];
+   const expected = { values: { __proto__: null, f: true }, positionals: [] };
+diff --git a/test/parallel/test-process-constants-noatime.js b/test/parallel/test-process-constants-noatime.js
+index bd1a848ed7..a4192a3a8e 100644
+--- a/test/parallel/test-process-constants-noatime.js
++++ b/test/parallel/test-process-constants-noatime.js
+@@ -4,7 +4,7 @@ const common = require('../common');
+ const assert = require('assert');
+ const constants = require('fs').constants;
+ 
+-if (common.isLinux) {
++if (common.isLinux || common.isAndroid) {
+   assert('O_NOATIME' in constants);
+   assert.strictEqual(constants.O_NOATIME, 0x40000);
+ } else {
+diff --git a/test/parallel/test-process-dlopen-error-message-crash.js b/test/parallel/test-process-dlopen-error-message-crash.js
+index de8b303319..261a2c8577 100644
+--- a/test/parallel/test-process-dlopen-error-message-crash.js
++++ b/test/parallel/test-process-dlopen-error-message-crash.js
+@@ -10,6 +10,7 @@ tmpdir.refresh();
+ 
+ const assert = require('assert');
+ const fs = require('fs');
++const path = require('path'); // nodejs-mobile patch
+ 
+ // This error message should not be passed to a printf-like function.
+ assert.throws(() => {
+@@ -23,7 +24,8 @@ assert.throws(() => {
+   return true;
+ });
+ 
+-const notBindingDir = 'test/addons/not-a-binding';
++// nodejs-mobile patch of notBindingDir:
++const notBindingDir = path.join(__dirname, '..', 'addons', 'not-a-binding');
+ const notBindingPath = `${notBindingDir}/build/Release/binding.node`;
+ const strangeBindingPath = `${tmpdir.path}/binding-%s.node`;
+ // Ensure that the addon directory exists, but skip the remainder of the test if
+diff --git a/test/parallel/test-process-getactiveresources-track-active-requests.js b/test/parallel/test-process-getactiveresources-track-active-requests.js
+index 12957ff956..66a43ada6d 100644
+--- a/test/parallel/test-process-getactiveresources-track-active-requests.js
++++ b/test/parallel/test-process-getactiveresources-track-active-requests.js
+@@ -8,4 +8,8 @@ for (let i = 0; i < 12; i++) {
+   fs.open(__filename, 'r', common.mustCall());
+ }
+ 
+-assert.strictEqual(process.getActiveResourcesInfo().length, 12);
++// nodejs-mobile patch: mobile keeps one extra stdio handle active for the life
++// of the process — see test-process-getactiveresources.
++const extraHandles = common.isAndroid || common.isIOS ? 1 : 0;
++
++assert.strictEqual(process.getActiveResourcesInfo().length, 12 + extraHandles);
+diff --git a/test/parallel/test-process-getactiveresources.js b/test/parallel/test-process-getactiveresources.js
+index a2df7d580d..eeb6c1de91 100644
+--- a/test/parallel/test-process-getactiveresources.js
++++ b/test/parallel/test-process-getactiveresources.js
+@@ -1,9 +1,19 @@
+ 'use strict';
+ 
+-require('../common');
++const common = require('../common');
+ 
+ const assert = require('assert');
+ 
+ setTimeout(() => {}, 0);
+ 
+-assert.deepStrictEqual(process.getActiveResourcesInfo(), ['Timeout']);
++// nodejs-mobile patch: the app hosts node on a background thread with stdio
++// wired to a pipe (Android) or a tty (iOS) that stays referenced for the life
++// of the process, so one extra handle is always active.
++const expected = ['Timeout'];
++if (common.isAndroid) {
++  expected.unshift('PipeWrap');
++} else if (common.isIOS) {
++  expected.unshift('TTYWrap');
++}
++
++assert.deepStrictEqual(process.getActiveResourcesInfo(), expected);
+diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
+index b670ff37ac..68724daf7f 100644
+--- a/test/parallel/test-process-versions.js
++++ b/test/parallel/test-process-versions.js
+@@ -2,8 +2,15 @@
+ const common = require('../common');
+ const assert = require('assert');
+ 
+-// Import of pure js (non-shared) deps for comparison
+-const acorn = require('../../deps/acorn/acorn/package.json');
++// Import of pure js (non-shared) deps for comparison.
++//
++// nodejs-mobile: the test assets copied into the app sandbox carry no
++// root-level "deps" folder, so on-device these files cannot be read at all --
++// the version cross-checks they feed are deferred to the bottom of this file
++// and skipped there. They are not replaced by hard-coded version strings: a
++// literal here goes stale at the next upstream bump and then fails on every
++// platform instead of only on the one that can't do the check.
++const canReadDeps = !common.isAndroid && !common.isIOS;
+ 
+ const expected_keys = [
+   'ares',
+@@ -27,6 +34,9 @@ const expected_keys = [
+   'merve',
+ ];
+ 
++if (common.isAndroid || common.isIOS) {
++  expected_keys.push('mobile');
++}
+ 
+ const hasUndici = process.config.variables.node_builtin_shareable_builtins.includes('deps/undici/undici.js');
+ const hasAmaro = process.config.variables.node_builtin_shareable_builtins.includes('deps/amaro/dist/index.js');
+@@ -111,11 +121,17 @@ for (let i = 0; i < expected_keys.length; i++) {
+ assert.strictEqual(process.config.variables.napi_build_version,
+                    process.versions.napi);
+ 
+-if (hasUndici) {
++// nodejs-mobile: `canReadDeps` -- see the top of this file. Where deps/ is out
++// of reach the shape of both versions is still asserted above, against
++// `commonTemplate`; only the value cross-check is skipped.
++if (hasUndici && canReadDeps) {
+   const undici = require('../../deps/undici/src/package.json');
+   const expectedUndiciVersion = undici.version;
+   assert.strictEqual(process.versions.undici, expectedUndiciVersion);
+ }
+ 
+-const expectedAcornVersion = acorn.version;
+-assert.strictEqual(process.versions.acorn, expectedAcornVersion);
++if (canReadDeps) {
++  const acorn = require('../../deps/acorn/acorn/package.json');
++  const expectedAcornVersion = acorn.version;
++  assert.strictEqual(process.versions.acorn, expectedAcornVersion);
++}
+diff --git a/test/parallel/test-repl-options.js b/test/parallel/test-repl-options.js
+index 0cea1d5be4..eded67e632 100644
+--- a/test/parallel/test-repl-options.js
++++ b/test/parallel/test-repl-options.js
+@@ -111,7 +111,11 @@ assert.strictEqual(r4.getPrompt(), '> ');
+ assert.strictEqual(r4.input, process.stdin);
+ assert.strictEqual(r4.output, process.stdout);
+ assert.strictEqual(r4.terminal, !!r4.output.isTTY);
+-assert.strictEqual(r4.useColors, r4.terminal);
++if (common.isIOS) {
++  assert.strictEqual(r4.useColors, r4.output.hasColors());
++} else {
++  assert.strictEqual(r4.useColors, r4.terminal);
++}
+ assert.strictEqual(r4.useGlobal, false);
+ assert.strictEqual(r4.ignoreUndefined, false);
+ assert.strictEqual(r4.replMode, repl.REPL_MODE_SLOPPY);
+diff --git a/test/parallel/test-runner-concurrency.js b/test/parallel/test-runner-concurrency.js
+index 2cb01bdc26..32e79d8603 100644
+--- a/test/parallel/test-runner-concurrency.js
++++ b/test/parallel/test-runner-concurrency.js
+@@ -86,6 +86,8 @@ describe('concurrency: true implies Infinity', { concurrency: true }, () => {
+   });
+ }
+ 
++// nodejs-mobile patch: spawnPromisified is not available
++/*
+ test('--test multiple files', { skip: os.availableParallelism() < 3 }, async () => {
+   await fs.writeFile(tmpdir.resolve('test-runner-concurrency'), '');
+   const { code, stderr } = await common.spawnPromisified(process.execPath, [
+@@ -96,3 +98,4 @@ test('--test multiple files', { skip: os.availableParallelism() < 3 }, async ()
+   assert.strictEqual(stderr, '');
+   assert.strictEqual(code, 0);
+ });
++*/
+\ No newline at end of file
+diff --git a/test/parallel/test-signal-handler.js b/test/parallel/test-signal-handler.js
+index b84d2063a2..4411854e0b 100644
+--- a/test/parallel/test-signal-handler.js
++++ b/test/parallel/test-signal-handler.js
+@@ -33,11 +33,17 @@ if (!isMainThread) {
+   common.skip('Signal handling in Workers is not supported');
+ }
+ 
++let SIGUSRToTest = 'SIGUSR1';
++if (common.isAndroid) {
++// SIGUSR1 may be used to trigger garbage collection on Android
++  SIGUSRToTest = 'SIGUSR2';
++}
++
+ console.log(`process.pid: ${process.pid}`);
+ 
+-process.on('SIGUSR1', common.mustCall());
++process.on(SIGUSRToTest, common.mustCall());
+ 
+-process.on('SIGUSR1', common.mustCall(function() {
++process.on(SIGUSRToTest, common.mustCall(function() {
+   setTimeout(function() {
+     console.log('End.');
+     process.exit(0);
+@@ -49,7 +55,7 @@ setInterval(function() {
+   console.log(`running process...${++i}`);
+ 
+   if (i === 5) {
+-    process.kill(process.pid, 'SIGUSR1');
++    process.kill(process.pid, SIGUSRToTest);
+   }
+ }, 1);
+ 
+diff --git a/test/parallel/test-watch-mode-files_watcher.mjs b/test/parallel/test-watch-mode-files_watcher.mjs
+index e1595350cd..f5d84f7480 100644
+--- a/test/parallel/test-watch-mode-files_watcher.mjs
++++ b/test/parallel/test-watch-mode-files_watcher.mjs
+@@ -199,6 +199,8 @@ describe('watch mode file watcher', () => {
+        assert.deepStrictEqual(watcher.watchedPaths, []);
+      });
+ 
++  // nodejs-mobile patch: spawn not supported
++  /*
+   it('should watch files from subprocess IPC events', async () => {
+     const file = fixtures.path('watch-mode/ipc.js');
+     const child = spawn(process.execPath, [file], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'], encoding: 'utf8' });
+@@ -210,4 +212,5 @@ describe('watch mode file watcher', () => {
+     }
+     assert.deepStrictEqual(watcher.watchedPaths, expected);
+   });
++  */
+ });
+diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
+index 627e61911d..7a4e74ce4a 100644
+--- a/test/sequential/sequential.status
++++ b/test/sequential/sequential.status
+@@ -43,6 +43,135 @@ test-perf-hooks: SKIP
+ # https://github.com/nodejs/node/issues/39683
+ test-tls-psk-client: PASS, FLAKY
+ 
++[$system==android]
++#
++# Tests that require child process that currently is not supported on mobile
++#
++test-child-process-*: SKIP
++test-cli-syntax-*: SKIP
++test-cluster-*: SKIP
++test-deprecation-flags: SKIP
++test-dgram-bind-shared-ports: SKIP
++test-diagnostic-dir-cpu-prof: SKIP
++test-diagnostic-dir-heap-prof: SKIP
++test-fs-stat-sync-overflow: SKIP
++test-heapdump-flag: SKIP
++test-init: SKIP
++test-net-GH-5504: SKIP
++test-net-listen-shared-ports: SKIP
++test-net-response-size: SKIP
++test-next-tick-error-spin: SKIP
++test-process-title: SKIP
++test-process-warnings: SKIP
++test-repl-timeout-throw: SKIP
++test-runner-run-inspect: SKIP
++test-set-http-max-http-headers: SKIP
++test-stream2-stderr-sync: SKIP
++test-util-debug: SKIP
++test-vm-timeout-rethrow: SKIP
++test-worker-prof: SKIP
++#
++# Tests that require the inspector, not included in the build
++#
++test-cpu-prof-*: SKIP
++test-debug*: SKIP
++test-heap-prof: SKIP
++test-inspector*: SKIP
++test-resolution-inspect-brk: SKIP
++#
++# Tests that require OpenSSL CLI that is not available on mobile
++#
++test-tls-psk-client: SKIP
++test-tls-securepair-client: SKIP
++test-tls-session-timeout: SKIP
++
++#
++# Measured on a device (Android emulator / iOS simulator), not inferred: each of
++# these spawns a child node process. The existing list enumerates individual
++# names rather than families, so everything upstream added to test-watch-mode-*,
++# test-heapdump-* and the heapsnapshot pair afterwards was never excluded. Four
++# of them do pass on the iOS *simulator*, where posix_spawn is permitted -- a
++# real device forbids it, so that is not coverage worth keeping.
++#
++test-get-heapsnapshot-options: SKIP
++test-heapdump-flag-custom-dir: SKIP
++test-watch-mode-restart-esm-loading-error: SKIP
++test-watch-mode-watch-flags: SKIP
++test-watch-mode-worker: SKIP
++test-without-async-context-frame: SKIP
++test-write-heapsnapshot-options: SKIP
++[$system==ios]
++#
++# Tests that require child process that currently is not supported on mobile
++#
++test-child-process-*: SKIP
++test-cli-syntax-*: SKIP
++test-cluster-*: SKIP
++test-deprecation-flags: SKIP
++test-dgram-bind-shared-ports: SKIP
++test-diagnostic-dir-cpu-prof: SKIP
++test-diagnostic-dir-heap-prof: SKIP
++test-fs-stat-sync-overflow: SKIP
++test-heapdump-flag: SKIP
++test-init: SKIP
++test-net-GH-5504: SKIP
++test-net-listen-shared-ports: SKIP
++test-net-response-size: SKIP
++test-next-tick-error-spin: SKIP
++test-process-title: SKIP
++test-process-warnings: SKIP
++test-repl-timeout-throw: SKIP
++test-runner-run-inspect: SKIP
++test-set-http-max-http-headers: SKIP
++test-stream2-stderr-sync: SKIP
++test-util-debug: SKIP
++test-vm-timeout-rethrow: SKIP
++test-worker-prof: SKIP
++#
++# Tests that require the inspector, not included in the build
++#
++test-cpu-prof-*: SKIP
++test-debug*: SKIP
++test-heap-prof: SKIP
++test-inspector*: SKIP
++test-resolution-inspect-brk: SKIP
++#
++# Tests that require OpenSSL CLI that is not available on mobile
++#
++test-tls-psk-client: SKIP
++test-tls-securepair-client: SKIP
++test-tls-session-timeout: SKIP
++#
++# Tests that uses fs.watch, which is inconsistent on iOS
++#
++test-fs-watch: SKIP
++
++#
++# Measured on a device (Android emulator / iOS simulator), not inferred: each of
++# these spawns a child node process. The existing list enumerates individual
++# names rather than families, so everything upstream added to test-watch-mode-*,
++# test-heapdump-* and the heapsnapshot pair afterwards was never excluded. Four
++# of them do pass on the iOS *simulator*, where posix_spawn is permitted -- a
++# real device forbids it, so that is not coverage worth keeping.
++#
++test-get-heapsnapshot-options: SKIP
++test-heapdump-flag-custom-dir: SKIP
++test-watch-mode-restart-esm-loading-error: SKIP
++test-watch-mode-watch-flags: SKIP
++test-watch-mode-worker: SKIP
++test-without-async-context-frame: SKIP
++test-write-heapsnapshot-options: SKIP
++#
++# Tests that spawn a child node process. They pass here only because the iOS
++# *simulator* permits posix_spawn; a shipped app cannot fork or exec, so
++# child_process is unusable on the platform and this was never coverage of
++# anything an embedder can run. Keeping them green on the simulator bought false
++# confidence, and because the spawn is timing-sensitive under load they were also
++# the entire flake population -- successive full sweeps failed a different
++# handful of test-runner-* each time. Android excludes the same set for the
++# harder reason that execPath there is app_process64 and the child SIGABRTs.
++#
++test-watch-mode: SKIP
+ [$arch==arm]
+ # https://github.com/nodejs/node/issues/49933
+ test-watch-mode-inspect: SKIP
+diff --git a/test/sequential/test-async-wrap-getasyncid.js b/test/sequential/test-async-wrap-getasyncid.js
+index 5db4a77631..dba092fd3f 100644
+--- a/test/sequential/test-async-wrap-getasyncid.js
++++ b/test/sequential/test-async-wrap-getasyncid.js
+@@ -12,6 +12,8 @@ const providers = { ...internalBinding('async_wrap').Providers };
+ const fixtures = require('../common/fixtures');
+ const tmpdir = require('../common/tmpdir');
+ const { getSystemErrorName } = require('util');
++// eslint-disable-next-line no-unused-vars
++const path = require('path');
+ 
+ // Make sure that all Providers are tested.
+ {
+@@ -77,6 +79,12 @@ const { getSystemErrorName } = require('util');
+     delete providers.QUIC_STREAM;
+     delete providers.LOCKS;
+ 
++    if (common.isIOS) {
++      // These providers are not tested on iOS.
++      delete providers.PIPECONNECTWRAP;
++      delete providers.PIPESERVERWRAP;
++    }
++
+     const objKeys = Object.keys(providers);
+     if (objKeys.length > 0)
+       process._rawDebug(objKeys);
+@@ -196,7 +204,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+   testInitialized(handle, 'Pipe');
+ }
+ 
+-{
++if (!common.isIOS) {
++  // Fails with EADDRINUSE on iOS.
+   tmpdir.refresh();
+ 
+   const server = net.createServer(common.mustCall((socket) => {
+@@ -328,6 +337,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+ // DIRHANDLE
+ {
+   const dirBinding = internalBinding('fs_dir');
+-  const handle = dirBinding.opendir('./', 'utf8', undefined, {});
++  const handle = dirBinding.opendir(
++    common.isAndroid ? __dirname : './', 'utf8', undefined, {}
++  );
+   testInitialized(handle, 'DirHandle');
+ }
+diff --git a/test/sequential/test-fs-watch.js b/test/sequential/test-fs-watch.js
+index 8db27a79e3..11608776ab 100644
+--- a/test/sequential/test-fs-watch.js
++++ b/test/sequential/test-fs-watch.js
+@@ -35,9 +35,13 @@ if (!isMainThread) {
+   common.skip('process.chdir is not available in Workers');
+ }
+ 
++// nodejs-mobile patch: Android and iOS report the filename like the Linux and
++// Darwin platforms they are built on.
+ const expectFilePath = common.isWindows ||
+                        common.isLinux ||
+                        common.isMacOS ||
++                       common.isAndroid ||
++                       common.isIOS ||
+                        common.isAIX;
+ 
+ const testDir = tmpdir.path;

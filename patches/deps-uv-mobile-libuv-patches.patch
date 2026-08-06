@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:30 +0000
+Subject: [PATCH] deps,uv: mobile libuv patches
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+libuv paths that assume desktop facilities: Android's copy_file_range
+guard, the iOS cpu-frequency sysctl that doesn't exist there, and
+uv.gyp host-toolset source selection for the cross-build.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+Co-authored-by: Julia Samól <j.samol@papers.ch>
+---
+ deps/uv/src/unix/darwin.c |  5 +++++
+ deps/uv/src/unix/fs.c     |  3 +++
+ deps/uv/uv.gyp            | 24 ++++++++++++++++++++++--
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/deps/uv/src/unix/darwin.c b/deps/uv/src/unix/darwin.c
+index c26a1faccb..e7ff1989ad 100644
+--- a/deps/uv/src/unix/darwin.c
++++ b/deps/uv/src/unix/darwin.c
+@@ -205,6 +205,10 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos, int* count) {
+     return UV__ERR(errno);
+   }
+ 
++#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
++  /* You can't get cpu frequency on iOS devices. Defaults to 0. */
++  cpuspeed = 0;
++#else
+   cpuspeed = 0;
+   size = sizeof(cpuspeed);
+   sysctlbyname("hw.cpufrequency", &cpuspeed, &size, NULL, 0);
+@@ -212,6 +216,7 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos, int* count) {
+     /* If sysctl hw.cputype == CPU_TYPE_ARM64, the correct value is unavailable
+      * from Apple, but we can hard-code it here to a plausible value. */
+     cpuspeed = 2400000000U;
++#endif
+ 
+   if (host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &numcpus,
+                           (processor_info_array_t*)&info,
+diff --git a/deps/uv/src/unix/fs.c b/deps/uv/src/unix/fs.c
+index 90cb40d98d..2a242facab 100644
+--- a/deps/uv/src/unix/fs.c
++++ b/deps/uv/src/unix/fs.c
+@@ -1046,8 +1046,11 @@ static ssize_t uv__fs_sendfile(uv_fs_t* req) {
+     try_sendfile = 1;
+ 
+ #ifdef __linux__
++#if !defined(__ANDROID__) || (!defined(__i386__) && !defined(__arm__)) || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS-0 == 64)
++// copy_file_range needs large offsets.
+     r = uv__fs_try_copy_file_range(in_fd, &off, out_fd, len);
+     try_sendfile = (r == -1 && errno == ENOSYS);
++#endif
+ #endif
+ 
+     if (try_sendfile)
+diff --git a/deps/uv/uv.gyp b/deps/uv/uv.gyp
+index 540445f1f3..f01630dafd 100644
+--- a/deps/uv/uv.gyp
++++ b/deps/uv/uv.gyp
+@@ -3,6 +3,12 @@
+     'conditions': [
+       ['OS=="win"', {
+         'shared_unix_defines': [ ],
++      }, 'OS=="android" and target_arch in ("arm","ia32")', {
++        # Android on API < 24 will miss function definitions for
++        #_FILE_OFFSET_BITS=64
++        'shared_unix_defines': [
++          '_LARGEFILE_SOURCE',
++        ],
+       }, {
+         'shared_unix_defines': [
+           '_LARGEFILE_SOURCE',
+@@ -292,8 +298,22 @@
+           'defines': [
+             '_GNU_SOURCE',
+           ],
+-          'sources': [
+-            '<@(uv_sources_android)',
++          'target_conditions': [
++            ['_toolset=="target"', {
++              'sources': [
++                '<@(uv_sources_android)',
++              ],
++            }],
++            ['_toolset=="host" and host_os=="mac"', {
++              'sources': [
++                '<@(uv_sources_apple)',
++              ],
++            }],
++            ['_toolset=="host" and host_os=="linux"', {
++              'sources': [
++                '<@(uv_sources_linux)',
++              ],
++            }],
+           ],
+           'link_settings': {
+             'libraries': [ '-ldl' ],

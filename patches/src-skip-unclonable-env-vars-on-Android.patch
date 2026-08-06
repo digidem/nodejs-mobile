@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:28 +0000
+Subject: [PATCH] src: skip unclonable env vars on Android
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+KVStore::Clone() treats a name that enumerates but doesn't resolve as
+fatal, returning a null store — and the bionic linker strips variables
+like LD_PRELOAD from a starting app, making that combination real on
+Android. Skip the unresolvable variable instead of losing the whole
+clone; a default-env Worker is the visible consumer. Covered by
+test/parallel/test-mobile-worker-env-clone.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+---
+ src/node_env_var.cc | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/node_env_var.cc b/src/node_env_var.cc
+index 5550a4bee3..761fc10b23 100644
+--- a/src/node_env_var.cc
++++ b/src/node_env_var.cc
+@@ -235,7 +235,9 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
+     }
+     CHECK(key->IsString());
+     if (!Get(isolate, key.As<String>()).ToLocal(&value)) {
+-      return nullptr;
++      // On Android, it's possible that some environment variables get removed,
++      // such as LD_PRELOAD. Skip them rather than aborting the whole clone.
++      continue;
+     }
+     copy->Set(isolate, key.As<String>(), value.As<String>());
+   }

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:31 +0000
+Subject: [PATCH] deps,cares: guard sys/random.h on iOS
+
+The iOS SDK has no <sys/random.h>: guard HAVE_SYS_RANDOM_H to macOS in
+the darwin c-ares config so iOS builds fall back to arc4random_buf.
+---
+ deps/cares/config/darwin/ares_config.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/deps/cares/config/darwin/ares_config.h b/deps/cares/config/darwin/ares_config.h
+index 6187024a3a..19777617ca 100644
+--- a/deps/cares/config/darwin/ares_config.h
++++ b/deps/cares/config/darwin/ares_config.h
+@@ -329,7 +329,14 @@
+ #define HAVE_SYS_PARAM_H 1
+ 
+ /* Define to 1 if you have the <sys/random.h> header file. */
++/* nodejs-mobile: the iOS SDK has no <sys/random.h>; c-ares falls back to
++ * arc4random_buf on Apple, so guard this define to macOS only. */
++#if defined(__APPLE__)
++#  include <TargetConditionals.h>
++#endif
++#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
+ #define HAVE_SYS_RANDOM_H 1
++#endif
+ 
+ /* Define to 1 if you have the <sys/select.h> header file. */
+ #define HAVE_SYS_SELECT_H 1

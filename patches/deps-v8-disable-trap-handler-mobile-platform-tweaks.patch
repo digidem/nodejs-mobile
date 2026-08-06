@@ -1,0 +1,282 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:30 +0000
+Subject: [PATCH] deps,v8: disable trap handler; mobile platform tweaks
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+V8's wasm trap handler installs a SIGSEGV handler, which per V8's own
+comment would need security review to be safe under Android's signal
+handling, and is useless on iOS where V8 runs jitless. Upstream ships
+the same disable as android-patches/trap-handler.h.patch, applied ad
+hoc by android_configure.py at configure time (Linux hosts only,
+mutates the tree mid-build) — incompatible with the byte-verified
+materialized tree and absent for iOS, so the edit is baked into
+trap-handler.h here and the orphaned upstream patch file is removed.
+Also: platform-posix iOS page-size tweak and the PR-57748
+push_registers_asm host/target arch selection.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+Co-authored-by: Andre Staltz <andre@staltz.com>
+Co-authored-by: Julia Samól <j.samol@papers.ch>
+---
+ android-patches/trap-handler.h.patch          | 47 ------------
+ deps/v8/src/base/platform/platform-posix.cc   |  6 ++
+ .../heap/base/asm/x64/push_registers_asm.cc   | 74 ++++++++++++++++---
+ deps/v8/src/trap-handler/handler-outside.cc   |  2 +
+ deps/v8/src/trap-handler/trap-handler.h       | 49 +++---------
+ 5 files changed, 82 insertions(+), 96 deletions(-)
+ delete mode 100644 android-patches/trap-handler.h.patch
+
+diff --git a/android-patches/trap-handler.h.patch b/android-patches/trap-handler.h.patch
+deleted file mode 100644
+index 6974259ffb..0000000000
+--- a/android-patches/trap-handler.h.patch
++++ /dev/null
+@@ -1,47 +0,0 @@
+---- trap-handler.h
+-+++ fixed-trap-handler.h
+-@@ -18,43 +18,1 @@
+--// X64 on Linux, Windows, MacOS, FreeBSD.
+--#if V8_HOST_ARCH_X64 && V8_TARGET_ARCH_X64 &&                        \
+--    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN || \
+--     V8_OS_FREEBSD)
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// Arm64 native on Linux, Windows, MacOS.
+--#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && \
+--    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN)
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// For Linux and Mac, enable the simulator when it's been requested.
+--#if USE_SIMULATOR && ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_DARWIN)
+--#define V8_TRAP_HANDLER_VIA_SIMULATOR
+--#endif
+--// Arm64 simulator on x64 on Linux, Mac, or Windows.
+--//
+--// The simulator case uses some inline assembly code, which cannot be
+--// compiled with MSVC, so don't enable the trap handler in that case.
+--// (MSVC #defines _MSC_VER, but so does Clang when targeting Windows, hence
+--// the check for __clang__.)
+--#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_X64 && \
+--    (V8_OS_LINUX || V8_OS_DARWIN || V8_OS_WIN) && \
+--    (!defined(_MSC_VER) || defined(__clang__))
+--#define V8_TRAP_HANDLER_VIA_SIMULATOR
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// Loong64 (non-simulator) on Linux.
+--#elif V8_TARGET_ARCH_LOONG64 && V8_HOST_ARCH_LOONG64 && V8_OS_LINUX
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// Loong64 simulator on x64 on Linux
+--#elif V8_TARGET_ARCH_LOONG64 && V8_HOST_ARCH_X64 && V8_OS_LINUX
+--#define V8_TRAP_HANDLER_VIA_SIMULATOR
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// RISCV64 (non-simulator) on Linux.
+--#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_RISCV64 && V8_OS_LINUX && \
+--    !V8_OS_ANDROID
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// RISCV64 simulator on x64 on Linux
+--#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_X64 && V8_OS_LINUX
+--#define V8_TRAP_HANDLER_VIA_SIMULATOR
+--#define V8_TRAP_HANDLER_SUPPORTED true
+--// Everything else is unsupported.
+--#else
+--#define V8_TRAP_HANDLER_SUPPORTED false
+--#endif
+-+#define V8_TRAP_HANDLER_SUPPORTED false
+diff --git a/deps/v8/src/base/platform/platform-posix.cc b/deps/v8/src/base/platform/platform-posix.cc
+index 5c93b3aaaf..2858a8c7dd 100644
+--- a/deps/v8/src/base/platform/platform-posix.cc
++++ b/deps/v8/src/base/platform/platform-posix.cc
+@@ -334,6 +334,12 @@ void* OS::GetRandomMmapAddr() {
+     MutexGuard guard(rng_mutex.Pointer());
+     GetPlatformRandomNumberGenerator()->NextBytes(&raw_addr, sizeof(raw_addr));
+   }
++#if defined(__APPLE__)
++#if V8_TARGET_ARCH_ARM64 && V8_OS_IOS
++  DCHECK_EQ(1 << 14, AllocatePageSize());
++  raw_addr = RoundDown(raw_addr, 1 << 14);
++#endif
++#endif
+ #if V8_HOST_ARCH_ARM64
+ #if defined(V8_TARGET_OS_MACOS)
+   DCHECK_EQ(1 << 14, AllocatePageSize());
+diff --git a/deps/v8/src/heap/base/asm/x64/push_registers_asm.cc b/deps/v8/src/heap/base/asm/x64/push_registers_asm.cc
+index 554caddfa7..71e6949e3c 100644
+--- a/deps/v8/src/heap/base/asm/x64/push_registers_asm.cc
++++ b/deps/v8/src/heap/base/asm/x64/push_registers_asm.cc
+@@ -14,16 +14,67 @@
+ 
+ // Do not depend on V8_TARGET_OS_* defines as some embedders may override the
+ // GN toolchain (e.g. ChromeOS) and not provide them.
++// _WIN64 Defined as 1 when the compilation target is 64-bit ARM or x64.
++// Otherwise, undefined.
++#ifdef _WIN64
+ 
+ // We maintain 16-byte alignment at calls. There is an 8-byte return address
+-// on the stack and we push 56 bytes which maintains 16-byte stack alignment
++// on the stack and we push 232 bytes which maintains 16-byte stack alignment
+ // at the call.
+-// Source: https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf
++// Source: https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention
++asm(".globl PushAllRegistersAndIterateStack             \n"
++// nodejs-mobile patch: actually, we SHOULD depend on V8_TARGET_* defines:
++// These situations happen because we compile both "host" and "target" code but
++// with flags that reflect only the "target" platform, so we end up incorrectly
++// mixing "host" files (such as this one) with "target" flags (such as
++// V8_TARGET_ARCH_*)
++#ifndef V8_TARGET_ARCH_ARM
++    "PushAllRegistersAndIterateStack:                   \n"
++    // rbp is callee-saved. Maintain proper frame pointer for debugging.
++    "  push %rbp                                        \n"
++    "  mov %rsp, %rbp                                   \n"
++    // Dummy for alignment.
++    "  push $0xCDCDCD                                   \n"
++    "  push %rsi                                        \n"
++    "  push %rdi                                        \n"
++    "  push %rbx                                        \n"
++    "  push %r12                                        \n"
++    "  push %r13                                        \n"
++    "  push %r14                                        \n"
++    "  push %r15                                        \n"
++    "  sub $160, %rsp                                   \n"
++    // Use aligned instrs as we are certain that the stack is properly aligned.
++    "  movdqa %xmm6, 144(%rsp)                          \n"
++    "  movdqa %xmm7, 128(%rsp)                          \n"
++    "  movdqa %xmm8, 112(%rsp)                          \n"
++    "  movdqa %xmm9, 96(%rsp)                           \n"
++    "  movdqa %xmm10, 80(%rsp)                          \n"
++    "  movdqa %xmm11, 64(%rsp)                          \n"
++    "  movdqa %xmm12, 48(%rsp)                          \n"
++    "  movdqa %xmm13, 32(%rsp)                          \n"
++    "  movdqa %xmm14, 16(%rsp)                          \n"
++    "  movdqa %xmm15, (%rsp)                            \n"
++    // Pass 1st parameter (rcx) unchanged (Stack*).
++    // Pass 2nd parameter (rdx) unchanged (StackVisitor*).
++    // Save 3rd parameter (r8; IterateStackCallback)
++    "  mov %r8, %r9                                     \n"
++    // Pass 3rd parameter as rsp (stack pointer).
++    "  mov %rsp, %r8                                    \n"
++    // Call the callback.
++    "  call *%r9                                        \n"
++    // Pop the callee-saved registers.
++    "  add $224, %rsp                                   \n"
++    // Restore rbp as it was used as frame pointer.
++    "  pop %rbp                                         \n"
++#endif  // !V8_TARGET_ARCH_ARM
++    "  ret                                              \n");
+ 
+-#ifdef _WIN64
+-#error "The masm based version must be used for Windows"
+-#endif
++#else  // !_WIN64
+ 
++// We maintain 16-byte alignment at calls. There is an 8-byte return address
++// on the stack and we push 56 bytes which maintains 16-byte stack alignment
++// at the call.
++// Source: https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf
+ asm(
+ #ifdef __APPLE__
+     ".globl _PushAllRegistersAndIterateStack            \n"
+@@ -35,6 +86,8 @@ asm(
+     ".hidden PushAllRegistersAndIterateStack            \n"
+     "PushAllRegistersAndIterateStack:                   \n"
+ #endif  // !__APPLE__
++// nodejs-mobile patch: actually, we SHOULD depend on V8_TARGET_* defines.
++#ifndef V8_TARGET_ARCH_ARM
+     // rbp is callee-saved. Maintain proper frame pointer for debugging.
+     "  push %rbp                                        \n"
+     "  mov %rsp, %rbp                                   \n"
+@@ -57,10 +110,7 @@ asm(
+     "  add $48, %rsp                                    \n"
+     // Restore rbp as it was used as frame pointer.
+     "  pop %rbp                                         \n"
+-    "  ret                                              \n"
+-#if !defined(__APPLE__)
+-    ".Lfunc_end0:                                       \n"
+-    ".size PushAllRegistersAndIterateStack, "
+-    ".Lfunc_end0-PushAllRegistersAndIterateStack        \n"
+-#endif  // !defined(__APPLE__)
+-    );
++#endif  // !V8_TARGET_ARCH_ARM
++    "  ret                                              \n");
++
++#endif  // !_WIN64
+diff --git a/deps/v8/src/trap-handler/handler-outside.cc b/deps/v8/src/trap-handler/handler-outside.cc
+index 6e2b40d9f5..ede435b302 100644
+--- a/deps/v8/src/trap-handler/handler-outside.cc
++++ b/deps/v8/src/trap-handler/handler-outside.cc
+@@ -307,11 +307,13 @@ bool EnableTrapHandler(bool use_v8_handler) {
+   if (!V8_TRAP_HANDLER_SUPPORTED) {
+     return false;
+   }
++#if V8_TRAP_HANDLER_SUPPORTED
+   if (use_v8_handler) {
+     g_is_trap_handler_enabled = RegisterDefaultTrapHandler();
+     return g_is_trap_handler_enabled;
+   }
+   g_is_trap_handler_enabled = true;
++#endif
+   return true;
+ }
+ 
+diff --git a/deps/v8/src/trap-handler/trap-handler.h b/deps/v8/src/trap-handler/trap-handler.h
+index bd6f19593d..a2133e1cbc 100644
+--- a/deps/v8/src/trap-handler/trap-handler.h
++++ b/deps/v8/src/trap-handler/trap-handler.h
+@@ -15,45 +15,20 @@
+ 
+ namespace v8::internal::trap_handler {
+ 
+-// X64 on Linux, Windows, MacOS, FreeBSD.
+-#if V8_HOST_ARCH_X64 && V8_TARGET_ARCH_X64 &&                        \
+-    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN || \
+-     V8_OS_FREEBSD)
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// Arm64 (non-simulator) on Linux, Windows, MacOS.
+-#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && \
+-    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN)
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// Arm64 simulator on x64 on Linux, Mac, or Windows.
++// nodejs-mobile patch.
+ //
+-// The simulator case uses some inline assembly code, which cannot be
+-// compiled with MSVC, so don't enable the trap handler in that case.
+-// (MSVC #defines _MSC_VER, but so does Clang when targeting Windows, hence
+-// the check for __clang__.)
+-#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_X64 && \
+-    (V8_OS_LINUX || V8_OS_DARWIN || V8_OS_WIN) && \
+-    (!defined(_MSC_VER) || defined(__clang__))
+-#define V8_TRAP_HANDLER_VIA_SIMULATOR
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// Loong64 (non-simulator) on Linux.
+-#elif V8_TARGET_ARCH_LOONG64 && V8_HOST_ARCH_LOONG64 && V8_OS_LINUX
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// Loong64 simulator on x64 on Linux
+-#elif V8_TARGET_ARCH_LOONG64 && V8_HOST_ARCH_X64 && V8_OS_LINUX
+-#define V8_TRAP_HANDLER_VIA_SIMULATOR
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// RISCV64 (non-simulator) on Linux.
+-#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_RISCV64 && V8_OS_LINUX && \
+-    !V8_OS_ANDROID
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// RISCV64 simulator on x64 on Linux
+-#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_X64 && V8_OS_LINUX
+-#define V8_TRAP_HANDLER_VIA_SIMULATOR
+-#define V8_TRAP_HANDLER_SUPPORTED true
+-// Everything else is unsupported.
+-#else
++// It would require some careful security review before the trap handler
++// can be enabled on Android.  Android may do unexpected things with signal
++// handling and crash reporting that could open up security holes in V8's
++// trap handling.  So we disable the trap handler everywhere.
++//
++// Upstream ships the same disable as android-patches/trap-handler.h.patch,
++// applied ad hoc by android_configure.py at configure time ("patch -f", Linux
++// hosts only, failure non-fatal). That mechanism mutates the source tree
++// during a build — incompatible with this project's byte-verified materialized
++// tree — and never ran for iOS or macOS-hosted builds, so the series bakes
++// the edit in here instead and removes the orphaned upstream patch file.
+ #define V8_TRAP_HANDLER_SUPPORTED false
+-#endif
+ 
+ #if V8_OS_ANDROID && V8_TRAP_HANDLER_SUPPORTED
+ // It would require some careful security review before the trap handler

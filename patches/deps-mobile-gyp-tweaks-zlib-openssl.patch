@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:31 +0000
+Subject: [PATCH] deps: mobile gyp tweaks (zlib, openssl)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Small gyp conditionals in deps that don't know the mobile OSes: zlib
+(Android/iOS arm features) and the openssl no-asm config selection.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+Co-authored-by: Andre Staltz <andre@staltz.com>
+Co-authored-by: Julia Samól <j.samol@papers.ch>
+---
+ deps/openssl/openssl_no_asm.gypi | 4 ++--
+ deps/zlib/zlib.gyp               | 9 ++++++++-
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/deps/openssl/openssl_no_asm.gypi b/deps/openssl/openssl_no_asm.gypi
+index 8169f605d7..e021093636 100644
+--- a/deps/openssl/openssl_no_asm.gypi
++++ b/deps/openssl/openssl_no_asm.gypi
+@@ -13,7 +13,7 @@
+       'includes': ['config/archs/linux-aarch64/no-asm/openssl.gypi'],
+     }, 'target_arch=="ia32" and OS=="freebsd"', {
+       'includes': ['config/archs/BSD-x86/no-asm/openssl.gypi'],
+-    }, 'target_arch=="ia32" and OS=="linux"', {
++    }, 'target_arch=="ia32" and OS in ("linux", "android")', {
+       'includes': ['config/archs/linux-elf/no-asm/openssl.gypi'],
+     }, 'target_arch=="ia32" and OS=="mac"', {
+       'includes': ['config/archs/darwin-i386-cc/no-asm/openssl.gypi'],
+@@ -36,7 +36,7 @@
+       'includes': ['config/archs/VC-WIN64A/no-asm/openssl.gypi'],
+     }, 'target_arch=="arm64" and OS=="win"', {
+       'includes': ['config/archs/VC-WIN64-ARM/no-asm/openssl.gypi'],
+-    }, 'target_arch=="x64" and OS=="linux"', {
++    }, 'target_arch=="x64" and OS in ("linux", "android")', {
+       'includes': ['config/archs/linux-x86_64/no-asm/openssl.gypi'],
+     }, 'target_arch=="mips64el" and OS=="linux"', {
+       'includes': ['config/archs/linux64-mips64/no-asm/openssl.gypi'],
+diff --git a/deps/zlib/zlib.gyp b/deps/zlib/zlib.gyp
+index 12449e7b02..0351850020 100644
+--- a/deps/zlib/zlib.gyp
++++ b/deps/zlib/zlib.gyp
+@@ -181,11 +181,18 @@
+           'sources': [
+             '<!@pymod_do_main(GN-scraper "<(ZLIB_ROOT)/BUILD.gn" "\\"zlib\\".*?sources = ")',
+           ],
+-          'include_dirs': [ '<(ZLIB_ROOT)' ],
++          # nodejs-mobile patch: silenced this 'include_dirs', in favor of the next patch below.
++          # 'include_dirs': [ '<(ZLIB_ROOT)' ],
+           'direct_dependent_settings': {
+             'include_dirs': [ '<(ZLIB_ROOT)' ],
+           },
+           'conditions': [
++            # nodejs-mobile patch: for Android, make available <cpu_features.h> from the NDK:
++            ['OS=="android"', {
++              'include_dirs': [ '<(ZLIB_ROOT)', '<(android_ndk_path)/sources/android/cpufeatures' ],
++            }, {
++              'include_dirs': [ '<(ZLIB_ROOT)' ],
++            }],
+             ['OS!="win"', {
+               'cflags!': [ '-ansi' ],
+               'cflags': [ '-Wno-implicit-fallthrough' ],

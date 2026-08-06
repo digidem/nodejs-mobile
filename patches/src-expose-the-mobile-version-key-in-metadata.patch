@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:29 +0000
+Subject: [PATCH] src: expose the mobile version key in metadata
+
+process.versions.mobile ("X.Y.Z-R") identifies a nodejs-mobile build:
+process.version stays the untouched upstream version so version-parsing
+tools keep working, and this key is the sanctioned way to detect the
+mobile runtime. Asserted on-device by parallel/test-process-versions.
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+---
+ src/node_metadata.cc | 7 +++++++
+ src/node_metadata.h  | 7 +++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/src/node_metadata.cc b/src/node_metadata.cc
+index 1458bf48d6..8da97400ae 100644
+--- a/src/node_metadata.cc
++++ b/src/node_metadata.cc
+@@ -48,6 +48,10 @@
+ #include <unicode/uversion.h>
+ #endif  // NODE_HAVE_I18N_SUPPORT
+ 
++#ifdef NODE_MOBILE
++#include "node_mobile_version.h"
++#endif  // NODE_MOBILE
++
+ namespace node {
+ 
+ namespace per_process {
+@@ -116,6 +120,9 @@ Metadata::Versions::Versions() {
+       NODE_STRINGIFY(LLHTTP_VERSION_MINOR)
+       "."
+       NODE_STRINGIFY(LLHTTP_VERSION_PATCH);
++#ifdef NODE_MOBILE
++  mobile = NODE_MOBILE_VERSION_STRING;
++#endif  // NODE_MOBILE
+ 
+   brotli =
+     std::to_string(BrotliEncoderVersion() >> 24) +
+diff --git a/src/node_metadata.h b/src/node_metadata.h
+index 8703e4315a..6f85755b8f 100644
+--- a/src/node_metadata.h
++++ b/src/node_metadata.h
+@@ -82,6 +82,12 @@ namespace node {
+ #define NODE_VERSIONS_KEY_INTL(V)
+ #endif  // NODE_HAVE_I18N_SUPPORT
+ 
++#ifdef NODE_MOBILE
++#define NODE_VERSIONS_KEY_MOBILE(V)                                            \
++  V(mobile)
++#else
++#define NODE_VERSIONS_KEY_MOBILE(V)
++#endif  // NODE_MOBILE
+ #if HAVE_SQLITE
+ #define NODE_VERSIONS_KEY_SQLITE(V) V(sqlite)
+ #else
+@@ -92,6 +98,7 @@ namespace node {
+   NODE_VERSIONS_KEYS_BASE(V)                                                   \
+   NODE_VERSIONS_KEY_CRYPTO(V)                                                  \
+   NODE_VERSIONS_KEY_INTL(V)                                                    \
++  NODE_VERSIONS_KEY_MOBILE(V)                                                  \
+   NODE_VERSIONS_KEY_SQLITE(V)
+ 
+ #define V(key) +1

@@ -1,0 +1,3459 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:33 +0000
+Subject: [PATCH] ci: remove upstream-only workflows and config
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Upstream workflows must never run in this repository: a ref containing
+the materialized tree (a release tag, or a branch cut from one) would
+otherwise carry live push/pull_request-triggered CI. Remove them ALL —
+even the schedule/dispatch-only ones that are inert outside upstream's
+default branch — because an inert file's triggers can change on any
+upstream bump, and a filename allowlist would accept the file while it
+went live. With zero workflow files the invariant is trivially
+checkable, and verify-patches enforces it: a materialized tree
+containing any workflow file fails CI, so an upstream bump that adds
+one forces extending this patch. Upstream support files that point at
+nodejs/node processes (SUPPORT.md, the issue-template config, the
+label-pr config) go too; non-triggering config such as dependabot.yml
+is read only from the default branch and is left untouched.
+---
+ .github/ISSUE_TEMPLATE/config.yml             |  14 -
+ .github/SUPPORT.md                            |  27 --
+ .github/label-pr-config.yml                   | 224 ------------
+ .github/workflows/auto-start-ci.yml           |  74 ----
+ .github/workflows/build-tarball.yml           | 102 ------
+ .github/workflows/close-stalled.yml           |  36 --
+ .github/workflows/codeql.yml                  |  42 ---
+ .github/workflows/comment-labeled.yml         |  55 ---
+ .../commit-lint-problem-matcher.json          |  13 -
+ .github/workflows/commit-lint.yml             |  35 --
+ .github/workflows/commit-queue.yml            |  99 ------
+ .../workflows/coverage-linux-without-intl.yml |  86 -----
+ .github/workflows/coverage-linux.yml          |  86 -----
+ .github/workflows/coverage-windows.yml        | 100 ------
+ .github/workflows/create-release-proposal.yml |  81 -----
+ .github/workflows/daily-wpt-fyi.yml           | 179 ----------
+ .github/workflows/daily.yml                   |  32 --
+ .github/workflows/doc.yml                     |  43 ---
+ .../workflows/find-inactive-collaborators.yml |  50 ---
+ .github/workflows/find-inactive-tsc.yml       |  62 ----
+ .github/workflows/label-flaky-test-issue.yml  |  52 ---
+ .github/workflows/label-pr.yml                |  18 -
+ .github/workflows/license-builder.yml         |  38 ---
+ .github/workflows/lint-release-proposal.yml   | 109 ------
+ .github/workflows/linters.yml                 | 260 --------------
+ .github/workflows/major-release.yml           |  49 ---
+ .github/workflows/notify-on-push.yml          |  61 ----
+ .github/workflows/notify-on-review-wanted.yml |  45 ---
+ .github/workflows/post-release.yml            |  33 --
+ .../remark-lint-problem-matcher.json          |  22 --
+ .github/workflows/scorecard.yml               |  81 -----
+ .github/workflows/stale.yml                   |  50 ---
+ .github/workflows/test-internet.yml           |  66 ----
+ .github/workflows/test-linux.yml              |  87 -----
+ .github/workflows/test-macos.yml              | 104 ------
+ .github/workflows/timezone-update.yml         |  74 ----
+ .github/workflows/tools.yml                   | 321 ------------------
+ .github/workflows/update-openssl.yml          |  61 ----
+ .github/workflows/update-v8.yml               |  57 ----
+ .github/workflows/update-wpt.yml              |  87 -----
+ 40 files changed, 3115 deletions(-)
+ delete mode 100644 .github/ISSUE_TEMPLATE/config.yml
+ delete mode 100644 .github/SUPPORT.md
+ delete mode 100644 .github/label-pr-config.yml
+ delete mode 100644 .github/workflows/auto-start-ci.yml
+ delete mode 100644 .github/workflows/build-tarball.yml
+ delete mode 100644 .github/workflows/close-stalled.yml
+ delete mode 100644 .github/workflows/codeql.yml
+ delete mode 100644 .github/workflows/comment-labeled.yml
+ delete mode 100644 .github/workflows/commit-lint-problem-matcher.json
+ delete mode 100644 .github/workflows/commit-lint.yml
+ delete mode 100644 .github/workflows/commit-queue.yml
+ delete mode 100644 .github/workflows/coverage-linux-without-intl.yml
+ delete mode 100644 .github/workflows/coverage-linux.yml
+ delete mode 100644 .github/workflows/coverage-windows.yml
+ delete mode 100644 .github/workflows/create-release-proposal.yml
+ delete mode 100644 .github/workflows/daily-wpt-fyi.yml
+ delete mode 100644 .github/workflows/daily.yml
+ delete mode 100644 .github/workflows/doc.yml
+ delete mode 100644 .github/workflows/find-inactive-collaborators.yml
+ delete mode 100644 .github/workflows/find-inactive-tsc.yml
+ delete mode 100644 .github/workflows/label-flaky-test-issue.yml
+ delete mode 100644 .github/workflows/label-pr.yml
+ delete mode 100644 .github/workflows/license-builder.yml
+ delete mode 100644 .github/workflows/lint-release-proposal.yml
+ delete mode 100644 .github/workflows/linters.yml
+ delete mode 100644 .github/workflows/major-release.yml
+ delete mode 100644 .github/workflows/notify-on-push.yml
+ delete mode 100644 .github/workflows/notify-on-review-wanted.yml
+ delete mode 100644 .github/workflows/post-release.yml
+ delete mode 100644 .github/workflows/remark-lint-problem-matcher.json
+ delete mode 100644 .github/workflows/scorecard.yml
+ delete mode 100644 .github/workflows/stale.yml
+ delete mode 100644 .github/workflows/test-internet.yml
+ delete mode 100644 .github/workflows/test-linux.yml
+ delete mode 100644 .github/workflows/test-macos.yml
+ delete mode 100644 .github/workflows/timezone-update.yml
+ delete mode 100644 .github/workflows/tools.yml
+ delete mode 100644 .github/workflows/update-openssl.yml
+ delete mode 100644 .github/workflows/update-v8.yml
+ delete mode 100644 .github/workflows/update-wpt.yml
+
+diff --git a/.github/ISSUE_TEMPLATE/config.yml b/.github/ISSUE_TEMPLATE/config.yml
+deleted file mode 100644
+index dc01fd3fda..0000000000
+--- a/.github/ISSUE_TEMPLATE/config.yml
++++ /dev/null
+@@ -1,14 +0,0 @@
+-blank_issues_enabled: true
+-contact_links:
+-  - name: ⁉️ Need general help with Node.js?
+-    url: https://github.com/nodejs/help
+-    about: Please file an issue in our help repo.
+-  - name: 📦 Have an issue with npm?
+-    url: https://github.com/npm/cli/issues
+-    about: npm has a separate issue tracker.
+-  - name: 📡 Have an issue with undici? (`WebSocket`, `fetch`, etc.)
+-    url: https://github.com/nodejs/undici/issues
+-    about: Undici has a separate issue tracker.
+-  - name: 🌐 Found a problem with nodejs.org beyond the API reference docs?
+-    url: https://github.com/nodejs/nodejs.org/issues/new/choose
+-    about: Please file an issue in the Node.js website repo.
+diff --git a/.github/SUPPORT.md b/.github/SUPPORT.md
+deleted file mode 100644
+index 4613512bf2..0000000000
+--- a/.github/SUPPORT.md
++++ /dev/null
+@@ -1,27 +0,0 @@
+-# Support
+-
+-Node.js contributors have limited availability to address general support
+-questions. Please make sure you are using a [currently-supported version of
+-Node.js](https://github.com/nodejs/Release#release-schedule).
+-
+-When looking for support, please first search for your question in these venues:
+-
+-* [Node.js Website](https://nodejs.org/en/), especially the
+-  [API docs](https://nodejs.org/api/) or the [Learn material](https://nodejs.org/en/learn)
+-* [Node.js's GitHub Help repository](https://github.com/nodejs/help)
+-* [Open or closed issues in the Node.js GitHub organization](https://github.com/issues?utf8=%E2%9C%93&q=sort%3Aupdated-desc+org%3Anodejs+is%3Aissue)
+-* [Ask for support on Node.js's Discord server](https://nodejs.org/discord)
+-
+-If you didn't find an answer in the resources above, try these unofficial
+-resources:
+-
+-* [Questions tagged 'node.js' on Stack Overflow](https://stackoverflow.com/questions/tagged/node.js)
+-* [#node.js channel on libera.chat](https://web.libera.chat?channels=node.js&uio=d4)
+-* [Node.js Slack Community](https://node-js.slack.com/)
+-  * To register: [nodeslackers.com](https://www.nodeslackers.com/)
+-
+-**GitHub issues are for tracking enhancements and bugs, not general support.**
+-
+-The open source license grants you the freedom to use Node.js. It does not
+-guarantee commitments of other people's time. Please be respectful and manage
+-your expectations.
+diff --git a/.github/label-pr-config.yml b/.github/label-pr-config.yml
+deleted file mode 100644
+index 8b36066473..0000000000
+--- a/.github/label-pr-config.yml
++++ /dev/null
+@@ -1,224 +0,0 @@
+-## Order of entries in this map *does* matter for the resolved labels
+-## earlier entries override later entries
+-subSystemLabels:
+-  # src subsystems
+-  /^src\/async_wrap/: c++, async_wrap
+-  /^src\/(?:base64|node_buffer|string_)/: c++, buffer
+-  /^src\/cares/: c++, cares
+-  /^src\/(?:process_wrap|spawn_)/: c++, child_process
+-  /^src\/(?:node_)?crypto/: c++, crypto
+-  /^src\/debug_/: c++, debugger
+-  /^src\/udp_/: c++, dgram
+-  /^src\/(?:fs_|node_file|node_stat_watcher)/: c++, fs
+-  /^src\/node_http_parser/: c++, http_parser
+-  /^src\/node_i18n/: c++, i18n-api
+-  /^src\/uv\./: c++, libuv
+-  /^src\/(?:connect(?:ion)?|pipe|tcp)_/: c++, net
+-  /^src\/node_os/: c++, os
+-  /^src\/(?:node_main|signal_)/: c++, process
+-  /^src\/timer[_s]/: c++, timers
+-  /^src\/node_root_certs/: c++, tls
+-  /^src\/tty_/: c++, tty
+-  /^src\/node_url/: c++, whatwg-url
+-  /^src\/node_util/: c++, util
+-  /^src\/node_v8/: c++, v8 engine
+-  /^src\/node_contextify/: c++, vm
+-  /^src\/node_zlib/: c++, zlib
+-  /^src\/tracing/: c++, tracing
+-  /^src\/(?:node_api|js_native_api)/: c++, node-api
+-  /^src\/node_http2/: c++, http2
+-  /^src\/node_report/: c++, report
+-  /^src\/node_wasi/: c++, wasi
+-  /^src\/node_worker/: c++, worker
+-  /^src\/quic\/*/: c++, quic
+-  /^src\/node_bob*/: c++, quic
+-  /^src\/node_sea/: single-executable
+-  /^src\/node_sqlite.*/: c++, sqlite
+-  /^src\/node_config_file.*/: c++, config
+-  /^src\/node_dotenv.*/: c++, config
+-  /^src\/node_options.*/: c++, config
+-
+-  # Properly label changes to V8 inspector integration-related files
+-  /^src\/inspector_/: c++, inspector, needs-ci
+-
+-  # Don't want to label it a C++ update when we're "only" bumping the Node.js version
+-  /^src\/(?!node_version\.h)/: c++
+-  # BUILDING.md should be marked as 'build' in addition to 'doc'
+-  /^BUILDING\.md$/: build, doc
+-  # 'meta' is a very specific label for things that are policy and or meta-info related
+-  /^(?:[A-Z]+$|CODE_OF_CONDUCT|GOVERNANCE|CHANGELOG|\.mail|\.git.+)/: meta
+-  # Things that edit top-level .md files are always a doc change
+-  /^\w+\.md$/: doc
+-  # Different variants of Makefile and build files
+-  /^(?:tools\/)?(?:Makefile|BSDmakefile|create_android_makefiles)$/: build, needs-ci
+-  /^tools\/(?:install\.py|getnodeversion\.py|js2c\.py|utils\.py|configure\.d\/.*)$/: build, python, needs-ci
+-  /^vcbuild\.bat$/: build, windows, needs-ci
+-  /^(?:android-)?configure|node\.gyp|common\.gypi$/: build, needs-ci
+-  # More specific tools
+-  /^tools\/gyp/: tools, build, gyp, needs-ci
+-  /^tools\/doc\//: tools, doc
+-  /^tools\/icu\//: tools, i18n-api, icu, needs-ci
+-  /^tools\/osx-/: tools, macos
+-  /^tools\/test-npm/: tools, test, npm
+-  /^tools\/test/: tools, test
+-  /^tools\/(?:certdata|mkssldef|mk-ca-bundle)/: tools, openssl, tls
+-  /^tools\/msvs\//: tools, windows, install, needs-ci
+-  /^tools\/[^/]+\.bat$/: tools, windows, needs-ci
+-  /^tools\/make-v8/: tools, v8 engine, needs-ci
+-  /^tools\/v8_gypfiles/: tools, v8 engine, needs-ci
+-  /^tools\/snapshot/: needs-ci
+-  /^tools\/build-addons.mjs/: needs-ci
+-  # All other tool changes should be marked as such
+-  /^tools\//: tools
+-  /^eslint\.config|\.editorconfig/: tools
+-  /^typings\//: typings
+-
+-  ## Dependencies
+-  # libuv needs an explicit mapping, as the ordinary /deps/ mapping below would
+-  # end up as libuv changes labeled with 'uv' (which is a non-existing label)
+-  /^deps\/uv\//: libuv
+-  /^deps\/v8\/tools\/gen-postmortem-metadata\.py/: v8 engine, python, post-mortem
+-  /^deps\/v8\//: v8 engine
+-  /^deps\/uvwasi\//: wasi
+-  /^deps\/npm\//: npm
+-  /^deps\/nghttp2\/nghttp2\.gyp/: build, http2
+-  /^deps\/nghttp2\//: http2
+-  /^deps\/ngtcp2\//: quic
+-  /^deps\/amaro\//: strip-types
+-  /^deps\/([^/]+)/: dependencies, $1
+-
+-  ## JS subsystems
+-  # Oddities first
+-  /^lib\/(?:punycode|\w+\/freelist|sys\.js)/: ''
+-  /^lib\/constants\.js$/: lib / src
+-  /^lib\/internal\/debugger$/: debugger
+-  /^lib\/internal\/linkedlist\.js$/: timers
+-  /^lib\/internal\/bootstrap/: lib / src
+-  /^lib\/internal\/v8_prof_/: tools
+-  /^lib\/internal\/socket(?:_list|address)\.js$/: net
+-  /^lib\/(_stream.*|internal\/streams\/.*|stream\.js|stream\/.*)$/: stream
+-  /^lib\/.*http2/: http2
+-  /^lib\/worker_threads.js$/: worker
+-  /^lib\/test.js$/: test_runner
+-  /^lib\/v8.js$/: v8 module
+-  /^lib\/internal\/url\.js$/: whatwg-url
+-  /^lib\/internal\/modules\/esm/: esm
+-  /^lib\/internal\/modules/: module
+-  /^lib\/internal\/source_map/: source maps
+-  /^lib\/internal\/webstreams/: web streams
+-  /^lib\/internal\/test_runner/: test_runner
+-  /^lib\/internal\/v8\//: v8 module
+-
+-  # All other lib/ files map directly
+-  /^lib\/_(\w+)_\w+\.js?$/: $1  # e.g. _(stream)_wrap
+-  /^lib(?:\/internal)?\/(\w+)\.js?$/: $1  # Other .js files
+-  /^lib(?:\/internal)?\/(\w+)(?:\/|$)/: $1  # Subfolders
+-
+-exlusiveLabels:
+-  # More specific tests
+-  /^test\/addons\//: test, addons
+-  /^test\/debugger/: test, debugger
+-  /^test\/doctool\//: test, doc, tools
+-  /^test\/timers/: test, timers
+-  /^test\/pseudo-tty\//: test, tty
+-  /^test\/inspector/: test, inspector
+-  /^test\/cctest\/test_inspector/: test, inspector
+-  /^test\/node-api\//: test, node-api
+-  /^test\/js-native-api\//: test, node-api
+-  /^test\/async-hooks\//: test, async_hooks
+-  /^test\/report\//: test, report
+-  /^test\/fixtures\/es-module/: test, esm
+-  /^test\/es-module\//: test, esm
+-  /^test\/fixtures\/source-map/: test, source maps
+-  /^test\/fixtures\/test-426/: test, source maps
+-  /^test\/fixtures\/wpt\/streams\//: test, web streams
+-  /^test\/fixtures\/typescript/: test, strip-types
+-  /^test\/module-hooks\//: test, module, loaders
+-  /^test\/fixtures/module-hooks\//: test, module, loaders
+-
+-  /^test\//: test
+-
+-  # Specific map for webcrypto.md as it should be labeled 'crypto'
+-  /^doc\/api\/webcrypto.md$/: doc, crypto
+-  # Specific map for modules.md as it should be labeled 'module' not 'modules'
+-  /^doc\/api\/modules.md$/: doc, module
+-  # node-api is treated separately since it is not a JS core module but is still
+-  # considered a subsystem of sorts
+-  /^doc\/api\/n-api.md$/: doc, node-api
+-  # Add worker label to PRs that affect doc/api/worker_threads.md
+-  /^doc\/api\/worker_threads.md$/: doc, worker
+-  # test_runner documentation
+-  /^doc\/api\/test.md$/: doc, test_runner
+-  # Automatically tag JS subsystem-specific API doc changes
+-  /^doc\/api\/(\w+)\.md$/: doc, $1
+-  # Add deprecations label to PRs that affect doc/api/deprecations.md
+-  /^doc\/api\/deprecations.md$/: doc, deprecations
+-  /^doc\/changelogs\//: release
+-  # Specific map for typescript.md as it should be labeled 'strip-types'
+-  /^doc\/api\/typescript.md$/: doc, strip-types
+-
+-  /^doc\/node-config-schema.json$/: doc, config
+-
+-  /^doc\//: doc
+-
+-  # More specific benchmarks
+-  /^benchmark\/buffers\//: benchmark, buffer
+-  /^benchmark\/es\//: benchmark, v8 engine
+-  /^benchmark\/_http/: benchmark, http
+-  /^benchmark\/(?:misc|fixtures)\//: benchmark
+-  /^benchmark\/streams\//: benchmark, stream
+-  /^benchmark\/url\//: benchmark, url, whatwg-url
+-  /^benchmark\/([^/]+)\//: benchmark, $1
+-
+-  /^benchmark\//: benchmark, performance
+-
+-allJsSubSystems:
+-  - assert
+-  - async_hooks
+-  - buffer
+-  - child_process
+-  - cluster
+-  - config
+-  - console
+-  - crypto
+-  - debugger
+-  - dgram
+-  - diagnostics_channel
+-  - dns
+-  - domain
+-  - events
+-  - esm
+-  - fs
+-  - http
+-  - https
+-  - http2
+-  - inspector
+-  - module
+-  - net
+-  - os
+-  - path
+-  - perf_hooks
+-  - process
+-  - punycode
+-  - querystring
+-  - quic
+-  - readline
+-  - repl
+-  - report
+-  - sqlite
+-  - stream
+-  - string_decoder
+-  - strip-types
+-  - timers
+-  - tls
+-  - trace_events
+-  - tty
+-  - typings
+-  - url
+-  - util
+-  - v8
+-  - vfs
+-  - vm
+-  - wasi
+-  - worker
+-  - zlib
+diff --git a/.github/workflows/auto-start-ci.yml b/.github/workflows/auto-start-ci.yml
+deleted file mode 100644
+index 34488eeed6..0000000000
+--- a/.github/workflows/auto-start-ci.yml
++++ /dev/null
+@@ -1,74 +0,0 @@
+-name: Auto Start CI
+-
+-on:
+-  schedule:
+-    # Runs every five minutes (fastest the scheduler can run). Five minutes is
+-    # optimistic, it can take longer to run.
+-    # To understand why `schedule` is used instead of other events, refer to
+-    # ./doc/contributing/commit-queue.md
+-    - cron: '*/5 * * * *'
+-
+-concurrency: ${{ github.workflow }}
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  get-prs-for-ci:
+-    permissions:
+-      pull-requests: read
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    outputs:
+-      numbers: ${{ steps.get_prs_for_ci.outputs.numbers }}
+-    steps:
+-      - name: Get Pull Requests
+-        id: get_prs_for_ci
+-        run: >
+-          echo "numbers=$(gh pr list \
+-                  --repo "$GITHUB_REPOSITORY" \
+-                  --label 'request-ci' \
+-                  --json 'number' \
+-                  --search 'review:approved' \
+-                  -t '{{ range . }}{{ .number }} {{ end }}' \
+-                  --limit 5)" >> "$GITHUB_OUTPUT"
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-  start-ci:
+-    permissions:
+-      contents: read
+-      pull-requests: write
+-    needs: get-prs-for-ci
+-    if: needs.get-prs-for-ci.outputs.numbers != ''
+-    runs-on: ubuntu-slim
+-    steps:
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-
+-      - name: Install @node-core/utils
+-        run: npm install -g @node-core/utils
+-
+-      - name: Setup @node-core/utils
+-        run: |
+-          ncu-config set username "$USERNAME"
+-          ncu-config set token "$GH_TOKEN"
+-          ncu-config set jenkins_token "$JENKINS_TOKEN"
+-          ncu-config set owner "$GITHUB_REPOSITORY_OWNER"
+-          ncu-config set repo "$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)"
+-        env:
+-          USERNAME: ${{ secrets.JENKINS_USER }}
+-          GH_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+-
+-      - name: Start the CI
+-        run: |
+-          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_SHA}/tools/actions/start-ci.sh" \
+-          | sh -s -- ${{ needs.get-prs-for-ci.outputs.numbers }}
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-          GH_REPO: ${{ github.repository }}
+diff --git a/.github/workflows/build-tarball.yml b/.github/workflows/build-tarball.yml
+deleted file mode 100644
+index 9b4e7684f4..0000000000
+--- a/.github/workflows/build-tarball.yml
++++ /dev/null
+@@ -1,102 +0,0 @@
+-name: Build from tarball
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-    paths-ignore:
+-      - .mailmap
+-      - '**.md'
+-      - AUTHORS
+-      - doc/**
+-      - test/internet/**
+-      - .github/**
+-      - '!.github/workflows/build-tarball.yml'
+-  push:
+-    branches:
+-      - main
+-      - v[0-9]+.x-staging
+-      - v[0-9]+.x
+-    paths-ignore:
+-      - .mailmap
+-      - '**.md'
+-      - AUTHORS
+-      - doc/**
+-      - test/internet/**
+-      - .github/**
+-      - '!.github/workflows/build-tarball.yml'
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  FLAKY_TESTS: keep_retrying
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  build-tarball:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Make tarball
+-        run: |
+-          export DISTTYPE=nightly
+-          export DATESTRING=$(date "+%Y-%m-%d")
+-          export COMMIT=$(git rev-parse --short=10 "$GITHUB_SHA")
+-          ./configure && make tar -j4 SKIP_XZ=1
+-      - name: Upload tarball artifact
+-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        with:
+-          name: tarballs
+-          path: '*.tar.gz'
+-          compression-level: 0
+-  test-tarball-linux:
+-    needs: build-tarball
+-    runs-on: ubuntu-24.04-arm
+-    env:
+-      CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang
+-      CXX: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang++
+-      SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
+-      SCCACHE_IDLE_TIMEOUT: '0'
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          sparse-checkout: .github/actions/install-clang
+-          sparse-checkout-cone-mode: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Set up sccache
+-        if: github.base_ref == 'main' || github.ref_name == 'main'
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.12.0
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Download tarball
+-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+-        with:
+-          name: tarballs
+-          path: tarballs
+-      - name: Extract tarball
+-        run: |
+-          tar xzf tarballs/*.tar.gz -C "$RUNNER_TEMP"
+-          echo "TAR_DIR=$RUNNER_TEMP/$(basename tarballs/*.tar.gz .tar.gz)" >> "$GITHUB_ENV"
+-      - name: Build
+-        run: make -C "$TAR_DIR" build-ci -j4 V=1
+-      - name: Test
+-        run: make -C "$TAR_DIR" test-ci -j1 V=1 TEST_CI_ARGS="-p dots --measure-flakiness 9"
+diff --git a/.github/workflows/close-stalled.yml b/.github/workflows/close-stalled.yml
+deleted file mode 100644
+index 4d36d9e93c..0000000000
+--- a/.github/workflows/close-stalled.yml
++++ /dev/null
+@@ -1,36 +0,0 @@
+-name: Close stalled issues and PRs
+-on:
+-  schedule:
+-    - cron: 0 0 * * *
+-
+-env:
+-  CLOSE_MESSAGE: >
+-    Closing this because it has stalled. Feel free to reopen if this issue/PR
+-    is still relevant, or to ping the collaborator who labelled it stalled if
+-    you have any questions.
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  stale:
+-    permissions:
+-      issues: write  # for actions/stale to close stale issues
+-      pull-requests: write  # for actions/stale to close stale PRs
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f  # v10.2.0
+-        with:
+-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+-          days-before-close: 30
+-          stale-pr-label: stalled
+-          stale-issue-label: stalled
+-          close-issue-message: ${{ env.CLOSE_MESSAGE }}
+-          close-pr-message: ${{ env.CLOSE_MESSAGE }}
+-          # used to filter issues to check whether or not should be closed, avoids hitting maximum operations allowed if needing to paginate through all open issues
+-          only-labels: stalled
+-          # max requests it will send per run to the GitHub API before it deliberately exits to avoid hitting API rate limits
+-          operations-per-run: 500
+-          # deactivates automatic stale labelling as we prefer to do that manually
+-          days-before-stale: -1
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+deleted file mode 100644
+index 01d7f37e38..0000000000
+--- a/.github/workflows/codeql.yml
++++ /dev/null
+@@ -1,42 +0,0 @@
+-name: Run CodeQL
+-
+-on:
+-  schedule:
+-    - cron: 0 0 * * *
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  analyze:
+-    if: github.repository == 'nodejs/node'
+-    name: Analyze
+-    runs-on: ubuntu-slim
+-    permissions:
+-      actions: read
+-      contents: read
+-      security-events: write
+-
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        language: [cpp, javascript, python]
+-
+-    steps:
+-      - name: Checkout repository
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-
+-      # Initializes the CodeQL tools for scanning.
+-      - name: Initialize CodeQL
+-        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        with:
+-          languages: ${{ matrix.language }}
+-          config-file: ./.github/codeql-config.yml
+-
+-      - name: Autobuild
+-        uses: github/codeql-action/autobuild@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-
+-      - name: Perform CodeQL Analysis
+-        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        with:
+-          category: /language:${{matrix.language}}
+diff --git a/.github/workflows/comment-labeled.yml b/.github/workflows/comment-labeled.yml
+deleted file mode 100644
+index e665250748..0000000000
+--- a/.github/workflows/comment-labeled.yml
++++ /dev/null
+@@ -1,55 +0,0 @@
+-name: Comment on issues and PRs when labeled
+-on:
+-  issues:
+-    types: [labeled]
+-  pull_request_target:
+-    types: [labeled]
+-
+-env:
+-  STALE_MESSAGE: >
+-    This issue/PR was marked as stalled, it will be automatically closed in 30 days.
+-    If it should remain open, please leave a comment explaining why it should remain open.
+-  FAST_TRACK_MESSAGE: Fast-track has been requested by @${{ github.actor }}. Please 👍 to approve.
+-  NOTABLE_CHANGE_MESSAGE: |
+-    The https://github.com/nodejs/node/labels/notable-change label has been added by @${{ github.actor }}.
+-
+-    Please suggest a text for the release notes if you'd like to include a more detailed summary, then proceed to update the PR description with the text or a link to the notable change suggested text comment. Otherwise, the commit will be placed in the _Other Notable Changes_ section.
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  stale-comment:
+-    permissions:
+-      issues: write
+-      pull-requests: write
+-    if: github.repository == 'nodejs/node' && github.event.label.name == 'stalled'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - name: Post stalled comment
+-        env:
+-          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        run: gh issue comment "$NUMBER" --repo ${{ github.repository }} --body "$STALE_MESSAGE"
+-
+-  fast-track:
+-    permissions:
+-      pull-requests: write
+-    if: github.repository == 'nodejs/node' && github.event_name == 'pull_request_target' && github.event.label.name == 'fast-track'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - name: Request Fast-Track
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "$FAST_TRACK_MESSAGE"
+-
+-  notable-change:
+-    permissions:
+-      pull-requests: write
+-    if: github.repository == 'nodejs/node' && github.event_name == 'pull_request_target' && github.event.label.name == 'notable-change'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - name: Add notable change description
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "$NOTABLE_CHANGE_MESSAGE"
+diff --git a/.github/workflows/commit-lint-problem-matcher.json b/.github/workflows/commit-lint-problem-matcher.json
+deleted file mode 100644
+index 72dd13b9e0..0000000000
+--- a/.github/workflows/commit-lint-problem-matcher.json
++++ /dev/null
+@@ -1,13 +0,0 @@
+-{
+-  "problemMatcher": [
+-    {
+-      "owner": "core-validate-commit",
+-      "pattern": [
+-        {
+-          "regexp": "^not ok \\d+ (.*)$",
+-          "message": 1
+-        }
+-      ]
+-    }
+-  ]
+-}
+diff --git a/.github/workflows/commit-lint.yml b/.github/workflows/commit-lint.yml
+deleted file mode 100644
+index 75ace50d2a..0000000000
+--- a/.github/workflows/commit-lint.yml
++++ /dev/null
+@@ -1,35 +0,0 @@
+-name: First commit message adheres to guidelines
+-
+-on:
+-  pull_request:
+-    branches:
+-      - main
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  lint-commit-message:
+-    runs-on: ubuntu-slim
+-    steps:
+-      - name: Compute number of commits in the PR
+-        id: nb-of-commits
+-        run: |
+-          echo "plusOne=$((${{ github.event.pull_request.commits }} + 1))" >> $GITHUB_OUTPUT
+-          echo "minusOne=$((${{ github.event.pull_request.commits }} - 1))" >> $GITHUB_OUTPUT
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          fetch-depth: ${{ steps.nb-of-commits.outputs.plusOne }}
+-          persist-credentials: false
+-      - run: git reset HEAD^2
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Validate commit message
+-        run: |
+-          echo "::add-matcher::.github/workflows/commit-lint-problem-matcher.json"
+-          git rev-parse HEAD~${{ steps.nb-of-commits.outputs.minusOne }} | xargs npx -q core-validate-commit --no-validate-metadata --tap
+diff --git a/.github/workflows/commit-queue.yml b/.github/workflows/commit-queue.yml
+deleted file mode 100644
+index dda452bed4..0000000000
+--- a/.github/workflows/commit-queue.yml
++++ /dev/null
+@@ -1,99 +0,0 @@
+-# This action requires the following secrets to be set on the repository:
+-#   GH_USER_TOKEN: GitHub user token, to be used by ncu and to push changes
+-#   JENKINS_USER: GitHub user whose Jenkins token is defined below
+-#   JENKINS_TOKEN: Jenkins token, to be used to check CI status
+-
+-name: Commit Queue
+-
+-on:
+-  # `schedule` event is used instead of `pull_request` because when a
+-  # `pull_request` event is triggered on a PR from a fork, GITHUB_TOKEN will
+-  # be read-only, and the Action won't have access to any other repository
+-  # secrets, which it needs to access Jenkins API.
+-  schedule:
+-    - cron: '*/5 * * * *'
+-
+-concurrency: ${{ github.workflow }}
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  get_mergeable_prs:
+-    permissions:
+-      pull-requests: read
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    outputs:
+-      numbers: ${{ steps.get_mergeable_prs.outputs.numbers }}
+-    steps:
+-      - name: Get Pull Requests
+-        id: get_mergeable_prs
+-        run: |
+-          prs=$(gh pr list \
+-                  --repo "$GITHUB_REPOSITORY" \
+-                  --base "$GITHUB_REF_NAME" \
+-                  --label 'commit-queue' \
+-                  --json 'number' \
+-                  --search "created:<=$(date --date="2 days ago"  +"%Y-%m-%dT%H:%M:%S%z") -label:blocked" \
+-                  -t '{{ range . }}{{ .number }} {{ end }}' \
+-                  --limit 100)
+-          fast_track_prs=$(gh pr list \
+-                  --repo "$GITHUB_REPOSITORY" \
+-                  --base "$GITHUB_REF_NAME" \
+-                  --label 'commit-queue' \
+-                  --label 'fast-track' \
+-                  --search "-label:blocked" \
+-                  --json 'number' \
+-                  -t '{{ range . }}{{ .number }} {{ end }}' \
+-                  --limit 100)
+-          numbers=$(echo $prs' '$fast_track_prs | jq -r -s 'unique | join(" ")')
+-          echo "numbers=$numbers" >> "$GITHUB_OUTPUT"
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-  commitQueue:
+-    needs: get_mergeable_prs
+-    if: needs.get_mergeable_prs.outputs.numbers != ''
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          # A personal token is required because pushing with GITHUB_TOKEN will
+-          # prevent commits from running CI after they land. It needs
+-          # to be set here because `checkout` configures GitHub authentication
+-          # for push as well.
+-          token: ${{ secrets.GH_USER_TOKEN }}
+-
+-      # Install dependencies
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Install @node-core/utils
+-        run: npm install -g @node-core/utils
+-
+-      - name: Set variables
+-        run: |
+-          echo "REPOSITORY=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)" >> "$GITHUB_ENV"
+-
+-      - name: Configure @node-core/utils
+-        run: |
+-          ncu-config set branch "${GITHUB_REF_NAME}"
+-          ncu-config set upstream origin
+-          ncu-config set username "$USERNAME"
+-          ncu-config set token "$GITHUB_TOKEN"
+-          ncu-config set jenkins_token "$JENKINS_TOKEN"
+-          ncu-config set repo "${REPOSITORY}"
+-          ncu-config set owner "${GITHUB_REPOSITORY_OWNER}"
+-        env:
+-          USERNAME: ${{ secrets.JENKINS_USER }}
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+-
+-      - name: Start the Commit Queue
+-        run: ./tools/actions/commit-queue.sh "${GITHUB_REPOSITORY_OWNER}" "${REPOSITORY}" ${{ needs.get_mergeable_prs.outputs.numbers }}
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+diff --git a/.github/workflows/coverage-linux-without-intl.yml b/.github/workflows/coverage-linux-without-intl.yml
+deleted file mode 100644
+index 4b0c686c9a..0000000000
+--- a/.github/workflows/coverage-linux-without-intl.yml
++++ /dev/null
+@@ -1,86 +0,0 @@
+-name: Coverage Linux (without intl)
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-    paths:
+-      - lib/**/*.js
+-      - Makefile
+-      - src/**/*.cc
+-      - src/**/*.h
+-      - test/**
+-      - tools/gyp/**
+-      - tools/test.py
+-      - .github/workflows/coverage-linux-without-intl.yml
+-      - codecov.yml
+-      - .nycrc
+-  push:
+-    branches:
+-      - main
+-    paths:
+-      - lib/**/*.js
+-      - Makefile
+-      - src/**/*.cc
+-      - src/**/*.h
+-      - test/**
+-      - tools/gyp/**
+-      - tools/test.py
+-      - .github/workflows/coverage-linux-without-intl.yml
+-      - codecov.yml
+-      - .nycrc
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  FLAKY_TESTS: keep_retrying
+-  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang
+-  CXX: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang++
+-  SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
+-  SCCACHE_IDLE_TIMEOUT: '0'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  coverage-linux-without-intl:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-24.04
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Set up sccache
+-        if: github.base_ref == 'main' || github.ref_name == 'main'
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.12.0
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Install gcovr
+-        run: pip install gcovr==7.2
+-      - name: Configure
+-        run: ./configure --verbose --error-on-warn --coverage --without-intl
+-      # TODO(bcoe): fix the couple tests that fail with the inspector enabled.
+-      # The cause is most likely coverage's use of the inspector.
+-      - name: Build and test
+-        run: NODE_V8_COVERAGE=coverage/tmp make test-cov -j4 V=1 TEST_CI_ARGS="-p dots  --measure-flakiness 9" || exit 0
+-      - name: Report JS
+-        run: npx c8 report --check-coverage
+-        env:
+-          NODE_OPTIONS: --max-old-space-size=8192
+-      - name: Report C++
+-        run: gcovr --object-directory=out -v --filter src --xml -o ./coverage/coverage-cxx.xml --root=./ --gcov-executable="llvm-cov-18 gcov"
+-      # Clean temporary output from gcov and c8, so that it's not uploaded:
+-      - name: Clean tmp
+-        run: rm -rf coverage/tmp && rm -rf out
+-      - name: Upload
+-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+-        with:
+-          directory: ./coverage
+diff --git a/.github/workflows/coverage-linux.yml b/.github/workflows/coverage-linux.yml
+deleted file mode 100644
+index ad3bc36e3e..0000000000
+--- a/.github/workflows/coverage-linux.yml
++++ /dev/null
+@@ -1,86 +0,0 @@
+-name: Coverage Linux
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-    paths:
+-      - lib/**/*.js
+-      - Makefile
+-      - src/**/*.cc
+-      - src/**/*.h
+-      - test/**
+-      - tools/gyp/**
+-      - tools/test.py
+-      - .github/workflows/coverage-linux.yml
+-      - codecov.yml
+-      - .nycrc
+-  push:
+-    branches:
+-      - main
+-    paths:
+-      - lib/**/*.js
+-      - Makefile
+-      - src/**/*.cc
+-      - src/**/*.h
+-      - test/**
+-      - tools/gyp/**
+-      - tools/test.py
+-      - .github/workflows/coverage-linux.yml
+-      - codecov.yml
+-      - .nycrc
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  FLAKY_TESTS: keep_retrying
+-  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang
+-  CXX: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang++
+-  SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
+-  SCCACHE_IDLE_TIMEOUT: '0'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  coverage-linux:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Set up sccache
+-        if: github.base_ref == 'main' || github.ref_name == 'main'
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.12.0
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Install gcovr
+-        run: pip install gcovr==7.2
+-      - name: Configure
+-        run: ./configure --verbose --error-on-warn --coverage
+-      # TODO(bcoe): fix the couple tests that fail with the inspector enabled.
+-      # The cause is most likely coverage's use of the inspector.
+-      - name: Build and test
+-        run: NODE_V8_COVERAGE=coverage/tmp make test-cov -j4 V=1 TEST_CI_ARGS="-p dots  --measure-flakiness 9" || exit 0
+-      - name: Report JS
+-        run: npx c8 report --check-coverage
+-        env:
+-          NODE_OPTIONS: --max-old-space-size=8192
+-      - name: Report C++
+-        run: gcovr --object-directory=out -v --filter src --xml -o ./coverage/coverage-cxx.xml --root=./ --gcov-executable="llvm-cov-18 gcov"
+-      # Clean temporary output from gcov and c8, so that it's not uploaded:
+-      - name: Clean tmp
+-        run: rm -rf coverage/tmp && rm -rf out
+-      - name: Upload
+-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+-        with:
+-          directory: ./coverage
+diff --git a/.github/workflows/coverage-windows.yml b/.github/workflows/coverage-windows.yml
+deleted file mode 100644
+index fcbc3d2d48..0000000000
+--- a/.github/workflows/coverage-windows.yml
++++ /dev/null
+@@ -1,100 +0,0 @@
+-name: Coverage Windows
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-    paths-ignore:
+-      - '**.md'
+-      - '**.nix'
+-      - eslint.config.mjs
+-      - '**/eslint.config_partial.mjs'
+-      - android-configure
+-      - android-configure.py
+-      - android-patches/**
+-      - benchmarks/**
+-      - doc/**
+-      - pyproject.yml
+-      - tsconfig.json
+-      - test/internet/**
+-      - tools/actions/**
+-      - tools/bootstrap/**
+-      - tools/dep_updaters/**
+-      - tools/doc/**
+-      - tools/eslint-rules/**
+-      - tools/eslint/**
+-      - tools/lint-md/**
+-      - typings/**
+-      - .**
+-      - '!.github/workflows/coverage-windows.yml'
+-  push:
+-    branches:
+-      - main
+-    paths-ignore:
+-      - '**.md'
+-      - '**.nix'
+-      - eslint.config.mjs
+-      - '**/eslint.config_partial.mjs'
+-      - android-configure
+-      - android-configure.py
+-      - android-patches/**
+-      - benchmarks/**
+-      - doc/**
+-      - pyproject.yml
+-      - tsconfig.json
+-      - test/internet/**
+-      - tools/actions/**
+-      - tools/bootstrap/**
+-      - tools/dep_updaters/**
+-      - tools/doc/**
+-      - tools/eslint-rules/**
+-      - tools/eslint/**
+-      - tools/lint-md/**
+-      - typings/**
+-      - .**
+-      - '!.github/workflows/coverage-windows.yml'
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  FLAKY_TESTS: keep_retrying
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  coverage-windows:
+-    if: github.event.pull_request.draft == false
+-    runs-on: windows-2025
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Install deps
+-        run: choco install nasm
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Build
+-        run: ./vcbuild.bat clang-cl
+-      # TODO(bcoe): investigate tests that fail with coverage enabled
+-      # on Windows.
+-      - name: Test
+-        run: ./vcbuild.bat noprojgen nobuild test-ci-js; node -e 'process.exit(0)'
+-        env:
+-          NODE_V8_COVERAGE: ./coverage/tmp
+-      - name: Report
+-        run: npx c8 report
+-        env:
+-          NODE_OPTIONS: --max-old-space-size=8192
+-      - name: Clean tmp
+-        run: npx rimraf ./coverage/tmp
+-      - name: Upload
+-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+-        with:
+-          directory: ./coverage
+diff --git a/.github/workflows/create-release-proposal.yml b/.github/workflows/create-release-proposal.yml
+deleted file mode 100644
+index 3c1437e0ac..0000000000
+--- a/.github/workflows/create-release-proposal.yml
++++ /dev/null
+@@ -1,81 +0,0 @@
+-# This action requires the following secrets to be set on the repository:
+-#   GH_USER_TOKEN: GitHub user token, to be used by ncu and to push changes
+-
+-name: Create Release Proposal
+-
+-on:
+-  workflow_dispatch:
+-    inputs:
+-      release-line:
+-        required: true
+-        type: number
+-        description: 'The release line (without dots or prefix). e.g: 22'
+-      release-date:
+-        required: true
+-        type: string
+-        description: The release date in YYYY-MM-DD format
+-
+-concurrency: ${{ github.workflow }}
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: write
+-  pull-requests: write
+-
+-jobs:
+-  releasePrepare:
+-    env:
+-      STAGING_BRANCH: v${{ inputs.release-line }}.x-staging
+-      RELEASE_BRANCH: v${{ inputs.release-line }}.x
+-      RELEASE_DATE: ${{ inputs.release-date }}
+-      RELEASE_LINE: ${{ inputs.release-line }}
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          ref: ${{ env.STAGING_BRANCH }}
+-          persist-credentials: false
+-
+-      # Install dependencies
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-
+-      - name: Install @node-core/utils
+-        run: npm install -g @node-core/utils
+-
+-      - name: Configure @node-core/utils
+-        run: |
+-          ncu-config set branch "${RELEASE_BRANCH}"
+-          ncu-config set upstream origin
+-          ncu-config set username "$GITHUB_ACTOR"
+-          ncu-config set token "$GH_TOKEN"
+-          ncu-config set repo "$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)"
+-          ncu-config set owner "${GITHUB_REPOSITORY_OWNER}"
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+-
+-      - name: Set up ghauth config (Ubuntu)
+-        run: |
+-          mkdir -p "${XDG_CONFIG_HOME:-~/.config}/changelog-maker"
+-          jq --null-input '{user: env.GITHUB_ACTOR, token: env.TOKEN}' > "${XDG_CONFIG_HOME:-~/.config}/changelog-maker/config.json"
+-        env:
+-          TOKEN: ${{ github.token }}
+-
+-      - name: Setup git author
+-        run: |
+-          git config --local user.email "github-bot@iojs.org"
+-          git config --local user.name "Node.js GitHub Bot"
+-
+-      - name: Start git node release prepare
+-        # The curl command is to make sure we run the version of the script corresponding to the current workflow.
+-        run: |
+-          curl -fsSL https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_SHA}/tools/actions/create-release-proposal.sh |\
+-          sh -s -- "${RELEASE_DATE}" "${RELEASE_LINE}" "${GITHUB_ACTOR}"
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+-          # We want the bot to push the push the release commit so CI runs on it.
+-          BOT_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+diff --git a/.github/workflows/daily-wpt-fyi.yml b/.github/workflows/daily-wpt-fyi.yml
+deleted file mode 100644
+index ef60209547..0000000000
+--- a/.github/workflows/daily-wpt-fyi.yml
++++ /dev/null
+@@ -1,179 +0,0 @@
+-# This workflow runs every night and tests various releases of Node.js
+-# (latest nightly, current, and two latest LTS release lines) against the
+-# `epochs/daily` branch of WPT.
+-
+-name: Daily WPT report
+-
+-on:
+-  workflow_dispatch:
+-  schedule:
+-    # This is 20 minutes after `epochs/daily` branch is triggered to be created
+-    # in WPT repo.
+-    # https://github.com/web-platform-tests/wpt/blob/master/.github/workflows/epochs.yml
+-    - cron: 30 0 * * *
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  collect-versions:
+-    if: github.repository == 'nodejs/node' || github.event_name == 'workflow_dispatch'
+-    runs-on: ubuntu-slim
+-    outputs:
+-      matrix: ${{ steps.query.outputs.matrix }}
+-    steps:
+-      - id: query
+-        run: |
+-          matrix=$(curl -s https://raw.githubusercontent.com/nodejs/Release/refs/heads/main/schedule.json | jq -c --arg now "$(date +%Y-%m-%d)" '[with_entries(select(.value.end > $now and .value.start < $now)) | keys[] | ltrimstr("v") | tonumber] + ["latest-nightly"]')
+-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+-  report:
+-    needs:
+-      - collect-versions
+-    strategy:
+-      matrix:
+-        node-version: ${{ fromJSON(needs.collect-versions.outputs.matrix) }}
+-      fail-fast: false
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-
+-      # install a version and checkout
+-      - name: Get latest nightly
+-        if: matrix.node-version == 'latest-nightly'
+-        run: echo "NIGHTLY=$(curl -s https://nodejs.org/download/nightly/index.json | jq -r '[.[] | select(.files[] | contains("linux-arm64"))][0].version')" >> $GITHUB_ENV
+-      - name: Install Node.js
+-        id: setup-node
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NIGHTLY || matrix.node-version }}
+-          check-latest: true
+-      - name: Get nightly ref
+-        if: contains(matrix.node-version, 'nightly')
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        run: |
+-          SHORT_SHA=$(node -p 'process.version.split(/-nightly\d{8}/)[1]')
+-          echo "NIGHTLY_REF=$(gh api /repos/nodejs/node/commits/$SHORT_SHA --jq '.sha')" >> $GITHUB_ENV
+-      - name: Checkout ${{ steps.setup-node.outputs.node-version }}
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          ref: ${{ env.NIGHTLY_REF || steps.setup-node.outputs.node-version }}
+-      - name: Set env.NODE
+-        run: echo "NODE=$(which node)" >> $GITHUB_ENV
+-      - name: Set env.WPT_REVISION
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        run: echo "WPT_REVISION=$(gh api /repos/web-platform-tests/wpt/branches/epochs/daily --jq '.commit.sha')" >> $GITHUB_ENV
+-
+-      # replace checked out WPT with the synchronized branch
+-      - name: Remove stale WPT
+-        run: rm -rf wpt
+-        working-directory: test/fixtures
+-      - name: Checkout epochs/daily WPT
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          repository: web-platform-tests/wpt
+-          persist-credentials: false
+-          path: test/fixtures/wpt
+-          clean: false
+-          ref: ${{ env.WPT_REVISION }}
+-
+-      # Node.js WPT Runner
+-      - name: Run WPT and generate report
+-        run: |
+-          make test-wpt-report || true
+-          if [ -e out/wpt/wptreport.json ]; then
+-            echo "WPT_REPORT=$(pwd)/out/wpt/wptreport.json" >> $GITHUB_ENV
+-          fi
+-
+-      # undici WPT Runner
+-      - name: Set env.UNDICI_VERSION
+-        if: ${{ env.WPT_REPORT != '' }}
+-        run: |
+-          UNDICI_VERSION=$(jq -r '.version' < deps/undici/src/package.json)
+-          echo "UNDICI_VERSION=v$UNDICI_VERSION" >> $GITHUB_ENV
+-          if [ "${UNDICI_VERSION%%.*}" -ge 7 ]; then
+-            echo "UNDICI_WPT=current" >> $GITHUB_ENV
+-          else
+-            echo "UNDICI_WPT=legacy" >> $GITHUB_ENV
+-          fi
+-      # Checkout composite actions from the default branch since the
+-      # version-specific checkout above overwrites .github/actions/
+-      - name: Checkout undici WPT actions
+-        if: ${{ env.WPT_REPORT != '' }}
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          sparse-checkout: |
+-            .github/actions/undici-wpt-current
+-            .github/actions/undici-wpt-legacy
+-          sparse-checkout-cone-mode: false
+-          persist-credentials: false
+-          path: _wpt_actions
+-          clean: false
+-      - name: Place undici WPT actions
+-        if: ${{ env.WPT_REPORT != '' }}
+-        run: |
+-          mkdir -p .github/actions
+-          cp -r _wpt_actions/.github/actions/undici-wpt-* .github/actions/
+-      - name: Run undici WPT (current)
+-        if: ${{ env.UNDICI_WPT == 'current' }}
+-        uses: ./.github/actions/undici-wpt-current
+-        with:
+-          undici-version: ${{ env.UNDICI_VERSION }}
+-          wpt-report: ${{ env.WPT_REPORT }}
+-      - name: Run undici WPT (legacy)
+-        if: ${{ env.UNDICI_WPT == 'legacy' }}
+-        uses: ./.github/actions/undici-wpt-legacy
+-        with:
+-          undici-version: ${{ env.UNDICI_VERSION }}
+-          wpt-report: ${{ env.WPT_REPORT }}
+-
+-      # Upload artifacts
+-      - name: Clone report for upload
+-        if: ${{ env.WPT_REPORT != '' }}
+-        working-directory: out/wpt
+-        run: cp wptreport.json wptreport-${{ steps.setup-node.outputs.node-version }}.json
+-      - name: Upload GitHub Actions artifact
+-        if: ${{ env.WPT_REPORT != '' }}
+-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        with:
+-          path: out/wpt/wptreport-*.json
+-          name: WPT Report for ${{ steps.setup-node.outputs.node-version }}
+-          if-no-files-found: error
+-      - name: Upload WPT Report to wpt.fyi API
+-        if: ${{ env.WPT_REPORT != '' }}
+-        env:
+-          WPT_FYI_USERNAME: ${{ vars.WPT_FYI_USERNAME }}
+-          WPT_FYI_PASSWORD: ${{ secrets.WPT_FYI_PASSWORD }}
+-        working-directory: out/wpt
+-        run: |
+-          gzip wptreport.json
+-          echo "## Node.js ${{ steps.setup-node.outputs.node-version }}" >> $GITHUB_STEP_SUMMARY
+-          echo "" >> $GITHUB_STEP_SUMMARY
+-          echo "WPT Revision: [\`${WPT_REVISION:0:7}\`](https://github.com/web-platform-tests/wpt/commits/$WPT_REVISION)" >> $GITHUB_STEP_SUMMARY
+-          for WPT_FYI_ENDPOINT in "https://wpt.fyi/api/results/upload" "https://staging.wpt.fyi/api/results/upload"
+-          do
+-            response=$(curl -sS \
+-              -u "$WPT_FYI_USERNAME:$WPT_FYI_PASSWORD" \
+-              -F "result_file=@wptreport.json.gz" \
+-              -F "labels=master" \
+-              $WPT_FYI_ENDPOINT)
+-
+-            if [[ $response =~ Task\ ([0-9]+)\ added\ to\ queue ]]; then
+-              run_id=${BASH_REMATCH[1]}
+-              origin=${WPT_FYI_ENDPOINT%/api/results/upload}
+-
+-              echo "" >> $GITHUB_STEP_SUMMARY
+-              echo "Run ID [\`$run_id\`]($origin/api/runs/$run_id) added to the processor queue at ${origin:8}" >> $GITHUB_STEP_SUMMARY
+-              echo "- [View on the ${origin:8} dashboard]($origin/results?run_id=$run_id)" >> $GITHUB_STEP_SUMMARY
+-            fi
+-          done
+diff --git a/.github/workflows/daily.yml b/.github/workflows/daily.yml
+deleted file mode 100644
+index 0b82dd2aac..0000000000
+--- a/.github/workflows/daily.yml
++++ /dev/null
+@@ -1,32 +0,0 @@
+-name: Node.js daily job
+-
+-on:
+-  workflow_dispatch:
+-  schedule:
+-    - cron: 0 0 * * *
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  build-lto:
+-    if: github.repository == 'nodejs/node' || github.event_name == 'workflow_dispatch'
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Build lto
+-        run: |
+-          sudo apt-get update && sudo apt-get install ninja-build -y
+-          ./configure --enable-lto --ninja
+-          ninja -C out/Release
+diff --git a/.github/workflows/doc.yml b/.github/workflows/doc.yml
+deleted file mode 100644
+index f2281dc7e7..0000000000
+--- a/.github/workflows/doc.yml
++++ /dev/null
+@@ -1,43 +0,0 @@
+-name: Test and upload documentation to artifacts
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-  push:
+-    branches:
+-      - main
+-      - v[0-9]+.x-staging
+-      - v[0-9]+.x
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  build-docs:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Build
+-        run: NODE=$(command -v node) make doc-only
+-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        with:
+-          name: docs
+-          path: out/doc
+-      - name: Test
+-        run: NODE=$(command -v node) make test-doc-ci TEST_CI_ARGS="-p actions --measure-flakiness 9"
+diff --git a/.github/workflows/find-inactive-collaborators.yml b/.github/workflows/find-inactive-collaborators.yml
+deleted file mode 100644
+index ba9ce0c2e1..0000000000
+--- a/.github/workflows/find-inactive-collaborators.yml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-name: Find inactive collaborators
+-
+-on:
+-  schedule:
+-    # Run every Monday at 4:05 AM UTC.
+-    - cron: 5 4 * * 1
+-
+-  workflow_dispatch:
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  find:
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          fetch-depth: 0
+-          persist-credentials: false
+-
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-
+-      - name: Find inactive collaborators
+-        run: tools/find-inactive-collaborators.mjs
+-
+-      - name: Open pull request
+-        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        # Creates a PR or update the Action's existing PR, or
+-        # no-op if the base branch is already up-to-date.
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-        with:
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          branch: actions/inactive-collaborators
+-          body: |
+-            This PR was generated by the [`find-inactive-collaborators.yml` workflow](https://github.com/nodejs/node/blob/main/.github/workflows/find-inactive-collaborators.yml).
+-
+-            @nodejs/tsc Please follow up with the [offboarding tasks](https://github.com/nodejs/node/blob/main/doc/contributing/offboarding.md).
+-          commit-message: 'meta: move one or more collaborators to emeritus'
+-          labels: meta
+-          title: 'meta: move one or more collaborators to emeritus'
+diff --git a/.github/workflows/find-inactive-tsc.yml b/.github/workflows/find-inactive-tsc.yml
+deleted file mode 100644
+index eb09e4e94a..0000000000
+--- a/.github/workflows/find-inactive-tsc.yml
++++ /dev/null
+@@ -1,62 +0,0 @@
+-name: Find inactive TSC voting members
+-
+-on:
+-  schedule:
+-    # Run every Tuesday 12:05 AM UTC.
+-    - cron: 5 0 * * 2
+-
+-  workflow_dispatch:
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  find:
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-
+-    steps:
+-      - name: Checkout the repo
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          fetch-depth: 0
+-          persist-credentials: false
+-
+-      - name: Clone nodejs/TSC repository
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          fetch-depth: 0
+-          path: .tmp
+-          persist-credentials: false
+-          repository: nodejs/TSC
+-
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-
+-      - name: Find inactive TSC voting members
+-        run: tools/find-inactive-tsc.mjs >> $GITHUB_ENV
+-
+-      - name: Open pull request
+-        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        # Creates a PR or update the Action's existing PR, or
+-        # no-op if the base branch is already up-to-date.
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-        with:
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          branch: actions/inactive-tsc
+-          body: |
+-            This PR was generated by tools/find-inactive-tsc.yml.
+-
+-            @nodejs/tsc ${{ env.INACTIVE_TSC_HANDLES }}
+-
+-            ${{ env.DETAILS_FOR_COMMIT_BODY }}
+-          commit-message: 'meta: move TSC voting member(s) to regular member(s)'
+-          labels: meta
+-          title: 'meta: move TSC voting member(s) to regular member(s)'
+-          update-pull-request-title-and-body: true
+diff --git a/.github/workflows/label-flaky-test-issue.yml b/.github/workflows/label-flaky-test-issue.yml
+deleted file mode 100644
+index 9f37f3b3ef..0000000000
+--- a/.github/workflows/label-flaky-test-issue.yml
++++ /dev/null
+@@ -1,52 +0,0 @@
+-name: Label Flaky Test Issues
+-
+-on:
+-  issues:
+-    types: [labeled]
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  label:
+-    if: github.event.label.name == 'flaky-test'
+-    runs-on: ubuntu-slim
+-    permissions:
+-      issues: write
+-    steps:
+-      - name: Extract labels
+-        id: extract-labels
+-        env:
+-          BODY: ${{ github.event.issue.body }}
+-        run: |
+-          BODY="${BODY//$'\n'/'\n'}"
+-
+-          declare -A platform2label
+-
+-          platform2label["AIX"]="aix";
+-          platform2label["FreeBSD"]="freebsd";
+-          platform2label["Linux ARM64"]="linux";
+-          platform2label["Linux PPC64LE"]="ppc";
+-          platform2label["Linux s390x"]="s390";
+-          platform2label["Linux x64"]="linux";
+-          platform2label["macOS ARM64"]="macos";
+-          platform2label["macOS x64"]="macos";
+-          platform2label["SmartOS"]="smartos";
+-          platform2label["Windows"]="windows";
+-
+-          # sed is cleaning up the edges
+-          PLATFORMS=$(echo $BODY | sed 's/^.*Platform\\n\\n//' | sed 's/\(, Other\)\?\\n\\n.*$//') 2> /dev/null
+-          readarray -d , -t list <<< "$PLATFORMS"
+-          labels=
+-          for row in "${list[@]}"; do \
+-            platform=$(echo $row | xargs); \
+-            labels="${labels}${platform2label[$platform]},"; \
+-          done;
+-
+-          echo "LABELS=${labels::-1}" >> $GITHUB_OUTPUT
+-
+-      - name: Add labels
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-          NUMBER: ${{ github.event.issue.number }}
+-        run: gh issue edit "$NUMBER" --repo ${{ github.repository }} --add-label "${{ steps.extract-labels.outputs.LABELS }}"
+diff --git a/.github/workflows/label-pr.yml b/.github/workflows/label-pr.yml
+deleted file mode 100644
+index 03aa1fa9a8..0000000000
+--- a/.github/workflows/label-pr.yml
++++ /dev/null
+@@ -1,18 +0,0 @@
+-name: Label PRs
+-
+-on:
+-  pull_request_target:
+-    types: [opened]
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  label:
+-    runs-on: ubuntu-slim
+-
+-    steps:
+-      - uses: nodejs/node-pr-labeler@d4cf1b8b9f23189c37917000e5e17e796c770a6b  # v1
+-        with:
+-          repo-token: ${{ secrets.GH_USER_TOKEN }}
+-          configuration-path: .github/label-pr-config.yml
+diff --git a/.github/workflows/license-builder.yml b/.github/workflows/license-builder.yml
+deleted file mode 100644
+index 83b7cea221..0000000000
+--- a/.github/workflows/license-builder.yml
++++ /dev/null
+@@ -1,38 +0,0 @@
+-name: License update
+-on:
+-  schedule:
+-    # 00:00:00 every Monday
+-    # https://crontab.guru/#0_0_*_*_1
+-    - cron: 0 0 * * 1
+-  workflow_dispatch:
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  update_license:
+-    permissions:
+-      contents: write  # for gr2m/create-or-update-pull-request-action to push local changes
+-      pull-requests: write  # for gr2m/create-or-update-pull-request-action to create a PR
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - run: ./tools/license-builder.sh  # Run the license builder tool
+-      - uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        # Creates a PR or update the Action's existing PR, or
+-        # no-op if the base branch is already up-to-date.
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        with:
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          branch: actions/license-builder
+-          title: 'doc: run license-builder'
+-          body: >
+-            License is likely out of date. This is an automatically generated PR by
+-            the `license-builder.yml` GitHub Action, which runs `license-builder.sh`
+-            and submits a new PR or updates an existing PR.
+-          commit-message: 'doc: run license-builder'
+-          labels: meta
+diff --git a/.github/workflows/lint-release-proposal.yml b/.github/workflows/lint-release-proposal.yml
+deleted file mode 100644
+index 68e316fbc4..0000000000
+--- a/.github/workflows/lint-release-proposal.yml
++++ /dev/null
+@@ -1,109 +0,0 @@
+-name: Linters (release proposals)
+-
+-on:
+-  push:
+-    branches:
+-      - v[0-9]+.[0-9]+.[0-9]+-proposal
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  lint-release-commit:
+-    runs-on: ubuntu-slim
+-    permissions:
+-      contents: read
+-      pull-requests: read
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          fetch-depth: 2
+-      - name: Lint release commit title format
+-        run: |
+-          EXPECTED_TITLE='^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}, Version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ (\(Current|'.+' \(LTS)\)$'
+-          echo "Expected commit title format: $EXPECTED_TITLE"
+-          COMMIT_SUBJECT="$(git --no-pager log -1 --format=%s)"
+-          echo "Actual: $ACTUAL"
+-          echo "$COMMIT_SUBJECT" | grep -q -E "$EXPECTED_TITLE"
+-          echo "COMMIT_SUBJECT=$COMMIT_SUBJECT" >> "$GITHUB_ENV"
+-      - name: Lint release commit message trailers
+-        run: |
+-          EXPECTED_TRAILER="^$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/[[:digit:]]+\$"
+-          echo "Expected trailer format: $EXPECTED_TRAILER"
+-          PR_URL="$(git --no-pager log -1 --format='%(trailers:key=PR-URL,valueonly)')"
+-          echo "Actual: $PR_URL"
+-          echo "$PR_URL" | grep -E -q "$EXPECTED_TRAILER"
+-
+-          PR_HEAD="$(gh pr view "$PR_URL" --json headRefOid -q .headRefOid)"
+-          echo "Head of $PR_URL: $PR_HEAD"
+-          echo "Current commit: $GITHUB_SHA"
+-          [ "$PR_HEAD" = "$GITHUB_SHA" ]
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+-      - name: Verify it's release-ready
+-        run: |
+-          SKIP_XZ=1 make release-only
+-      - name: Lint release commit content
+-        run: |
+-          MAJOR="$(awk '/^#define NODE_MAJOR_VERSION / { print $3 }' src/node_version.h)"
+-
+-          echo "Checking for expected files in the release commit:"
+-          missing_expected=
+-          for expected in CHANGELOG.md src/node_version.h doc/changelogs/; do
+-            if git diff --exit-code --quiet --diff-filter=M HEAD^ -- "$expected"; then
+-              echo "Missing expected file in diff: $expected"
+-              missing_expected=1
+-            fi
+-          done
+-          [ -z "$missing_expected" ] || exit 1
+-
+-          echo "Checking for unexpected files in the release commit:"
+-          set -ex
+-          [ -z "$(git diff-tree --no-commit-id --name-only -r HEAD --\
+-            . \
+-            ':(exclude)CHANGELOG.md' \
+-            ':(exclude)src/node_version.h' \
+-            ':(exclude)test/parallel/test-process-release.js' \
+-            ':(exclude)doc/abi_version_registry.json' \
+-            ':(exclude)doc/api/' \
+-            ":(exclude)doc/changelogs/")" ]
+-      - name: Validate CHANGELOG
+-        id: releaser-info
+-        run: |
+-          EXPECTED_CHANGELOG_TITLE_INTRO="## $COMMIT_SUBJECT, @"
+-          echo "Expected CHANGELOG section title: $EXPECTED_CHANGELOG_TITLE_INTRO"
+-          MAJOR="$(awk '/^#define NODE_MAJOR_VERSION / { print $3 }' src/node_version.h)"
+-          CHANGELOG_PATH="doc/changelogs/CHANGELOG_V${MAJOR}.md"
+-          CHANGELOG_TITLE="$(grep "$EXPECTED_CHANGELOG_TITLE_INTRO" "$CHANGELOG_PATH")"
+-          echo "Actual: $CHANGELOG_TITLE"
+-          [ "${CHANGELOG_TITLE%%@*}@" = "$EXPECTED_CHANGELOG_TITLE_INTRO" ]
+-          gh api \
+-            -H "Accept: application/vnd.github+json" \
+-            -H "X-GitHub-Api-Version: 2022-11-28" \
+-            --jq '.commits.[] | { smallSha: .sha[0:10] } + (.commit.message|capture("^(?<title>.+)\n\n(.*\n)*PR-URL: (?<prURL>.+)(\n|$)"))' \
+-            "/repos/${GITHUB_REPOSITORY}/compare/v${MAJOR}.x...$GITHUB_SHA" --paginate \
+-          | node tools/actions/lint-release-proposal-commit-list.mjs "$CHANGELOG_PATH" "$GITHUB_SHA" \
+-          | while IFS= read -r PR_URL; do
+-            DONT_LAND_LABEL="dont-land-on-v${MAJOR}.x" LTS_WATCH_LABEL="lts-watch-v${MAJOR}.x" gh pr view \
+-              --json labels,url \
+-              --jq '
+-                if (.labels|any(.name==env.DONT_LAND_LABEL)) then
+-                  error("\(.url) has the \(env.DONT_LAND_LABEL) label, forbidding it to be in this release proposal")
+-                elif (.labels|any(.name==env.LTS_WATCH_LABEL)) then
+-                  error("\(.url) has the \(env.LTS_WATCH_LABEL) label, please remove the label now that the PR is included in a release proposal")
+-                end
+-                ' \
+-              "$PR_URL" > /dev/null
+-          done
+-        shell: bash  # See https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference, we want the pipefail option.
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+diff --git a/.github/workflows/linters.yml b/.github/workflows/linters.yml
+deleted file mode 100644
+index 4fbdb480e3..0000000000
+--- a/.github/workflows/linters.yml
++++ /dev/null
+@@ -1,260 +0,0 @@
+-name: Linters
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-  push:
+-    branches:
+-      - main
+-      - v[0-9]+.x-staging
+-      - v[0-9]+.x
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  lint-addon-docs:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Lint addon docs
+-        run: NODE=$(command -v node) make lint-addon-docs
+-  lint-cpp:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Lint C/C++ files
+-        run: make lint-cpp
+-  format-cpp:
+-    if: ${{ github.event.pull_request && github.event.pull_request.draft == false && github.base_ref == github.event.repository.default_branch }}
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          fetch-depth: 0
+-          persist-credentials: false
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Format C/C++ files
+-        run: |
+-          make format-cpp-build
+-          # The `make format-cpp` error code is intentionally ignored here
+-          # because it is irrelevant. We already check if the formatter produced
+-          # a diff in the next line.
+-          # Refs: https://github.com/nodejs/node/pull/42764
+-          CLANG_FORMAT_START="$(git merge-base HEAD refs/remotes/origin/$GITHUB_BASE_REF)" \
+-            make format-cpp || true
+-          git --no-pager diff --exit-code && EXIT_CODE="$?" || EXIT_CODE="$?"
+-          if [ "$EXIT_CODE" != "0" ]
+-          then
+-            echo
+-            echo 'ERROR: Please run:'
+-            echo
+-            echo "  CLANG_FORMAT_START="$\(git merge-base HEAD ${GITHUB_BASE_REF}\)" make format-cpp"
+-            echo
+-            echo 'to format the commits in your branch.'
+-            exit "$EXIT_CODE"
+-          fi
+-  lint-js-and-md:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Lint JavaScript files
+-        run: |
+-          set +e
+-          NODE=$(command -v node) make lint-js
+-          EXIT_CODE="$?"
+-          if [ "$EXIT_CODE" != "0" ]; then
+-            echo
+-            echo 'ERROR: The JavaScript lint validation failed (the errors are logged above).'
+-            echo '       Please fix the lint errors.'
+-            if NODE=$(command -v node) make lint-js-fix > /dev/null 2>&1; then
+-              echo '       Run:'
+-              echo '          make lint-js-fix'
+-              echo '       to fix the lint issues.'
+-              git --no-pager diff
+-            elif git diff --quiet --exit-code; then
+-              echo '       None of the issue is auto-fixable, so manual fixes for'
+-              echo '       all of the issues are required.'
+-            else
+-              echo '       Run:'
+-              echo '          make lint-js-fix'
+-              echo '       to fix the auto-fixable lint issues.'
+-              echo '       Note that some manual fixes are also required.'
+-            fi
+-            echo
+-            exit "$EXIT_CODE"
+-          fi
+-      - name: Get release version numbers
+-        if: ${{ github.event.pull_request && github.event.pull_request.base.ref == github.event.pull_request.base.repo.default_branch }}
+-        id: get-released-versions
+-        run: ./tools/lint-md/list-released-versions-from-changelogs.mjs >> $GITHUB_OUTPUT
+-      - name: Lint markdown files
+-        run: |
+-          echo "::add-matcher::.github/workflows/remark-lint-problem-matcher.json"
+-          NODE=$(command -v node) make lint-md
+-        env:
+-          NODE_RELEASED_VERSIONS: ${{ steps.get-released-versions.outputs.NODE_RELEASED_VERSIONS }}
+-  lint-py:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          sparse-checkout: |
+-            /Makefile
+-            /benchmark/
+-            /doc/
+-            /lib/
+-            /src/node_version.h
+-            /tools/
+-            pyproject.toml
+-            *.py
+-          sparse-checkout-cone-mode: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Lint Python
+-        run: |
+-          make lint-py-build
+-          make lint-py
+-  lint-yaml:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          sparse-checkout: |
+-            /Makefile
+-            /tools/pip/
+-            *.yml
+-            *.yaml
+-          sparse-checkout-cone-mode: false
+-      - name: Use Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Lint YAML
+-        run: |
+-          make lint-yaml-build || true
+-          make lint-yaml
+-
+-  lint-sh:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          sparse-checkout: |
+-            /tools/lint-sh.mjs
+-            *.sh
+-          sparse-checkout-cone-mode: false
+-      - run: shellcheck -V
+-      - name: Lint Shell scripts
+-        run: tools/lint-sh.mjs .
+-  lint-codeowners:
+-    if: github.event.pull_request.draft == false
+-    # cannot use ubuntu-slim here because mszostok/codeowners-validator is dockerized
+-    # cannot use ubuntu-24.04-arm here because the docker image is x86 only
+-    runs-on: ubuntu-latest
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - uses: mszostok/codeowners-validator@7f3f5e28c6d7b8dfae5731e54ce2272ca384592f
+-        with:
+-          checks: files,duppatterns
+-  lint-pr-url:
+-    if: ${{ github.event.pull_request }}
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          fetch-depth: 2
+-          persist-credentials: false
+-          sparse-checkout: |
+-            /tools/lint-pr-url.mjs
+-            /doc/api/
+-          sparse-checkout-cone-mode: false
+-      # GH Actions squashes all PR commits, HEAD^ refers to the base branch.
+-      - run: git diff HEAD^ HEAD -G"pr-url:" -- "*.md" | ./tools/lint-pr-url.mjs ${{ github.event.pull_request.html_url }}
+-  lint-readme:
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          sparse-checkout: |
+-            README.md
+-            /tools/lint-readme-lists.mjs
+-          sparse-checkout-cone-mode: false
+-      - name: Get team members if possible
+-        if: ${{ (github.event.pull_request && github.event.pull_request.base.ref == github.event.pull_request.base.repo.default_branch) || github.event.ref == github.event.repository.default_branch }}
+-        id: team_members
+-        run: |
+-          get_list_members() {
+-            TEAM="$1"
+-            QUOTE='"'
+-            gh api "/orgs/nodejs/teams/$TEAM/members" -X GET -f per_page=100 --jq "map(.login) | ${QUOTE}${TEAM}=\(tojson)${QUOTE}"
+-          }
+-          [ -z "$GITHUB_TOKEN" ] || (
+-            get_list_members "collaborators"
+-            get_list_members "issue-triage"
+-            get_list_members "tsc"
+-          ) >> "$GITHUB_OUTPUT"
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-      - run: tools/lint-readme-lists.mjs "$TEAMS"
+-        env:
+-          TEAMS: ${{ tojson(steps.team_members.outputs) }}
+diff --git a/.github/workflows/major-release.yml b/.github/workflows/major-release.yml
+deleted file mode 100644
+index b65917f89e..0000000000
+--- a/.github/workflows/major-release.yml
++++ /dev/null
+@@ -1,49 +0,0 @@
+-name: Major Release
+-
+-on:
+-  schedule:
+-    - cron: 0 0 15 2,8 *  # runs at midnight UTC every 15 February and 15 August
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  create-issue:
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    permissions:
+-      issues: write
+-    steps:
+-      - name: Check for release schedule
+-        id: check-date
+-        run: |
+-          # Get the current month and day
+-          MONTH=$(date +'%m')
+-          DAY=$(date +'%d')
+-          # We'll create the reminder issue two months prior the release
+-          if [[ "$MONTH" == "02" || "$MONTH" == "08" ]] && [[ "$DAY" == "15" ]]; then
+-            echo "create_issue=true" >> "$GITHUB_ENV"
+-          fi
+-      - name: Retrieve next major release info from nodejs/Release
+-        if: env.create_issue == 'true'
+-        run: |
+-          curl -L https://github.com/nodejs/Release/raw/HEAD/schedule.json | \
+-          jq -r 'to_entries | map(select(.value.start | strptime("%Y-%m-%d") | mktime > now)) | first | "VERSION=" + .key + "\nRELEASE_DATE=" + .value.start' >> "$GITHUB_ENV"
+-      - name: Compute max date for landing semver-major PRs
+-        if: env.create_issue == 'true'
+-        run: |
+-          echo "PR_MAX_DATE=$(date -d "$RELEASE_DATE -1 month" +%Y-%m-%d)" >> "$GITHUB_ENV"
+-      - name: Create release announcement issue
+-        if: env.create_issue == 'true'
+-        run: |
+-         gh issue create --repo "${GITHUB_REPOSITORY}" \
+-           --title "Upcoming Node.js Major Release ($VERSION)" \
+-           --body-file -<<EOF
+-            A reminder that the next Node.js **SemVer Major release** is scheduled for **${RELEASE_DATE}**.
+-            All commits that were landed until **${PR_MAX_DATE}** (one month prior to the release) will be included in the next semver major release. Please ensure that any necessary preparations are made in advance.
+-            For more details on the release process, consult the [Node.js Release Working Group repository](https://github.com/nodejs/release).
+-
+-            cc: @nodejs/collaborators
+-         EOF
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+diff --git a/.github/workflows/notify-on-push.yml b/.github/workflows/notify-on-push.yml
+deleted file mode 100644
+index 9ca33943c9..0000000000
+--- a/.github/workflows/notify-on-push.yml
++++ /dev/null
+@@ -1,61 +0,0 @@
+-on:
+-  push:
+-    branches:
+-      - main
+-
+-name: Notify on Push
+-permissions:
+-  contents: read
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-jobs:
+-  notifyOnForcePush:
+-    name: Notify on Force Push on `main`
+-    if: github.repository == 'nodejs/node' && github.event.forced
+-    # cannot use ubuntu-slim here because rtCamp/action-slack-notify is dockerized
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - name: Slack Notification
+-        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
+-        env:
+-          SLACK_COLOR: '#DE512A'
+-          SLACK_ICON: https://github.com/nodejs.png?size=48
+-          SLACK_TITLE: ${{ github.actor }} force-pushed to ${{ github.ref }}
+-          SLACK_MESSAGE: |
+-            <!here> A commit was force-pushed to <https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.repository }}@${{ github.ref_name }}> by <https://github.com/${{ github.actor }}|${{ github.actor }}>
+-
+-            Before: <https://github.com/${{ github.repository }}/commit/${{ github.event.before }}|${{ github.event.before }}>
+-            After: <https://github.com/${{ github.repository }}/commit/${{ github.event.after }}|${{ github.event.after }}>
+-          SLACK_USERNAME: nodejs-bot
+-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+-
+-  validateCommitMessage:
+-    name: Notify on Push on `main` with invalid message
+-    # cannot use ubuntu-slim here because rtCamp/action-slack-notify is dockerized
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Validate commits
+-        run: echo "$COMMITS" | npx -q core-validate-commit -
+-        id: commit-check
+-        env:
+-          COMMITS: ${{ toJSON(github.event.commits) }}
+-      - name: Slack Notification
+-        if: ${{ failure() && steps.commit-check.conclusion == 'failure' && github.repository == 'nodejs/node' }}
+-        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
+-        env:
+-          SLACK_COLOR: '#DE512A'
+-          SLACK_ICON: https://github.com/nodejs.png?size=48
+-          SLACK_TITLE: Invalid commit was pushed to ${{ github.ref }}
+-          SLACK_MESSAGE: |
+-            <!here> A commit with an invalid message was pushed to <https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.repository }}@${{ github.ref_name }}> by <https://github.com/${{ github.actor }}|${{ github.actor }}>.
+-
+-            Before: <https://github.com/${{ github.repository }}/commit/${{ github.event.before }}|${{ github.event.before }}>
+-            After: <https://github.com/${{ github.repository }}/commit/${{ github.event.after }}|${{ github.event.after }}>
+-          SLACK_USERNAME: nodejs-bot
+-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+diff --git a/.github/workflows/notify-on-review-wanted.yml b/.github/workflows/notify-on-review-wanted.yml
+deleted file mode 100644
+index 1d3124e336..0000000000
+--- a/.github/workflows/notify-on-review-wanted.yml
++++ /dev/null
+@@ -1,45 +0,0 @@
+-name: Notify on Review Wanted
+-on:
+-  issues:
+-    types: [labeled]
+-  pull_request_target:
+-    types: [labeled]
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  notifyOnReviewWanted:
+-    name: Notify on Review Wanted
+-    if: github.repository == 'nodejs/node' && github.event.label.name == 'review wanted'
+-    # cannot use ubuntu-slim here because rtCamp/action-slack-notify is dockerized
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - name: Determine PR or Issue
+-        id: define-message
+-        env:
+-          TITLE_ISSUE: ${{ github.event.issue.title }}
+-          TITLE_PR: ${{ github.event.pull_request.title }}
+-        run: |
+-          if [[ -n "${{ github.event.pull_request.number }}" ]]; then
+-            number="${{ github.event.pull_request.number }}"
+-            link="https://github.com/${{ github.repository }}/pull/$number"
+-            echo "message=The PR (#$number) requires review from Node.js maintainers. See: $link" >> "$GITHUB_OUTPUT"
+-            echo "title=$TITLE_PR" >> "$GITHUB_OUTPUT"
+-          else
+-            number="${{ github.event.issue.number }}"
+-            link="https://github.com/${{ github.repository }}/issues/$number"
+-            echo "message=The issue (#$number) requires review from Node.js maintainers. See: $link" >> "$GITHUB_OUTPUT"
+-            echo "title=$TITLE_ISSUE" >> "$GITHUB_OUTPUT"
+-          fi
+-
+-      - name: Slack Notification
+-        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
+-        env:
+-          MSG_MINIMAL: actions url
+-          SLACK_COLOR: '#3d85c6'
+-          SLACK_ICON: https://github.com/nodejs.png?size=48
+-          SLACK_TITLE: ${{ steps.define-message.outputs.title }}
+-          SLACK_MESSAGE: ${{ steps.define-message.outputs.message }}
+-          SLACK_USERNAME: nodejs-bot
+-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+diff --git a/.github/workflows/post-release.yml b/.github/workflows/post-release.yml
+deleted file mode 100644
+index 2fb374e912..0000000000
+--- a/.github/workflows/post-release.yml
++++ /dev/null
+@@ -1,33 +0,0 @@
+-name: Post-Release actions
+-
+-on:
+-  workflow_dispatch:
+-    inputs:
+-      version:
+-        description: The version to generate a blog post for.
+-        type: string
+-        required: true
+-  release:
+-    types: [released]
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  post-release-actions:
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - name: Trigger update-links workflow on nodejs/release-cloudflare-worker
+-        run: |
+-          gh workflow run update-links.yml --repo nodejs/release-cloudflare-worker -f version=$VERSION
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          VERSION: ${{ inputs.version || github.event.release.tag_name }}
+-
+-      - name: Trigger create-release-post workflow on nodejs/nodejs.org
+-        run: |
+-          gh workflow run create-release-post.yml --repo nodejs/nodejs.org -f version=$VERSION
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          VERSION: ${{ inputs.version || github.event.release.tag_name }}
+diff --git a/.github/workflows/remark-lint-problem-matcher.json b/.github/workflows/remark-lint-problem-matcher.json
+deleted file mode 100644
+index cfb281310a..0000000000
+--- a/.github/workflows/remark-lint-problem-matcher.json
++++ /dev/null
+@@ -1,22 +0,0 @@
+-{
+-  "problemMatcher": [
+-    {
+-      "owner": "remark-lint",
+-      "pattern": [
+-        {
+-          "regexp": "^(?:\\x1b\\[\\d+m)*(.+?)(?:\\x1b\\[\\d+m)*$",
+-          "file": 1
+-        },
+-        {
+-          "regexp": "^\\s+(?:\\d+:\\d+-)?(\\d+):(\\d+)\\s+\\S*(error|warning|info)\\S*\\s+(.+)\\s+(\\S+)\\s+(?:\\S+)$",
+-          "line": 1,
+-          "column": 2,
+-          "severity": 3,
+-          "message": 4,
+-          "code": 5,
+-          "loop": true
+-        }
+-      ]
+-    }
+-  ]
+-}
+diff --git a/.github/workflows/scorecard.yml b/.github/workflows/scorecard.yml
+deleted file mode 100644
+index fbd12b7654..0000000000
+--- a/.github/workflows/scorecard.yml
++++ /dev/null
+@@ -1,81 +0,0 @@
+-# This workflow uses actions that are not certified by GitHub. They are provided
+-# by a third-party and are governed by separate terms of service, privacy
+-# policy, and support documentation.
+-
+-name: Scorecard supply-chain security
+-on:
+-  # For Branch-Protection check. Only the default branch is supported. See
+-  # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
+-  branch_protection_rule:
+-  # To guarantee Maintained check is occasionally updated. See
+-  # https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained
+-  schedule:
+-    - cron: 16 21 * * 1
+-  push:
+-    branches: [main]
+-  workflow_dispatch:
+-
+-# Declare default permissions as read only.
+-permissions: read-all
+-
+-jobs:
+-  analysis:
+-    if: github.repository == 'nodejs/node' || github.event_name == 'workflow_dispatch'
+-    name: Scorecard analysis
+-    # cannot use ubuntu-slim here because ossf/scorecard-action is dockerized
+-    # cannot use ubuntu-24.04-arm here because the docker image is x86 only
+-    runs-on: ubuntu-latest
+-    permissions:
+-      # Needed to upload the results to code-scanning dashboard.
+-      security-events: write
+-      # Needed to publish results and get a badge (see publish_results below).
+-      id-token: write
+-      # Uncomment the permissions below if installing in a private repository.
+-      # contents: read
+-      # actions: read
+-
+-    steps:
+-      - name: Harden Runner
+-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40  # v2.19.0
+-        with:
+-          egress-policy: audit  # TODO: change to 'egress-policy: block' after couple of runs
+-
+-      - name: Checkout code
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-
+-      - name: Run analysis
+-        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a  # v2.4.3
+-        with:
+-          results_file: results.sarif
+-          results_format: sarif
+-          # (Optional) "write" PAT token. Uncomment the `repo_token` line below if:
+-          # - you want to enable the Branch-Protection check on a *public* repository, or
+-          # - you are installing Scorecard on a *private* repository
+-          # To create the PAT, follow the steps in https://github.com/ossf/scorecard-action#authentication-with-pat.
+-          # repo_token: ${{ secrets.SCORECARD_TOKEN }}
+-
+-          # Public repositories:
+-          #   - Publish results to OpenSSF REST API for easy access by consumers
+-          #   - Allows the repository to include the Scorecard badge.
+-          #   - See https://github.com/ossf/scorecard-action#publishing-results.
+-          # For private repositories:
+-          #   - `publish_results` will always be set to `false`, regardless
+-          #     of the value entered here.
+-          publish_results: true
+-
+-      # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
+-      # format to the repository Actions tab.
+-      - name: Upload artifact
+-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        with:
+-          name: SARIF file
+-          path: results.sarif
+-          retention-days: 5
+-
+-      # Upload the results to GitHub's code scanning dashboard.
+-      - name: Upload to code-scanning
+-        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        with:
+-          sarif_file: results.sarif
+diff --git a/.github/workflows/stale.yml b/.github/workflows/stale.yml
+deleted file mode 100644
+index 704967c24e..0000000000
+--- a/.github/workflows/stale.yml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-name: Close stale
+-on:
+-  workflow_dispatch:
+-  schedule:
+-    # Run every day at 1:00 AM UTC.
+-    - cron: 0 1 * * *
+-
+-# yamllint disable rule:empty-lines
+-env:
+-  CLOSE_MESSAGE: >
+-    This {0} has been automatically closed after 30 days of inactivity
+-    following its stale status (no activity for a total of 240 days).
+-
+-    If this is still relevant, feel free to reopen it or leave a comment
+-    with additional details so we can continue the discussion.
+-
+-  WARN_MESSAGE: >
+-    This {0} has been marked as stale due to 210 days of inactivity.
+-
+-    It will be automatically closed in 30 days if no further activity occurs.
+-    If this is still relevant, please leave a comment or update it to keep it open.
+-# yamllint enable
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  stale:
+-    permissions:
+-      issues: write  # for actions/stale to close stale issues
+-      pull-requests: write  # for actions/stale to close stale PRs
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f  # v10.2.0
+-        with:
+-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+-          days-before-stale: 210
+-          days-before-close: 30
+-          stale-issue-label: stale
+-          exempt-issue-labels: never-stale, confirmed-bug
+-          close-issue-message: ${{ format(env.CLOSE_MESSAGE, 'issue') }}
+-          stale-issue-message: ${{ format(env.WARN_MESSAGE, 'issue') }}
+-          stale-pr-label: stale
+-          exempt-pr-labels: never-stale
+-          close-pr-message: ${{ format(env.CLOSE_MESSAGE, 'pull request') }}
+-          stale-pr-message: ${{ format(env.WARN_MESSAGE, 'pull request') }}
+-          # max requests it will send per run to the GitHub API before it deliberately exits to avoid hitting API rate limits
+-          operations-per-run: 500
+-          remove-stale-when-updated: true
+diff --git a/.github/workflows/test-internet.yml b/.github/workflows/test-internet.yml
+deleted file mode 100644
+index 6c01dc978d..0000000000
+--- a/.github/workflows/test-internet.yml
++++ /dev/null
+@@ -1,66 +0,0 @@
+-name: Test internet
+-
+-on:
+-  workflow_dispatch:
+-  schedule:
+-    - cron: 5 0 * * *
+-
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-    paths:
+-      - .github/workflows/test-internet.yml
+-      - test/internet/**
+-      - internal/dns/**
+-      - lib/dns.js
+-      - lib/net.js
+-  push:
+-    branches:
+-      - main
+-      - canary
+-      - v[0-9]+.x-staging
+-      - v[0-9]+.x
+-    paths:
+-      - .github/workflows/test-internet.yml
+-      - test/internet/**
+-      - internal/dns/**
+-      - lib/dns.js
+-      - lib/net.js
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  FLAKY_TESTS: keep_retrying
+-  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang
+-  CXX: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang++
+-  SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
+-  SCCACHE_IDLE_TIMEOUT: '0'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  test-internet:
+-    if: (github.event_name == 'schedule' && github.repository == 'nodejs/node') || (github.event.pull_request && github.event.pull_request.draft == false)
+-    runs-on: ubuntu-24.04-arm
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Set up sccache
+-        if: github.base_ref == 'main' || github.ref_name == 'main'
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.12.0
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Build
+-        run: make build-ci -j4 V=1 CONFIG_FLAGS="--error-on-warn"
+-      - name: Test Internet
+-        run: make test-internet -j4 V=1;
+diff --git a/.github/workflows/test-linux.yml b/.github/workflows/test-linux.yml
+deleted file mode 100644
+index 397498a7e1..0000000000
+--- a/.github/workflows/test-linux.yml
++++ /dev/null
+@@ -1,87 +0,0 @@
+-name: Test Linux
+-
+-on:
+-  pull_request:
+-    paths-ignore:
+-      - .mailmap
+-      - README.md
+-      - vcbuild.bat
+-      - tools/actions/**
+-      - tools/clang-format/**
+-      - tools/dep_updaters/**
+-      - test/internet/**
+-      - .github/**
+-      - '!.github/workflows/test-linux.yml'
+-    types: [opened, synchronize, reopened, ready_for_review]
+-  push:
+-    branches:
+-      - main
+-      - canary
+-      - v[0-9]+.x-staging
+-      - v[0-9]+.x
+-    paths-ignore:
+-      - .mailmap
+-      - README.md
+-      - vcbuild.bat
+-      - tools/actions/**
+-      - tools/clang-format/**
+-      - tools/dep_updaters/**
+-      - test/internet/**
+-      - .github/**
+-      - '!.github/workflows/test-linux.yml'
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  FLAKY_TESTS: keep_retrying
+-  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang
+-  CXX: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang++
+-  SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
+-  SCCACHE_IDLE_TIMEOUT: '0'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  test-linux:
+-    if: github.event.pull_request.draft == false
+-    runs-on: ${{ matrix.os }}
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        os: [ubuntu-24.04, ubuntu-24.04-arm]
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          path: node
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Set up sccache
+-        if: github.base_ref == 'main' || github.ref_name == 'main'
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.12.0
+-      - name: Environment Information
+-        run: npx envinfo
+-      - name: Build
+-        working-directory: node
+-        run: make build-ci -j4 V=1 CONFIG_FLAGS="--error-on-warn"
+-      - name: Test
+-        working-directory: node
+-        run: make test-ci -j1 V=1 TEST_CI_ARGS="-p actions --measure-flakiness 9"
+-      - name: Ensure running tests did not cause any change in the tree
+-        working-directory: node
+-        run: git add -A && git diff --name-only --exit-code --staged
+-      - name: Re-run test in a folder whose name contains unusual chars
+-        run: |
+-          mv node "$DIR"
+-          cd "$DIR"
+-          ./tools/test.py --flaky-tests keep_retrying -p actions -j 4
+-        env:
+-          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
+diff --git a/.github/workflows/test-macos.yml b/.github/workflows/test-macos.yml
+deleted file mode 100644
+index 9059a9b5c6..0000000000
+--- a/.github/workflows/test-macos.yml
++++ /dev/null
+@@ -1,104 +0,0 @@
+-name: Test macOS
+-
+-on:
+-  pull_request:
+-    types: [opened, synchronize, reopened, ready_for_review]
+-    paths-ignore:
+-      - .mailmap
+-      - '**.md'
+-      - AUTHORS
+-      - doc/**
+-      - test/internet/**
+-      - .github/**
+-      - '!.github/workflows/test-macos.yml'
+-  push:
+-    branches:
+-      - main
+-      - canary
+-      - v[0-9]+.x-staging
+-      - v[0-9]+.x
+-    paths-ignore:
+-      - .mailmap
+-      - '**.md'
+-      - AUTHORS
+-      - doc/**
+-      - test/internet/**
+-      - .github/**
+-      - '!.github/workflows/test-macos.yml'
+-
+-concurrency:
+-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+-  cancel-in-progress: true
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  XCODE_VERSION: '16.1'
+-  FLAKY_TESTS: keep_retrying
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  test-macOS:
+-    if: github.event.pull_request.draft == false
+-    strategy:
+-      fail-fast: false
+-    runs-on: macos-14
+-    env:
+-      CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} gcc
+-      CXX: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} g++
+-      SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
+-      SCCACHE_IDLE_TIMEOUT: '0'
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-          path: node
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - name: Set up Xcode ${{ env.XCODE_VERSION }}
+-        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+-      - name: Set up sccache
+-        if: github.base_ref == 'main' || github.ref_name == 'main'
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.12.0
+-      - name: Environment Information
+-        run: npx envinfo
+-      # The `npm ci` for this step fails a lot as part of the Test step. Run it
+-      # now so that we don't have to wait 2 hours for the Build step to pass
+-      # first before that failure happens. (And if there's something about
+-      # `make run-ci -j3` that is causing the failure and the failure doesn't
+-      # happen anymore running this step here first, that's also useful
+-      # information.)
+-      - name: tools/doc/node_modules workaround
+-        run: make -C node tools/doc/node_modules
+-      # This is needed due to https://github.com/nodejs/build/issues/3878
+-      - name: Cleanup
+-        run: |
+-          echo "::group::Free space before cleanup"
+-          df -h
+-          echo "::endgroup::"
+-          echo "::group::Cleaned Files"
+-
+-          sudo rm -rf /Users/runner/Library/Android/sdk
+-
+-          echo "::endgroup::"
+-          echo "::group::Free space after cleanup"
+-          df -h
+-          echo "::endgroup::"
+-      - name: Build
+-        run: make -C node build-ci -j$(getconf _NPROCESSORS_ONLN) V=1 CONFIG_FLAGS="--error-on-warn"
+-      - name: Free Space After Build
+-        run: df -h
+-      - name: Test
+-        run: make -C node test-ci -j1 V=1 TEST_CI_ARGS="-p actions --measure-flakiness 9"
+-      - name: Re-run test in a folder whose name contains unusual chars
+-        run: |
+-          mv node "$DIR"
+-          cd "$DIR"
+-          ./tools/test.py --flaky-tests keep_retrying -p actions -j 4
+-        env:
+-          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
+diff --git a/.github/workflows/timezone-update.yml b/.github/workflows/timezone-update.yml
+deleted file mode 100644
+index 5e90d16c1b..0000000000
+--- a/.github/workflows/timezone-update.yml
++++ /dev/null
+@@ -1,74 +0,0 @@
+-name: Timezone update
+-on:
+-  schedule:
+-    # Run once a week at 00:05 AM UTC on Sunday.
+-    - cron: 5 0 * * 0
+-
+-  workflow_dispatch:
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  timezone_update:
+-    permissions:
+-      contents: write  # to push local changes (gr2m/create-or-update-pull-request-action)
+-      pull-requests: write  # to create a PR (gr2m/create-or-update-pull-request-action)
+-
+-    if: github.repository == 'nodejs/node'
+-    # cannot use ubuntu-slim here because it does not have icupkg
+-    runs-on: ubuntu-latest
+-
+-    steps:
+-      - name: Checkout nodejs/node
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-
+-      - name: Checkout unicode-org/icu-data
+-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          path: icu-data
+-          persist-credentials: false
+-          repository: unicode-org/icu-data
+-
+-      - name: Record new version
+-        run: echo "new_version=$(ls icu-data/tzdata/icunew | tail -1)" >> $GITHUB_ENV
+-
+-      - name: Record current version
+-        run: echo "current_version=$(cat ./test/fixtures/tz-version.txt)" >> $GITHUB_ENV
+-
+-      - name: Compare versions
+-        run: |
+-          echo "Comparing current version ${{ env.current_version }} to new version ${{ env.new_version }}"
+-
+-      - run: ./tools/dep_updaters/update-timezone.mjs
+-        if: ${{ env.new_version != env.current_version }}
+-
+-      - name: Update the expected timezone version in test
+-        if: ${{ env.new_version != env.current_version }}
+-        run: echo "${{ env.new_version }}" > test/fixtures/tz-version.txt
+-
+-      - name: Open Pull Request
+-        if: ${{ env.new_version != env.current_version }}
+-        # Create a PR or update the Action's existing PR
+-        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-        with:
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          body: |
+-            This PR was generated by `.github/workflows/timezone-update.yml` and `tools/dep_updaters/update-timezone.mjs`.
+-
+-            Updates the ICU files as per the instructions present in https://github.com/nodejs/node/blob/main/doc/contributing/maintaining/maintaining-icu.md#time-zone-data
+-
+-            To test, build node off this branch & log the version of tz using
+-            ```js
+-            console.log(process.versions.tz)
+-            ```
+-          branch: actions/timezone-update
+-          commit-message: 'deps: update timezone to ${{ env.new_version }}'
+-          labels: dependencies
+-          title: 'deps: update timezone to ${{ env.new_version }}'
+-          reviewers: \@nodejs/i18n-api
+-          update-pull-request-title-and-body: true
+diff --git a/.github/workflows/tools.yml b/.github/workflows/tools.yml
+deleted file mode 100644
+index 59c9d4bcd4..0000000000
+--- a/.github/workflows/tools.yml
++++ /dev/null
+@@ -1,321 +0,0 @@
+-name: Tools and deps update
+-on:
+-  schedule:
+-    # Run once a week at 00:05 AM UTC on Sunday.
+-    - cron: 5 0 * * 0
+-
+-  workflow_dispatch:
+-    inputs:
+-      id:
+-        description: The ID of the job to run
+-        required: true
+-        default: all
+-        type: choice
+-        options:
+-          - all
+-          - acorn
+-          - acorn-walk
+-          - ada
+-          - amaro
+-          - brotli
+-          - c-ares
+-          - merve
+-          - corepack
+-          - googletest
+-          - gyp-next
+-          - histogram
+-          - icu
+-          - inspector_protocol
+-          - libuv
+-          - llhttp
+-          - minimatch
+-          - nbytes
+-          - nghttp2
+-          - nghttp3
+-          - ngtcp2
+-          - postject
+-          - root-certificates
+-          - simdjson
+-          - sqlite
+-          - test426-fixtures
+-          - undici
+-          - uvwasi
+-          - zlib
+-          - zstd
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  tools-deps-update:
+-    if: github.repository == 'nodejs/node' || github.event_name == 'workflow_dispatch'
+-    # cannot use ubuntu-slim here because some update scripts require Docker
+-    runs-on: ubuntu-latest
+-    strategy:
+-      fail-fast: false  # Prevent other jobs from aborting if one fails
+-      matrix:
+-        include:
+-          - id: acorn
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-acorn.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: acorn-walk
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-acorn-walk.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: ada
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-ada.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: amaro
+-            subsystem: deps
+-            label: dependencies, strip-types
+-            run: |
+-              ./tools/dep_updaters/update-amaro.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: brotli
+-            subsystem: deps
+-            label: dependencies, zlib
+-            run: |
+-              ./tools/dep_updaters/update-brotli.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: c-ares
+-            subsystem: deps
+-            label: dependencies, cares
+-            run: |
+-              ./tools/dep_updaters/update-c-ares.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: merve
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-merve.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: corepack
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              make corepack-update
+-              echo "NEW_VERSION=$(node deps/corepack/dist/corepack.js --version)" >> $GITHUB_ENV
+-          - id: googletest
+-            subsystem: deps
+-            label: dependencies, test
+-            run: |
+-              ./tools/dep_updaters/update-googletest.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: gyp-next
+-            subsystem: tools
+-            label: tools, gyp
+-            run: |
+-              ./tools/dep_updaters/update-gyp-next.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: histogram
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-histogram.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: icu
+-            subsystem: deps
+-            label: dependencies, test, icu
+-            run: |
+-              ./tools/dep_updaters/update-icu.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: inspector_protocol
+-            subsystem: deps
+-            label: dependencies, inspector
+-            run: |
+-              ./tools/dep_updaters/update-inspector-protocol.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: libuv
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-libuv.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: llhttp
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-llhttp.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: minimatch
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-minimatch.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: nbytes
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-nbytes.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: nghttp2
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-nghttp2.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: nghttp3
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-nghttp3.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: ngtcp2
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-ngtcp2.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: postject
+-            subsystem: deps,test
+-            label: test
+-            run: |
+-              ./tools/dep_updaters/update-postject.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: root-certificates
+-            subsystem: crypto
+-            label: crypto, notable-change
+-            run: |
+-              node ./tools/dep_updaters/update-root-certs.mjs -v -f "$GITHUB_ENV"
+-          - id: simdjson
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-simdjson.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: sqlite
+-            subsystem: deps
+-            label: dependencies, sqlite
+-            run: |
+-              ./tools/dep_updaters/update-sqlite.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: test426-fixtures
+-            subsystem: test
+-            label: test
+-            run: |
+-              bash tools/dep_updaters/update-test426-fixtures.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: undici
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-undici.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: uvwasi
+-            subsystem: deps
+-            label: dependencies
+-            run: |
+-              ./tools/dep_updaters/update-uvwasi.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: zlib
+-            subsystem: deps
+-            label: dependencies, zlib
+-            run: |
+-              ./tools/dep_updaters/update-zlib.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: zstd
+-            subsystem: deps
+-            label: dependencies, zlib
+-            run: |
+-              ./tools/dep_updaters/update-zstd.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        if: github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id
+-        with:
+-          persist-credentials: false
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        if: |
+-          (matrix.id == 'icu' || matrix.id == 'inspector_protocol') &&
+-          (github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id)
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-      - run: ${{ matrix.run }}
+-        if: github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-      - name: Generate commit message if not set
+-        if: env.COMMIT_MSG == '' && (github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id)
+-        run: |
+-          echo "COMMIT_MSG=${{ matrix.subsystem }}: update ${{ matrix.id }} to ${{ env.NEW_VERSION }}" >> "$GITHUB_ENV"
+-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
+-        if: github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id
+-        # Creates a PR or update the Action's existing PR, or
+-        # no-op if the base branch is already up-to-date.
+-        with:
+-          token: ${{ secrets.GH_USER_TOKEN }}
+-          branch: actions/${{ github.ref_name == 'main' || format('{0}/', github.ref_name) }}tools-update-${{ matrix.id }}  # Custom branch *just* for this Action.
+-          delete-branch: true
+-          commit-message: ${{ env.COMMIT_MSG }}
+-          labels: ${{ matrix.label }}
+-          title: '${{ matrix.subsystem }}: update ${{ matrix.id }} to ${{ env.NEW_VERSION }}'
+-          body: This is an automated update of ${{ matrix.id }} to ${{ env.NEW_VERSION }}.
+-          committer: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+diff --git a/.github/workflows/update-openssl.yml b/.github/workflows/update-openssl.yml
+deleted file mode 100644
+index b93e37e7f4..0000000000
+--- a/.github/workflows/update-openssl.yml
++++ /dev/null
+@@ -1,61 +0,0 @@
+-name: OpenSSL update
+-on:
+-  schedule:
+-    # Run once a week at 00:05 AM UTC on Sunday.
+-    - cron: 5 0 * * 0
+-
+-  workflow_dispatch:
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  openssl-update:
+-    if: github.repository == 'nodejs/node'
+-    # Cannot use ubuntu-slim here because the update script requires Docker
+-    runs-on: ubuntu-latest
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Check and download new OpenSSL version
+-        run: |
+-          ./tools/dep_updaters/update-openssl.sh download > temp-output
+-          cat temp-output
+-          tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-          rm temp-output
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-      - name: Create PR with first commit
+-        if: env.NEW_VERSION
+-        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        # Creates a PR with the new OpenSSL source code committed
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-        with:
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          body: This is an automated update of OpenSSL to ${{ env.NEW_VERSION }}.
+-          branch: actions/tools-update-openssl  # Custom branch *just* for this Action.
+-          commit-message: 'deps: upgrade openssl sources to openssl-${{ env.NEW_VERSION }}'
+-          labels: dependencies, openssl
+-          title: 'deps: update OpenSSL to ${{ env.NEW_VERSION }}'
+-          path: deps/openssl
+-          update-pull-request-title-and-body: true
+-      - name: Regenerate platform specific files
+-        if: env.NEW_VERSION
+-        run: |
+-          sudo apt update && sudo apt install -y nasm libtext-template-perl
+-          ./tools/dep_updaters/update-openssl.sh regenerate
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-      - name: Add second commit
+-        # Adds a second commit to the PR with the generated platform-dependent files
+-        if: env.NEW_VERSION
+-        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-        with:
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          branch: actions/tools-update-openssl  # Custom branch *just* for this Action.
+-          commit-message: 'deps: update archs files for openssl-${{ env.NEW_VERSION }}'
+-          path: deps/openssl
+diff --git a/.github/workflows/update-v8.yml b/.github/workflows/update-v8.yml
+deleted file mode 100644
+index 8d2db8261c..0000000000
+--- a/.github/workflows/update-v8.yml
++++ /dev/null
+@@ -1,57 +0,0 @@
+-name: V8 patch update
+-on:
+-  schedule:
+-    # Run once a week at 00:05 AM UTC on Sunday.
+-    - cron: 5 0 * * 0
+-  workflow_dispatch:
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  v8-update:
+-    if: github.repository == 'nodejs/node'
+-    runs-on: ubuntu-slim
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-      - name: Cache node modules and update-v8
+-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+-        id: cache-v8-npm
+-        env:
+-          cache-name: cache-v8-npm
+-        with:
+-          path: |
+-            ~/.update-v8
+-            ~/.npm
+-          key: ${{ runner.os }}-build-${{ env.cache-name }}
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-      - name: Install @node-core/utils
+-        run: npm install -g @node-core/utils
+-      - name: Setup Git config
+-        run: |
+-          git config --global user.name "Node.js GitHub Bot"
+-          git config --global user.email "github-bot@iojs.org"
+-      - name: Check and download new V8 version
+-        run: |
+-            ./tools/dep_updaters/update-v8-patch.sh > temp-output
+-            cat temp-output
+-            tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-            rm temp-output
+-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
+-        # Creates a PR or update the Action's existing PR, or
+-        # no-op if the base branch is already up-to-date.
+-        with:
+-          token: ${{ secrets.GH_USER_TOKEN }}
+-          branch: actions/update-v8-patch  # Custom branch *just* for this Action.
+-          delete-branch: true
+-          title: 'deps: patch V8 to ${{ env.NEW_VERSION }}'
+-          body: This is an automated patch update of V8 to ${{ env.NEW_VERSION }}.
+-          labels: dependencies, v8 engine
+diff --git a/.github/workflows/update-wpt.yml b/.github/workflows/update-wpt.yml
+deleted file mode 100644
+index 7e9a6a30fe..0000000000
+--- a/.github/workflows/update-wpt.yml
++++ /dev/null
+@@ -1,87 +0,0 @@
+-name: WPT update
+-
+-on:
+-  schedule:
+-    # Run once a week at 12:00 AM UTC on Sunday.
+-    - cron: 0 0 * * 0
+-  workflow_dispatch:
+-    inputs:
+-      subsystems:
+-        description: Subsystem to run the update for
+-        required: false
+-        default: '["url", "urlpattern", "WebCryptoAPI"]'
+-
+-permissions:
+-  contents: read
+-
+-env:
+-  NODE_VERSION: lts/*
+-
+-jobs:
+-  wpt-subsystem-update:
+-    if: github.repository == 'nodejs/node' || github.event_name == 'workflow_dispatch'
+-    runs-on: ubuntu-slim
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        subsystem: ${{ fromJSON(github.event.inputs.subsystems || '["url", "urlpattern", "WebCryptoAPI"]') }}
+-
+-    steps:
+-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        with:
+-          persist-credentials: false
+-
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-
+-      - name: Install @node-core/utils
+-        run: npm install -g @node-core/utils
+-
+-      - name: Setup @node-core/utils
+-        run: |
+-          ncu-config set username "$USERNAME"
+-          ncu-config set token "$GH_TOKEN"
+-          ncu-config set owner "${GITHUB_REPOSITORY_OWNER}"
+-          ncu-config set repo "$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)"
+-        env:
+-          USERNAME: ${{ secrets.JENKINS_USER }}
+-          GH_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-
+-      - name: Update WPT for subsystem ${{ matrix.subsystem }}
+-        run: |
+-          git node wpt "$SUBSYSTEM"
+-        env:
+-          SUBSYSTEM: ${{ matrix.subsystem }}
+-
+-      - name: Retrieve new version commit
+-        run: |
+-          new_version="$(
+-            node -p 'require("./test/fixtures/wpt/versions.json")[process.argv[1]].commit' "$SUBSYSTEM"
+-          )"
+-          {
+-            echo "long_version=$new_version"
+-            echo "short_version=${new_version:0:10}"
+-          } >> "$GITHUB_ENV"
+-        env:
+-          SUBSYSTEM: ${{ matrix.subsystem }}
+-
+-      - name: Open or update PR for the subsystem update
+-        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
+-        with:
+-          # The create-or-update-pull-request-action matches the branch name by prefix,
+-          # which is why we need to add the -wpt suffix. If we dont do that, we risk matching wrong PRs,
+-          # like for example "url" mistakenly matching and updating the "urlpattern" PR
+-          # as seen in https://github.com/nodejs/node/pull/57368
+-          branch: actions/update-${{ matrix.subsystem }}-wpt
+-          author: Node.js GitHub Bot <github-bot@iojs.org>
+-          title: 'test: update WPT for ${{ matrix.subsystem }} to ${{ env.short_version }}'
+-          commit-message: 'test: update WPT for ${{ matrix.subsystem }} to ${{ env.short_version }}'
+-          labels: test
+-          update-pull-request-title-and-body: true
+-          body: >
+-            This is an automated update of the WPT for ${{ matrix.subsystem }} to
+-            https://github.com/web-platform-tests/wpt/commit/${{ env.long_version }}.
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}

@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:29 +0000
+Subject: [PATCH] src,crypto: mobile adjustment in crypto_context.cc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Upstream's Apple system-trust reader is written against macOS-only API
+(SecTrustSettingsCopyTrustSettings and the kSecTrustSettings* keys);
+an iOS build does not even link them. Fence those spans with
+TARGET_OS_OSX and fall back on iOS to asking the system to evaluate
+each candidate directly (SecTrustEvaluateWithError). Reader invariants
+covered by test/parallel/test-mobile-system-ca.
+
+Co-authored-by: Julia Samól <j.samol@papers.ch>
+---
+ src/crypto/crypto_context.cc | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index 3513afc5df..6ec847b0c6 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -309,6 +309,9 @@ bool isSelfIssued(X509* cert) {
+ #ifdef __APPLE__
+ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
+                                               bool is_self_issued) {
++
++  // nodejs-mobile patch: the APIs used here are macOS-only
++#if TARGET_OS_OSX
+   // Trust settings may be scoped to a single application
+   // skip as this is not supported
+   if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsApplication)) {
+@@ -400,6 +403,10 @@ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
+   return (trust_settings_result == kSecTrustSettingsResultTrustAsRoot)
+              ? TrustStatus::TRUSTED
+              : TrustStatus::UNSPECIFIED;
++#else
++  // nodejs-mobile patch: no user/admin trust settings on iOS.
++  return TrustStatus::UNSPECIFIED;
++#endif  // TARGET_OS_OSX
+ }
+ 
+ TrustStatus IsTrustSettingsTrustedForPolicy(CFArrayRef trust_settings,
+@@ -471,6 +478,8 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
+   bool trust_evaluated = false;
+   bool is_self_issued = isSelfIssued(cert);
+ 
++  // nodejs-mobile patch: the APIs used here are macOS-only
++#if TARGET_OS_OSX
+   // Evaluate user trust domain, then admin. User settings can override
+   // admin (and both override the system domain, but we don't check that).
+   for (const auto& trust_domain :
+@@ -509,6 +518,14 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
+       CFRelease(trust_settings);
+     }
+   }
++#else
++  if (!trust_evaluated) {
++    bool result = IsCertificateTrustValid(ref);
++    if (result) {
++      return true;
++    }
++  }
++#endif
+   return false;
+ }
+ 

@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:27 +0000
+Subject: [PATCH] src: mobile platform guards in node.cc / node_internals.h
+
+TARGET_OS_IPHONE / __ANDROID__ guards in node.cc and node_internals.h
+for process-level facilities mobile OSes forbid or lack (tty tcsetattr
+teardown on iOS; NODE_IMPLEMENTS_POSIX_CREDENTIALS turned on for
+Android API >= 21, which upstream leaves off).
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+---
+ src/node.cc          | 3 +++
+ src/node_internals.h | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/node.cc b/src/node.cc
+index 6f899ec062..4aaa736600 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -693,6 +693,8 @@ void ResetStdio() {
+       CHECK_NE(err, -1);
+     }
+ 
++#if !(defined(__APPLE__) && TARGET_OS_IPHONE)
++    // tcsetattr is not working on iOS devices.
+     if (s.isatty) {
+       sigset_t sa;
+       int err;
+@@ -714,6 +716,7 @@ void ResetStdio() {
+       // - if the process group is orphaned, e.g. because the user logged out,
+       //   tcsetattr fails with EIO
+     }
++#endif  // !(defined(__APPLE__) && TARGET_OS_IPHONE)
+   }
+ #endif  // __POSIX__
+ }
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 8e930a6fec..b279bf9999 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -326,7 +326,7 @@ class ThreadPoolWork {
+ 
+ // Functions defined in node.cc that are exposed via the bootstrapper object
+ 
+-#if defined(__POSIX__) && !defined(__ANDROID__) && !defined(__CloudABI__)
++#if defined(__POSIX__) && !(defined(__ANDROID__) && __ANDROID_API__ < 21) && !defined(__CloudABI__)  // NOLINT(whitespace/line_length)
+ #define NODE_IMPLEMENTS_POSIX_CREDENTIALS 1
+ #endif  // defined(__POSIX__) && !defined(__ANDROID__) && !defined(__CloudABI__)
+ 

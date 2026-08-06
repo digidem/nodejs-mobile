@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gregor MacLennan <gmaclennan@awana.digital>
+Date: Tue, 28 Jul 2026 19:20:32 +0000
+Subject: [PATCH] test: mobile test harness
+
+The harness plumbing that lets upstream's own test runner drive a
+phone: common.isAndroid/isIOS platform detection, tools/test.py
+arch->system mapping so --arch android/ios selects the device .status
+sections, and the [$system==android]/[$system==ios] skip sections for
+whole categories mobile can't run (child_process, cluster, signals,
+OpenSSL CLI).
+
+Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
+Co-authored-by: Andre Staltz <andre@staltz.com>
+---
+ test/common/index.js        |  4 ++++
+ test/common/index.mjs       |  4 ++++
+ test/message/message.status | 40 +++++++++++++++++++++++++++++++++++++
+ test/message/testcfg.py     |  7 +++++--
+ tools/test.py               |  6 ++++++
+ 5 files changed, 59 insertions(+), 2 deletions(-)
+ mode change 100755 => 100644 test/common/index.js
+
+diff --git a/test/common/index.js b/test/common/index.js
+old mode 100755
+new mode 100644
+index 6cfebae8f4..b9a9213da1
+--- a/test/common/index.js
++++ b/test/common/index.js
+@@ -159,6 +159,8 @@ const isFreeBSD = process.platform === 'freebsd';
+ const isOpenBSD = process.platform === 'openbsd';
+ const isLinux = process.platform === 'linux';
+ const isMacOS = process.platform === 'darwin';
++const isAndroid = process.platform === 'android';
++const isIOS = process.platform === 'ios';
+ const isASan = process.config.variables.asan === 1;
+ const isRiscv64 = process.arch === 'riscv64';
+ const isDebug = process.features.debug;
+@@ -945,8 +947,10 @@ const common = {
+   invalidArgTypeHelper,
+   isAlive,
+   isASan,
++  isAndroid,
+   isDebug,
+   isFreeBSD,
++  isIOS,
+   isLinux,
+   isOpenBSD,
+   isMacOS,
+diff --git a/test/common/index.mjs b/test/common/index.mjs
+index a9704d83c2..7d11acd371 100644
+--- a/test/common/index.mjs
++++ b/test/common/index.mjs
+@@ -23,9 +23,11 @@ const {
+   hasIPv6,
+   isAIX,
+   isAlive,
++  isAndroid,
+   isFreeBSD,
+   isIBMi,
+   isInsideDirWithUnusualChars,
++  isIOS,
+   isLinux,
+   isOpenBSD,
+   isMacOS,
+@@ -77,9 +79,11 @@ export {
+   hasIPv6,
+   isAIX,
+   isAlive,
++  isAndroid,
+   isFreeBSD,
+   isIBMi,
+   isInsideDirWithUnusualChars,
++  isIOS,
+   isLinux,
+   isOpenBSD,
+   isMacOS,
+diff --git a/test/message/message.status b/test/message/message.status
+index bd3f488b7b..2f94651a74 100644
+--- a/test/message/message.status
++++ b/test/message/message.status
+@@ -17,3 +17,43 @@ prefix message
+ [$system==freebsd]
+ 
+ [$system==aix]
++
++[$system==android]
++#
++# Tests that require child process that currently is not supported on mobile
++#
++async_error_eval_cjs: SKIP
++async_error_eval_esm: SKIP
++esm_loader_not_found_cjs_hint_bare: SKIP
++eval_messages: SKIP
++stdin_messages: SKIP
++#
++# Tests that require printing '\0' to stderr, which logcat won't show
++#
++error_with_nul: SKIP
++#
++# Tests that try to access the 'test' parent folder, currently not supported on mobile
++#
++esm_loader_not_found_cjs_hint_relative: SKIP
++
++[$system==ios]
++#
++# Tests that require child process that currently is not supported on mobile
++#
++async_error_eval_cjs: SKIP
++async_error_eval_esm: SKIP
++esm_loader_not_found_cjs_hint_bare: SKIP
++eval_messages: SKIP
++stdin_messages: SKIP
++#
++# Tests that require WebAssembly, not supported in JIT-less V8
++#
++v8_warning: SKIP
++#
++# Tests that require printing '\0' to stderr, which Xcode doesn't support
++#
++error_with_nul: SKIP
++#
++# Tests that try to access the 'test' parent folder, currently not supported on mobile
++#
++esm_loader_not_found_cjs_hint_relative: SKIP
+diff --git a/test/message/testcfg.py b/test/message/testcfg.py
+index 5470fd2bd9..4db0a9d5c6 100644
+--- a/test/message/testcfg.py
++++ b/test/message/testcfg.py
+@@ -47,8 +47,10 @@ class MessageTestCase(test.TestCase):
+     self.parallel = True
+ 
+   def IgnoreLine(self, str):
+-    """Ignore empty lines and valgrind output."""
++    """Ignore empty lines and valgrind output and warnings."""
++    # nodejs-mobile patch
+     if not str.strip(): return True
++    elif str.startswith('Warning: disabling flag --expose_wasm'): return True
+     else: return str.startswith('==') or str.startswith('**')
+ 
+   def IsFailureOutput(self, output):
+@@ -138,10 +140,11 @@ class MessageTestConfiguration(test.TestConfiguration):
+     for tst in all_tests:
+       if self.Contains(path, tst):
+         file_path = join(self.root, reduce(join, tst[1:], ''))
++        test_name = tst[:-1] + [os.path.splitext(tst[-1])[0]]
+         output_path = file_path[:file_path.rfind('.')] + '.out'
+         if not exists(output_path):
+           raise Exception("Could not find %s" % output_path)
+-        result.append(MessageTestCase(tst, file_path, output_path,
++        result.append(MessageTestCase(test_name, file_path, output_path,
+                                       arch, mode, self.context, self))
+     return result
+ 
+diff --git a/tools/test.py b/tools/test.py
+index 0bdfa5de79..97c9503393 100755
+--- a/tools/test.py
++++ b/tools/test.py
+@@ -1745,6 +1745,12 @@ def Main():
+         'asan': get_asan_state(vm, context),
+         'pointer_compression': get_pointer_compression_state(vm, context),
+       }
++      # If arch is android, system is android as well.
++      if arch.lower() == "android":
++        env['system'] = "android"
++      # If arch is ios, system is iOS as well.
++      elif arch.lower() == "ios":
++        env['system'] = "ios"
+       for path in paths:
+         test_list = root.ListTests([], path, context, arch, mode)
+         unclassified_tests += test_list
