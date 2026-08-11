@@ -1,0 +1,82 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'nodejsmobile.test.testnode'
+    compileSdk 34
+    ndkVersion '27.3.13750724'
+
+    defaultConfig {
+        applicationId 'nodejsmobile.test.testnode'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        // Self-driving real-device smoke (BrowserStack Espresso) — see
+        // src/androidTest/.../NodeSmokeTest.java.
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+
+        externalNativeBuild {
+            cmake {
+                cppFlags '-fexceptions'
+                arguments '-DANDROID_STL=c++_shared'
+            }
+        }
+        ndk {
+            // CMake imports a prebuilt libnode.so per ABI, so only build ABIs
+            // that have one in out_android/. CI builds a single ABI (x86_64 for
+            // the emulator) and sets ORG_GRADLE_PROJECT_testnodeAbis=x86_64.
+            def abis = (project.findProperty('testnodeAbis') ?: 'armeabi-v7a,arm64-v8a,x86_64').split(',')
+            abis.each { abiFilters.add(it.trim()) }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    sourceSets {
+        main {
+            // The upstream test suite is bundled as assets and copied to the
+            // app's files dir on first launch; the proxy then rewrites test
+            // paths to that location (see node-android-proxy.sh). The
+            // BrowserStack smoke stages its few files via the test APK instead
+            // and sets testnodeSkipTestAssets to keep the upload small.
+            if (!(project.findProperty('testnodeSkipTestAssets') ?: 'false').toBoolean()) {
+                assets.srcDirs += '../../../../../test/'
+            }
+            // libnode.so is built by tools/android_build.sh into out_android/<abi>/.
+            jniLibs.srcDirs += '../../../../../out_android'
+        }
+    }
+
+    // person.jpg and person.jpg.gz both map to the asset key fixtures/person.jpg
+    // (the merger strips the .gz), so the gzip fixture must be excluded.
+    androidResources {
+        ignoreAssetsPatterns.add('person.jpg.gz')
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    // Instrumentation deps for the BrowserStack Espresso smoke only; the app
+    // itself has no dependencies.
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
