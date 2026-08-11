@@ -54,10 +54,10 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  35 files changed, 1676 insertions(+), 46 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 5c7fe47927..cd7df2fbbe 100644
+index cf7f8d42e8..ed19dda221 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -156,6 +156,1372 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -158,6 +158,1372 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  

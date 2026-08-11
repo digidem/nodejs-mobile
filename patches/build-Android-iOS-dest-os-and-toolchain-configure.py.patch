@@ -123,10 +123,10 @@ index 5cea0393f4..ec76c900ca 100644
 -    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --cross-compiling")
 +    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --with-intl=" + intl + extra_flags + " --cross-compiling --shared")
 diff --git a/configure.py b/configure.py
-index 9c426b3f8f..ee95ed7f80 100755
+index a9910d038f..09a7e45d57 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1140,6 +1140,11 @@ parser.add_argument('-C',
+@@ -1146,6 +1146,11 @@ parser.add_argument('-C',
      default=None,
      help=argparse.SUPPRESS)
  
@@ -138,7 +138,7 @@ index 9c426b3f8f..ee95ed7f80 100755
  parser.add_argument('--clang-cl',
      action='store',
      dest='clang_cl',
-@@ -1620,6 +1625,9 @@ def configure_node_cctest_sources(o):
+@@ -1626,6 +1631,9 @@ def configure_node_cctest_sources(o):
      SearchFiles('test/cctest', 'h')
  
  def configure_node(o):

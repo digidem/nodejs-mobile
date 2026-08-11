@@ -1,4 +1,4 @@
 # The upstream nodejs/node release the patch series applies to.
 # First non-comment line is the tag (or SHA); update it as part of every
 # upstream bump (see README.md).
-v24.18.0
+v24.19.0

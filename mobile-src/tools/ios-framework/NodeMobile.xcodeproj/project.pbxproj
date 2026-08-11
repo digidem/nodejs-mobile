@@ -21,6 +21,7 @@
 		A36728F22E53580A004DF2FB /* libncrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728C12E530EF7004DF2FB /* libncrypto.a */; };
 		A36728F32E53580A004DF2FB /* libnghttp2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 334822141F6AFBD200CF403E /* libnghttp2.a */; };
 		A36728F42E53580A004DF2FB /* libnode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C91D1EC3922F0007AD59 /* libnode.a */; };
+		A36728F42E53580A004E02FB /* libnode_base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728F42E53580A004E12FB /* libnode_base.a */; };
 		A36728F52E53580A004DF2FB /* libopenssl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C91E1EC3922F0007AD59 /* libopenssl.a */; };
 		A36728F62E53580A004DF2FB /* libsimdjson.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728BA2E530EF7004DF2FB /* libsimdjson.a */; };
 		DEADBEEF000000000000D002 /* libicui18n.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEADBEEF000000000000D001 /* libicui18n.a */; };
@@ -59,6 +60,7 @@
 		334822141F6AFBD200CF403E /* libnghttp2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnghttp2.a; path = bin/libnghttp2.a; sourceTree = "<group>"; };
 		3376C9191EC3922F0007AD59 /* libcares.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcares.a; path = bin/libcares.a; sourceTree = "<group>"; };
 		3376C91D1EC3922F0007AD59 /* libnode.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnode.a; path = bin/libnode.a; sourceTree = "<group>"; };
+		A36728F42E53580A004E12FB /* libnode_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnode_base.a; path = bin/libnode_base.a; sourceTree = "<group>"; };
 		3376C91E1EC3922F0007AD59 /* libopenssl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libopenssl.a; path = bin/libopenssl.a; sourceTree = "<group>"; };
 		3376C91F1EC3922F0007AD59 /* libuv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libuv.a; path = bin/libuv.a; sourceTree = "<group>"; };
 		3376C9201EC3922F0007AD59 /* libzlib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzlib.a; path = bin/libzlib.a; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 				A36728FA2E53580A004DF2FB /* libv8_base_without_compiler.a in Frameworks */,
 				A36728FE2E53580A004DF2FB /* libv8_libbase.a in Frameworks */,
 				A36728F42E53580A004DF2FB /* libnode.a in Frameworks */,
+				A36728F42E53580A004E02FB /* libnode_base.a in Frameworks */,
 				A36728FF2E53580A004DF2FB /* libv8_libplatform.a in Frameworks */,
 				A36728F12E53580A004DF2FB /* libnbytes.a in Frameworks */,
 				A36728F82E53580A004DF2FB /* libuv.a in Frameworks */,
@@ -173,6 +176,7 @@
 				33300EAC240437620019E302 /* libllhttp.a */,
 				334822141F6AFBD200CF403E /* libnghttp2.a */,
 				3376C91D1EC3922F0007AD59 /* libnode.a */,
+				A36728F42E53580A004E12FB /* libnode_base.a */,
 				3376C91E1EC3922F0007AD59 /* libopenssl.a */,
 				F6860EE62ACD493C00070ED3 /* libsimdutf.a */,
 				3376C91F1EC3922F0007AD59 /* libuv.a */,

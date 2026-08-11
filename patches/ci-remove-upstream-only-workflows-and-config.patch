@@ -27,7 +27,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/build-tarball.yml           | 102 ------
  .github/workflows/close-stalled.yml           |  36 --
  .github/workflows/codeql.yml                  |  42 ---
- .github/workflows/comment-labeled.yml         |  55 ---
+ .github/workflows/comment-labeled.yml         |  57 ----
  .../commit-lint-problem-matcher.json          |  13 -
  .github/workflows/commit-lint.yml             |  35 --
  .github/workflows/commit-queue.yml            |  99 ------
@@ -40,18 +40,19 @@ is read only from the default branch and is left untouched.
  .github/workflows/doc.yml                     |  43 ---
  .../workflows/find-inactive-collaborators.yml |  50 ---
  .github/workflows/find-inactive-tsc.yml       |  62 ----
- .github/workflows/label-flaky-test-issue.yml  |  52 ---
+ .github/workflows/label-flaky-test-issue.yml  |  53 ---
  .github/workflows/label-pr.yml                |  18 -
  .github/workflows/license-builder.yml         |  38 ---
- .github/workflows/lint-release-proposal.yml   | 109 ------
- .github/workflows/linters.yml                 | 260 --------------
+ .github/workflows/lint-release-proposal.yml   | 119 -------
+ .github/workflows/linters.yml                 | 262 --------------
  .github/workflows/major-release.yml           |  49 ---
  .github/workflows/notify-on-push.yml          |  61 ----
  .github/workflows/notify-on-review-wanted.yml |  45 ---
  .github/workflows/post-release.yml            |  33 --
  .../remark-lint-problem-matcher.json          |  22 --
  .github/workflows/scorecard.yml               |  81 -----
- .github/workflows/stale.yml                   |  50 ---
+ .github/workflows/stale.yml                   |  51 ---
+ .github/workflows/stress-test.yml             | 116 -------
  .github/workflows/test-internet.yml           |  66 ----
  .github/workflows/test-linux.yml              |  87 -----
  .github/workflows/test-macos.yml              | 104 ------
@@ -60,7 +61,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/update-openssl.yml          |  61 ----
  .github/workflows/update-v8.yml               |  57 ----
  .github/workflows/update-wpt.yml              |  87 -----
- 40 files changed, 3115 deletions(-)
+ 41 files changed, 3247 deletions(-)
  delete mode 100644 .github/ISSUE_TEMPLATE/config.yml
  delete mode 100644 .github/SUPPORT.md
  delete mode 100644 .github/label-pr-config.yml
@@ -93,6 +94,7 @@ is read only from the default branch and is left untouched.
  delete mode 100644 .github/workflows/remark-lint-problem-matcher.json
  delete mode 100644 .github/workflows/scorecard.yml
  delete mode 100644 .github/workflows/stale.yml
+ delete mode 100644 .github/workflows/stress-test.yml
  delete mode 100644 .github/workflows/test-internet.yml
  delete mode 100644 .github/workflows/test-linux.yml
  delete mode 100644 .github/workflows/test-macos.yml
@@ -467,7 +469,7 @@ index 34488eeed6..0000000000
 -          GH_REPO: ${{ github.repository }}
 diff --git a/.github/workflows/build-tarball.yml b/.github/workflows/build-tarball.yml
 deleted file mode 100644
-index 9b4e7684f4..0000000000
+index 9d2cca4782..0000000000
 --- a/.github/workflows/build-tarball.yml
 +++ /dev/null
 @@ -1,102 +0,0 @@
@@ -514,7 +516,7 @@ index 9b4e7684f4..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -530,7 +532,7 @@ index 9b4e7684f4..0000000000
 -          export COMMIT=$(git rev-parse --short=10 "$GITHUB_SHA")
 -          ./configure && make tar -j4 SKIP_XZ=1
 -      - name: Upload tarball artifact
--        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
 -        with:
 -          name: tarballs
 -          path: '*.tar.gz'
@@ -544,7 +546,7 @@ index 9b4e7684f4..0000000000
 -      SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
 -      SCCACHE_IDLE_TIMEOUT: '0'
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          sparse-checkout: .github/actions/install-clang
@@ -557,7 +559,7 @@ index 9b4e7684f4..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
 -        with:
--          version: v0.12.0
+-          version: v0.16.0
 -      - name: Environment Information
 -        run: npx envinfo
 -      - name: Download tarball
@@ -575,7 +577,7 @@ index 9b4e7684f4..0000000000
 -        run: make -C "$TAR_DIR" test-ci -j1 V=1 TEST_CI_ARGS="-p dots --measure-flakiness 9"
 diff --git a/.github/workflows/close-stalled.yml b/.github/workflows/close-stalled.yml
 deleted file mode 100644
-index 4d36d9e93c..0000000000
+index 56c0f2542b..0000000000
 --- a/.github/workflows/close-stalled.yml
 +++ /dev/null
 @@ -1,36 +0,0 @@
@@ -601,7 +603,7 @@ index 4d36d9e93c..0000000000
 -    if: github.repository == 'nodejs/node'
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f  # v10.2.0
+-      - uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899  # v10.3.0
 -        with:
 -          repo-token: ${{ secrets.GITHUB_TOKEN }}
 -          days-before-close: 30
@@ -617,7 +619,7 @@ index 4d36d9e93c..0000000000
 -          days-before-stale: -1
 diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
 deleted file mode 100644
-index 01d7f37e38..0000000000
+index c869c23cac..0000000000
 --- a/.github/workflows/codeql.yml
 +++ /dev/null
 @@ -1,42 +0,0 @@
@@ -647,28 +649,28 @@ index 01d7f37e38..0000000000
 -
 -    steps:
 -      - name: Checkout repository
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -
 -      # Initializes the CodeQL tools for scanning.
 -      - name: Initialize CodeQL
--        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
 -        with:
 -          languages: ${{ matrix.language }}
 -          config-file: ./.github/codeql-config.yml
 -
 -      - name: Autobuild
--        uses: github/codeql-action/autobuild@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        uses: github/codeql-action/autobuild@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
 -
 -      - name: Perform CodeQL Analysis
--        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
 -        with:
 -          category: /language:${{matrix.language}}
 diff --git a/.github/workflows/comment-labeled.yml b/.github/workflows/comment-labeled.yml
 deleted file mode 100644
-index e665250748..0000000000
+index 5e6f936d38..0000000000
 --- a/.github/workflows/comment-labeled.yml
 +++ /dev/null
-@@ -1,55 +0,0 @@
+@@ -1,57 +0,0 @@
 -name: Comment on issues and PRs when labeled
 -on:
 -  issues:
@@ -701,7 +703,7 @@ index e665250748..0000000000
 -        env:
 -          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
 -          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
--        run: gh issue comment "$NUMBER" --repo ${{ github.repository }} --body "$STALE_MESSAGE"
+-        run: gh issue comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$STALE_MESSAGE"
 -
 -  fast-track:
 -    permissions:
@@ -712,7 +714,8 @@ index e665250748..0000000000
 -      - name: Request Fast-Track
 -        env:
 -          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
--        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "$FAST_TRACK_MESSAGE"
+-          NUMBER: ${{ github.event.pull_request.number }}
+-        run: gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$FAST_TRACK_MESSAGE"
 -
 -  notable-change:
 -    permissions:
@@ -723,7 +726,8 @@ index e665250748..0000000000
 -      - name: Add notable change description
 -        env:
 -          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
--        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "$NOTABLE_CHANGE_MESSAGE"
+-          NUMBER: ${{ github.event.pull_request.number }}
+-        run: gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$NOTABLE_CHANGE_MESSAGE"
 diff --git a/.github/workflows/commit-lint-problem-matcher.json b/.github/workflows/commit-lint-problem-matcher.json
 deleted file mode 100644
 index 72dd13b9e0..0000000000
@@ -745,7 +749,7 @@ index 72dd13b9e0..0000000000
 -}
 diff --git a/.github/workflows/commit-lint.yml b/.github/workflows/commit-lint.yml
 deleted file mode 100644
-index 75ace50d2a..0000000000
+index 93ca3425be..0000000000
 --- a/.github/workflows/commit-lint.yml
 +++ /dev/null
 @@ -1,35 +0,0 @@
@@ -771,7 +775,7 @@ index 75ace50d2a..0000000000
 -        run: |
 -          echo "plusOne=$((${{ github.event.pull_request.commits }} + 1))" >> $GITHUB_OUTPUT
 -          echo "minusOne=$((${{ github.event.pull_request.commits }} - 1))" >> $GITHUB_OUTPUT
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          fetch-depth: ${{ steps.nb-of-commits.outputs.plusOne }}
 -          persist-credentials: false
@@ -786,7 +790,7 @@ index 75ace50d2a..0000000000
 -          git rev-parse HEAD~${{ steps.nb-of-commits.outputs.minusOne }} | xargs npx -q core-validate-commit --no-validate-metadata --tap
 diff --git a/.github/workflows/commit-queue.yml b/.github/workflows/commit-queue.yml
 deleted file mode 100644
-index dda452bed4..0000000000
+index 8b5f37807b..0000000000
 --- a/.github/workflows/commit-queue.yml
 +++ /dev/null
 @@ -1,99 +0,0 @@
@@ -851,7 +855,7 @@ index dda452bed4..0000000000
 -    if: needs.get_mergeable_prs.outputs.numbers != ''
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          # A personal token is required because pushing with GITHUB_TOKEN will
 -          # prevent commits from running CI after they land. It needs
@@ -891,7 +895,7 @@ index dda452bed4..0000000000
 -          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
 diff --git a/.github/workflows/coverage-linux-without-intl.yml b/.github/workflows/coverage-linux-without-intl.yml
 deleted file mode 100644
-index 4b0c686c9a..0000000000
+index 69fdc02c65..0000000000
 --- a/.github/workflows/coverage-linux-without-intl.yml
 +++ /dev/null
 @@ -1,86 +0,0 @@
@@ -946,7 +950,7 @@ index 4b0c686c9a..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-24.04
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -957,7 +961,7 @@ index 4b0c686c9a..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
 -        with:
--          version: v0.12.0
+-          version: v0.16.0
 -      - name: Environment Information
 -        run: npx envinfo
 -      - name: Install gcovr
@@ -978,12 +982,12 @@ index 4b0c686c9a..0000000000
 -      - name: Clean tmp
 -        run: rm -rf coverage/tmp && rm -rf out
 -      - name: Upload
--        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-linux.yml b/.github/workflows/coverage-linux.yml
 deleted file mode 100644
-index ad3bc36e3e..0000000000
+index f4b7ed4296..0000000000
 --- a/.github/workflows/coverage-linux.yml
 +++ /dev/null
 @@ -1,86 +0,0 @@
@@ -1038,7 +1042,7 @@ index ad3bc36e3e..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-24.04-arm
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -1049,7 +1053,7 @@ index ad3bc36e3e..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
 -        with:
--          version: v0.12.0
+-          version: v0.16.0
 -      - name: Environment Information
 -        run: npx envinfo
 -      - name: Install gcovr
@@ -1070,12 +1074,12 @@ index ad3bc36e3e..0000000000
 -      - name: Clean tmp
 -        run: rm -rf coverage/tmp && rm -rf out
 -      - name: Upload
--        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-windows.yml b/.github/workflows/coverage-windows.yml
 deleted file mode 100644
-index fcbc3d2d48..0000000000
+index 7d5afebad4..0000000000
 --- a/.github/workflows/coverage-windows.yml
 +++ /dev/null
 @@ -1,100 +0,0 @@
@@ -1150,7 +1154,7 @@ index fcbc3d2d48..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: windows-2025
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -1176,12 +1180,12 @@ index fcbc3d2d48..0000000000
 -      - name: Clean tmp
 -        run: npx rimraf ./coverage/tmp
 -      - name: Upload
--        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/create-release-proposal.yml b/.github/workflows/create-release-proposal.yml
 deleted file mode 100644
-index 3c1437e0ac..0000000000
+index ae4c4240a2..0000000000
 --- a/.github/workflows/create-release-proposal.yml
 +++ /dev/null
 @@ -1,81 +0,0 @@
@@ -1220,7 +1224,7 @@ index 3c1437e0ac..0000000000
 -      RELEASE_LINE: ${{ inputs.release-line }}
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          ref: ${{ env.STAGING_BRANCH }}
 -          persist-credentials: false
@@ -1268,7 +1272,7 @@ index 3c1437e0ac..0000000000
 -          BOT_TOKEN: ${{ secrets.GH_USER_TOKEN }}
 diff --git a/.github/workflows/daily-wpt-fyi.yml b/.github/workflows/daily-wpt-fyi.yml
 deleted file mode 100644
-index ef60209547..0000000000
+index 2470ce6913..0000000000
 --- a/.github/workflows/daily-wpt-fyi.yml
 +++ /dev/null
 @@ -1,179 +0,0 @@
@@ -1337,7 +1341,7 @@ index ef60209547..0000000000
 -          SHORT_SHA=$(node -p 'process.version.split(/-nightly\d{8}/)[1]')
 -          echo "NIGHTLY_REF=$(gh api /repos/nodejs/node/commits/$SHORT_SHA --jq '.sha')" >> $GITHUB_ENV
 -      - name: Checkout ${{ steps.setup-node.outputs.node-version }}
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          ref: ${{ env.NIGHTLY_REF || steps.setup-node.outputs.node-version }}
@@ -1353,7 +1357,7 @@ index ef60209547..0000000000
 -        run: rm -rf wpt
 -        working-directory: test/fixtures
 -      - name: Checkout epochs/daily WPT
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          repository: web-platform-tests/wpt
 -          persist-credentials: false
@@ -1384,7 +1388,7 @@ index ef60209547..0000000000
 -      # version-specific checkout above overwrites .github/actions/
 -      - name: Checkout undici WPT actions
 -        if: ${{ env.WPT_REPORT != '' }}
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          sparse-checkout: |
 -            .github/actions/undici-wpt-current
@@ -1418,7 +1422,7 @@ index ef60209547..0000000000
 -        run: cp wptreport.json wptreport-${{ steps.setup-node.outputs.node-version }}.json
 -      - name: Upload GitHub Actions artifact
 -        if: ${{ env.WPT_REPORT != '' }}
--        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
 -        with:
 -          path: out/wpt/wptreport-*.json
 -          name: WPT Report for ${{ steps.setup-node.outputs.node-version }}
@@ -1453,7 +1457,7 @@ index ef60209547..0000000000
 -          done
 diff --git a/.github/workflows/daily.yml b/.github/workflows/daily.yml
 deleted file mode 100644
-index 0b82dd2aac..0000000000
+index 23ffe66fb2..0000000000
 --- a/.github/workflows/daily.yml
 +++ /dev/null
 @@ -1,32 +0,0 @@
@@ -1475,7 +1479,7 @@ index 0b82dd2aac..0000000000
 -    if: github.repository == 'nodejs/node' || github.event_name == 'workflow_dispatch'
 -    runs-on: ubuntu-24.04-arm
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Use Node.js ${{ env.NODE_VERSION }}
@@ -1491,7 +1495,7 @@ index 0b82dd2aac..0000000000
 -          ninja -C out/Release
 diff --git a/.github/workflows/doc.yml b/.github/workflows/doc.yml
 deleted file mode 100644
-index f2281dc7e7..0000000000
+index baf07c2b68..0000000000
 --- a/.github/workflows/doc.yml
 +++ /dev/null
 @@ -1,43 +0,0 @@
@@ -1521,7 +1525,7 @@ index f2281dc7e7..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Use Node.js ${{ env.NODE_VERSION }}
@@ -1532,7 +1536,7 @@ index f2281dc7e7..0000000000
 -        run: npx envinfo
 -      - name: Build
 -        run: NODE=$(command -v node) make doc-only
--      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
 -        with:
 -          name: docs
 -          path: out/doc
@@ -1540,7 +1544,7 @@ index f2281dc7e7..0000000000
 -        run: NODE=$(command -v node) make test-doc-ci TEST_CI_ARGS="-p actions --measure-flakiness 9"
 diff --git a/.github/workflows/find-inactive-collaborators.yml b/.github/workflows/find-inactive-collaborators.yml
 deleted file mode 100644
-index ba9ce0c2e1..0000000000
+index 35a0f4b1f5..0000000000
 --- a/.github/workflows/find-inactive-collaborators.yml
 +++ /dev/null
 @@ -1,50 +0,0 @@
@@ -1565,7 +1569,7 @@ index ba9ce0c2e1..0000000000
 -    runs-on: ubuntu-slim
 -
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          fetch-depth: 0
 -          persist-credentials: false
@@ -1596,7 +1600,7 @@ index ba9ce0c2e1..0000000000
 -          title: 'meta: move one or more collaborators to emeritus'
 diff --git a/.github/workflows/find-inactive-tsc.yml b/.github/workflows/find-inactive-tsc.yml
 deleted file mode 100644
-index eb09e4e94a..0000000000
+index 8deeaccf5d..0000000000
 --- a/.github/workflows/find-inactive-tsc.yml
 +++ /dev/null
 @@ -1,62 +0,0 @@
@@ -1622,13 +1626,13 @@ index eb09e4e94a..0000000000
 -
 -    steps:
 -      - name: Checkout the repo
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          fetch-depth: 0
 -          persist-credentials: false
 -
 -      - name: Clone nodejs/TSC repository
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          fetch-depth: 0
 -          path: .tmp
@@ -1664,10 +1668,10 @@ index eb09e4e94a..0000000000
 -          update-pull-request-title-and-body: true
 diff --git a/.github/workflows/label-flaky-test-issue.yml b/.github/workflows/label-flaky-test-issue.yml
 deleted file mode 100644
-index 9f37f3b3ef..0000000000
+index 35d780ae66..0000000000
 --- a/.github/workflows/label-flaky-test-issue.yml
 +++ /dev/null
-@@ -1,52 +0,0 @@
+@@ -1,53 +0,0 @@
 -name: Label Flaky Test Issues
 -
 -on:
@@ -1719,7 +1723,8 @@ index 9f37f3b3ef..0000000000
 -        env:
 -          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 -          NUMBER: ${{ github.event.issue.number }}
--        run: gh issue edit "$NUMBER" --repo ${{ github.repository }} --add-label "${{ steps.extract-labels.outputs.LABELS }}"
+-          LABELS: ${{ steps.extract-labels.outputs.LABELS }}
+-        run: gh issue edit "$NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "$LABELS"
 diff --git a/.github/workflows/label-pr.yml b/.github/workflows/label-pr.yml
 deleted file mode 100644
 index 03aa1fa9a8..0000000000
@@ -1746,7 +1751,7 @@ index 03aa1fa9a8..0000000000
 -          configuration-path: .github/label-pr-config.yml
 diff --git a/.github/workflows/license-builder.yml b/.github/workflows/license-builder.yml
 deleted file mode 100644
-index 83b7cea221..0000000000
+index 36d303f9e1..0000000000
 --- a/.github/workflows/license-builder.yml
 +++ /dev/null
 @@ -1,38 +0,0 @@
@@ -1769,7 +1774,7 @@ index 83b7cea221..0000000000
 -    if: github.repository == 'nodejs/node'
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - run: ./tools/license-builder.sh  # Run the license builder tool
@@ -1790,10 +1795,10 @@ index 83b7cea221..0000000000
 -          labels: meta
 diff --git a/.github/workflows/lint-release-proposal.yml b/.github/workflows/lint-release-proposal.yml
 deleted file mode 100644
-index 68e316fbc4..0000000000
+index 93c67df521..0000000000
 --- a/.github/workflows/lint-release-proposal.yml
 +++ /dev/null
-@@ -1,109 +0,0 @@
+@@ -1,119 +0,0 @@
 -name: Linters (release proposals)
 -
 -on:
@@ -1819,18 +1824,29 @@ index 68e316fbc4..0000000000
 -      contents: read
 -      pull-requests: read
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          fetch-depth: 2
 -      - name: Lint release commit title format
+-        id: commit-message-parse
 -        run: |
--          EXPECTED_TITLE='^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}, Version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ (\(Current|'.+' \(LTS)\)$'
+-          VERSION=$(${CXX:-cc} -E -dM src/node_version.h | awk '
+-            $2 == "NODE_MAJOR_VERSION"  { maj = $3 }
+-            $2 == "NODE_MINOR_VERSION"  { min = $3 }
+-            $2 == "NODE_PATCH_VERSION"  { pat = $3 }
+-            $2 == "NODE_VERSION_LTS_CODENAME" { gsub(/^"|"$/, "'"'"'",$3); lts = $3 }
+-            END { if (maj) print maj "\\." min "\\." pat " " (lts != "'"''"'" ? lts " \\(LTS" : "\\(Current" ) "\\)" }
+-          ')
+-          MAJOR=${VERSION%%\\.*}
+-          EXPECTED_TITLE='^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}, Version '"$VERSION"'$'
 -          echo "Expected commit title format: $EXPECTED_TITLE"
 -          COMMIT_SUBJECT="$(git --no-pager log -1 --format=%s)"
--          echo "Actual: $ACTUAL"
+-          echo "Actual: $COMMIT_SUBJECT"
 -          echo "$COMMIT_SUBJECT" | grep -q -E "$EXPECTED_TITLE"
--          echo "COMMIT_SUBJECT=$COMMIT_SUBJECT" >> "$GITHUB_ENV"
+-
+-          echo "COMMIT_SUBJECT=$COMMIT_SUBJECT" >> "$GITHUB_OUTPUT"
+-          echo "MAJOR=$MAJOR" >> "$GITHUB_OUTPUT"
 -      - name: Lint release commit message trailers
 -        run: |
 -          EXPECTED_TRAILER="^$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/[[:digit:]]+\$"
@@ -1850,8 +1866,6 @@ index 68e316fbc4..0000000000
 -          SKIP_XZ=1 make release-only
 -      - name: Lint release commit content
 -        run: |
--          MAJOR="$(awk '/^#define NODE_MAJOR_VERSION / { print $3 }' src/node_version.h)"
--
 -          echo "Checking for expected files in the release commit:"
 -          missing_expected=
 -          for expected in CHANGELOG.md src/node_version.h doc/changelogs/; do
@@ -1877,7 +1891,6 @@ index 68e316fbc4..0000000000
 -        run: |
 -          EXPECTED_CHANGELOG_TITLE_INTRO="## $COMMIT_SUBJECT, @"
 -          echo "Expected CHANGELOG section title: $EXPECTED_CHANGELOG_TITLE_INTRO"
--          MAJOR="$(awk '/^#define NODE_MAJOR_VERSION / { print $3 }' src/node_version.h)"
 -          CHANGELOG_PATH="doc/changelogs/CHANGELOG_V${MAJOR}.md"
 -          CHANGELOG_TITLE="$(grep "$EXPECTED_CHANGELOG_TITLE_INTRO" "$CHANGELOG_PATH")"
 -          echo "Actual: $CHANGELOG_TITLE"
@@ -1902,13 +1915,15 @@ index 68e316fbc4..0000000000
 -          done
 -        shell: bash  # See https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference, we want the pipefail option.
 -        env:
+-          COMMIT_SUBJECT: ${{ steps.commit-message-parse.outputs.COMMIT_SUBJECT }}
+-          MAJOR: ${{ steps.commit-message-parse.outputs.MAJOR }}
 -          GH_TOKEN: ${{ github.token }}
 diff --git a/.github/workflows/linters.yml b/.github/workflows/linters.yml
 deleted file mode 100644
-index 4fbdb480e3..0000000000
+index fae3018e7a..0000000000
 --- a/.github/workflows/linters.yml
 +++ /dev/null
-@@ -1,260 +0,0 @@
+@@ -1,262 +0,0 @@
 -name: Linters
 -
 -on:
@@ -1936,7 +1951,7 @@ index 4fbdb480e3..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Use Node.js ${{ env.NODE_VERSION }}
@@ -1951,7 +1966,7 @@ index 4fbdb480e3..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -1966,7 +1981,7 @@ index 4fbdb480e3..0000000000
 -    if: ${{ github.event.pull_request && github.event.pull_request.draft == false && github.base_ref == github.event.repository.default_branch }}
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          fetch-depth: 0
 -          persist-credentials: false
@@ -2004,7 +2019,7 @@ index 4fbdb480e3..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Use Node.js ${{ env.NODE_VERSION }}
@@ -2053,7 +2068,7 @@ index 4fbdb480e3..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          sparse-checkout: |
@@ -2080,7 +2095,7 @@ index 4fbdb480e3..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          sparse-checkout: |
@@ -2104,7 +2119,7 @@ index 4fbdb480e3..0000000000
 -    if: github.event.pull_request.draft == false
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          sparse-checkout: |
@@ -2120,7 +2135,7 @@ index 4fbdb480e3..0000000000
 -    # cannot use ubuntu-24.04-arm here because the docker image is x86 only
 -    runs-on: ubuntu-latest
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - uses: mszostok/codeowners-validator@7f3f5e28c6d7b8dfae5731e54ce2272ca384592f
@@ -2130,7 +2145,7 @@ index 4fbdb480e3..0000000000
 -    if: ${{ github.event.pull_request }}
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          fetch-depth: 2
 -          persist-credentials: false
@@ -2138,12 +2153,14 @@ index 4fbdb480e3..0000000000
 -            /tools/lint-pr-url.mjs
 -            /doc/api/
 -          sparse-checkout-cone-mode: false
--      # GH Actions squashes all PR commits, HEAD^ refers to the base branch.
--      - run: git diff HEAD^ HEAD -G"pr-url:" -- "*.md" | ./tools/lint-pr-url.mjs ${{ github.event.pull_request.html_url }}
+-      # We've checked out a merge commit, HEAD^ refers to the base branch.
+-      - run: git diff HEAD^ HEAD -G"pr-url:" -- "*.md" | ./tools/lint-pr-url.mjs "$PR_URL"
+-        env:
+-          PR_URL: ${{ github.event.pull_request.html_url }}
 -  lint-readme:
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          sparse-checkout: |
@@ -2226,7 +2243,7 @@ index b65917f89e..0000000000
 -          GH_TOKEN: ${{ github.token }}
 diff --git a/.github/workflows/notify-on-push.yml b/.github/workflows/notify-on-push.yml
 deleted file mode 100644
-index 9ca33943c9..0000000000
+index e709df93a8..0000000000
 --- a/.github/workflows/notify-on-push.yml
 +++ /dev/null
 @@ -1,61 +0,0 @@
@@ -2250,7 +2267,7 @@ index 9ca33943c9..0000000000
 -    runs-on: ubuntu-24.04-arm
 -    steps:
 -      - name: Slack Notification
--        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
+-        uses: rtCamp/action-slack-notify@33ca3be66c6f378fe1610fd1d5258632dbed5e58  # 2.4.0
 -        env:
 -          SLACK_COLOR: '#DE512A'
 -          SLACK_ICON: https://github.com/nodejs.png?size=48
@@ -2279,7 +2296,7 @@ index 9ca33943c9..0000000000
 -          COMMITS: ${{ toJSON(github.event.commits) }}
 -      - name: Slack Notification
 -        if: ${{ failure() && steps.commit-check.conclusion == 'failure' && github.repository == 'nodejs/node' }}
--        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
+-        uses: rtCamp/action-slack-notify@33ca3be66c6f378fe1610fd1d5258632dbed5e58  # 2.4.0
 -        env:
 -          SLACK_COLOR: '#DE512A'
 -          SLACK_ICON: https://github.com/nodejs.png?size=48
@@ -2293,7 +2310,7 @@ index 9ca33943c9..0000000000
 -          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 diff --git a/.github/workflows/notify-on-review-wanted.yml b/.github/workflows/notify-on-review-wanted.yml
 deleted file mode 100644
-index 1d3124e336..0000000000
+index 2f1f3af813..0000000000
 --- a/.github/workflows/notify-on-review-wanted.yml
 +++ /dev/null
 @@ -1,45 +0,0 @@
@@ -2333,7 +2350,7 @@ index 1d3124e336..0000000000
 -          fi
 -
 -      - name: Slack Notification
--        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # 2.3.3
+-        uses: rtCamp/action-slack-notify@33ca3be66c6f378fe1610fd1d5258632dbed5e58  # 2.4.0
 -        env:
 -          MSG_MINIMAL: actions url
 -          SLACK_COLOR: '#3d85c6'
@@ -2411,7 +2428,7 @@ index cfb281310a..0000000000
 -}
 diff --git a/.github/workflows/scorecard.yml b/.github/workflows/scorecard.yml
 deleted file mode 100644
-index fbd12b7654..0000000000
+index a6a5b03022..0000000000
 --- a/.github/workflows/scorecard.yml
 +++ /dev/null
 @@ -1,81 +0,0 @@
@@ -2453,12 +2470,12 @@ index fbd12b7654..0000000000
 -
 -    steps:
 -      - name: Harden Runner
--        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40  # v2.19.0
+-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
 -        with:
 -          egress-policy: audit  # TODO: change to 'egress-policy: block' after couple of runs
 -
 -      - name: Checkout code
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -
@@ -2485,7 +2502,7 @@ index fbd12b7654..0000000000
 -      # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
 -      # format to the repository Actions tab.
 -      - name: Upload artifact
--        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
 -        with:
 -          name: SARIF file
 -          path: results.sarif
@@ -2493,15 +2510,15 @@ index fbd12b7654..0000000000
 -
 -      # Upload the results to GitHub's code scanning dashboard.
 -      - name: Upload to code-scanning
--        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7  # v4.35.3
+-        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
 -        with:
 -          sarif_file: results.sarif
 diff --git a/.github/workflows/stale.yml b/.github/workflows/stale.yml
 deleted file mode 100644
-index 704967c24e..0000000000
+index d4be0ceaa3..0000000000
 --- a/.github/workflows/stale.yml
 +++ /dev/null
-@@ -1,50 +0,0 @@
+@@ -1,51 +0,0 @@
 -name: Close stale
 -on:
 -  workflow_dispatch:
@@ -2533,10 +2550,11 @@ index 704967c24e..0000000000
 -    permissions:
 -      issues: write  # for actions/stale to close stale issues
 -      pull-requests: write  # for actions/stale to close stale PRs
+-      actions: write  # for actions/stale to cache stale saved state
 -    if: github.repository == 'nodejs/node'
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f  # v10.2.0
+-      - uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899  # v10.3.0
 -        with:
 -          repo-token: ${{ secrets.GITHUB_TOKEN }}
 -          days-before-stale: 210
@@ -2550,11 +2568,133 @@ index 704967c24e..0000000000
 -          close-pr-message: ${{ format(env.CLOSE_MESSAGE, 'pull request') }}
 -          stale-pr-message: ${{ format(env.WARN_MESSAGE, 'pull request') }}
 -          # max requests it will send per run to the GitHub API before it deliberately exits to avoid hitting API rate limits
--          operations-per-run: 500
+-          operations-per-run: 2500
 -          remove-stale-when-updated: true
+diff --git a/.github/workflows/stress-test.yml b/.github/workflows/stress-test.yml
+deleted file mode 100644
+index e3846cf4d3..0000000000
+--- a/.github/workflows/stress-test.yml
++++ /dev/null
+@@ -1,116 +0,0 @@
+-name: Stress Test (rebase tested branch on main for cache reuse)
+-
+-on:
+-  workflow_dispatch:
+-    inputs:
+-      test_path:
+-        description: Test path or glob (e.g. test/parallel/test-debugger-break.js or "test/parallel/test-debugger-*")
+-        required: true
+-        type: string
+-      os:
+-        description: Runner to use
+-        required: true
+-        default: macos-15
+-        type: choice
+-        options:
+-          - macos-15
+-          - ubuntu-24.04
+-          - ubuntu-24.04-arm
+-      repeat:
+-        description: Number of times to repeat each test (--repeat)
+-        required: true
+-        default: '1000'
+-        type: string
+-      test_jobs:
+-        description: Number of jobs to run in parallel (-j).
+-        required: true
+-        default: '1'
+-        type: string
+-      test_args:
+-        description: Extra args for tools/test.py, space-separated (e.g. "-t 10 --worker")
+-        required: false
+-        default: ''
+-        type: string
+-
+-env:
+-  PYTHON_VERSION: '3.14'
+-  XCODE_VERSION: '16.4'
+-  CLANG_VERSION: '19'
+-  RUSTC_VERSION: '1.82'
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  stress-test:
+-    runs-on: ${{ inputs.os }}
+-    env:
+-      # Linux builds with clang (matching test-linux.yml), macOS with gcc/g++.
+-      CC: ${{ startsWith(inputs.os, 'ubuntu') && 'sccache clang-19' || 'sccache gcc' }}
+-      CXX: ${{ startsWith(inputs.os, 'ubuntu') && 'sccache clang++-19' || 'sccache g++' }}
+-      # Enable sccache - this is okay for a manually-dispatched workflow that is typically used to
+-      # test lib-only or test-only deflaking changes. This should be able to pick up cache from
+-      # test-linux.yml and test-macos.yml running on the main branch.
+-      SCCACHE_GHA_ENABLED: 'true'
+-      SCCACHE_IDLE_TIMEOUT: '0'
+-    steps:
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+-        with:
+-          persist-credentials: false
+-          path: node
+-      - name: Install Clang ${{ env.CLANG_VERSION }}
+-        if: runner.os == 'Linux'
+-        uses: ./node/.github/actions/install-clang
+-        with:
+-          clang-version: ${{ env.CLANG_VERSION }}
+-      - name: Set up Xcode ${{ env.XCODE_VERSION }}
+-        if: runner.os == 'macOS'
+-        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+-        with:
+-          python-version: ${{ env.PYTHON_VERSION }}
+-          allow-prereleases: true
+-      - name: Install Rust ${{ env.RUSTC_VERSION }}
+-        run: |
+-          rustup override set "$RUSTC_VERSION"
+-          rustup --version
+-      - name: Set up sccache
+-        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
+-        with:
+-          version: v0.16.0
+-      - name: Environment Information
+-        run: npx envinfo@7.21.0
+-      # This is needed due to https://github.com/nodejs/build/issues/3878
+-      - name: Cleanup
+-        if: runner.os == 'macOS'
+-        run: |
+-          echo "::group::Free space before cleanup"
+-          df -h
+-          echo "::endgroup::"
+-          echo "::group::Cleaned Files"
+-
+-          sudo rm -rf /Users/runner/Library/Android/sdk
+-
+-          echo "::endgroup::"
+-          echo "::group::Free space after cleanup"
+-          df -h
+-          echo "::endgroup::"
+-      - name: Build
+-        run: make -C node build-ci -j"$(getconf _NPROCESSORS_ONLN)" V=1 CONFIG_FLAGS="--error-on-warn --v8-enable-temporal-support"
+-      - name: Stress run ${{ inputs.test_path }} x${{ inputs.repeat }}
+-        shell: bash
+-        env:
+-          REPEAT: ${{ inputs.repeat }}
+-          JOBS: ${{ inputs.test_jobs }}
+-          TEST_ARGS: ${{ inputs.test_args }}
+-          TEST_PATH: ${{ inputs.test_path }}
+-        run: |
+-          cd node
+-          read -ra EXTRA_ARGS <<< "$TEST_ARGS"
+-          python3 tools/test.py \
+-            --repeat "$REPEAT" \
+-            -j "$JOBS" \
+-            -p actions \
+-            "${EXTRA_ARGS[@]}" \
+-            "$TEST_PATH"
 diff --git a/.github/workflows/test-internet.yml b/.github/workflows/test-internet.yml
 deleted file mode 100644
-index 6c01dc978d..0000000000
+index 7f8f4cc302..0000000000
 --- a/.github/workflows/test-internet.yml
 +++ /dev/null
 @@ -1,66 +0,0 @@
@@ -2606,7 +2746,7 @@ index 6c01dc978d..0000000000
 -    if: (github.event_name == 'schedule' && github.repository == 'nodejs/node') || (github.event.pull_request && github.event.pull_request.draft == false)
 -    runs-on: ubuntu-24.04-arm
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -2617,7 +2757,7 @@ index 6c01dc978d..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
 -        with:
--          version: v0.12.0
+-          version: v0.16.0
 -      - name: Environment Information
 -        run: npx envinfo
 -      - name: Build
@@ -2626,7 +2766,7 @@ index 6c01dc978d..0000000000
 -        run: make test-internet -j4 V=1;
 diff --git a/.github/workflows/test-linux.yml b/.github/workflows/test-linux.yml
 deleted file mode 100644
-index 397498a7e1..0000000000
+index 40ac519c7e..0000000000
 --- a/.github/workflows/test-linux.yml
 +++ /dev/null
 @@ -1,87 +0,0 @@
@@ -2686,7 +2826,7 @@ index 397498a7e1..0000000000
 -      matrix:
 -        os: [ubuntu-24.04, ubuntu-24.04-arm]
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          path: node
@@ -2698,7 +2838,7 @@ index 397498a7e1..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
 -        with:
--          version: v0.12.0
+-          version: v0.16.0
 -      - name: Environment Information
 -        run: npx envinfo
 -      - name: Build
@@ -2719,7 +2859,7 @@ index 397498a7e1..0000000000
 -          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
 diff --git a/.github/workflows/test-macos.yml b/.github/workflows/test-macos.yml
 deleted file mode 100644
-index 9059a9b5c6..0000000000
+index 352282a9bb..0000000000
 --- a/.github/workflows/test-macos.yml
 +++ /dev/null
 @@ -1,104 +0,0 @@
@@ -2775,7 +2915,7 @@ index 9059a9b5c6..0000000000
 -      SCCACHE_GHA_ENABLED: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
 -      SCCACHE_IDLE_TIMEOUT: '0'
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -          path: node
@@ -2789,7 +2929,7 @@ index 9059a9b5c6..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696  # v0.0.10
 -        with:
--          version: v0.12.0
+-          version: v0.16.0
 -      - name: Environment Information
 -        run: npx envinfo
 -      # The `npm ci` for this step fails a lot as part of the Test step. Run it
@@ -2829,7 +2969,7 @@ index 9059a9b5c6..0000000000
 -          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
 diff --git a/.github/workflows/timezone-update.yml b/.github/workflows/timezone-update.yml
 deleted file mode 100644
-index 5e90d16c1b..0000000000
+index 02299e66b3..0000000000
 --- a/.github/workflows/timezone-update.yml
 +++ /dev/null
 @@ -1,74 +0,0 @@
@@ -2856,12 +2996,12 @@ index 5e90d16c1b..0000000000
 -
 -    steps:
 -      - name: Checkout nodejs/node
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -
 -      - name: Checkout unicode-org/icu-data
--        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          path: icu-data
 -          persist-credentials: false
@@ -2909,7 +3049,7 @@ index 5e90d16c1b..0000000000
 -          update-pull-request-title-and-body: true
 diff --git a/.github/workflows/tools.yml b/.github/workflows/tools.yml
 deleted file mode 100644
-index 59c9d4bcd4..0000000000
+index aa99096658..0000000000
 --- a/.github/workflows/tools.yml
 +++ /dev/null
 @@ -1,321 +0,0 @@
@@ -3201,7 +3341,7 @@ index 59c9d4bcd4..0000000000
 -              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
 -              rm temp-output
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        if: github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id
 -        with:
 -          persist-credentials: false
@@ -3236,7 +3376,7 @@ index 59c9d4bcd4..0000000000
 -          author: Node.js GitHub Bot <github-bot@iojs.org>
 diff --git a/.github/workflows/update-openssl.yml b/.github/workflows/update-openssl.yml
 deleted file mode 100644
-index b93e37e7f4..0000000000
+index d87f6b3a4b..0000000000
 --- a/.github/workflows/update-openssl.yml
 +++ /dev/null
 @@ -1,61 +0,0 @@
@@ -3257,7 +3397,7 @@ index b93e37e7f4..0000000000
 -    # Cannot use ubuntu-slim here because the update script requires Docker
 -    runs-on: ubuntu-latest
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Check and download new OpenSSL version
@@ -3303,7 +3443,7 @@ index b93e37e7f4..0000000000
 -          path: deps/openssl
 diff --git a/.github/workflows/update-v8.yml b/.github/workflows/update-v8.yml
 deleted file mode 100644
-index 8d2db8261c..0000000000
+index e2794cc772..0000000000
 --- a/.github/workflows/update-v8.yml
 +++ /dev/null
 @@ -1,57 +0,0 @@
@@ -3325,11 +3465,11 @@ index 8d2db8261c..0000000000
 -    if: github.repository == 'nodejs/node'
 -    runs-on: ubuntu-slim
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -      - name: Cache node modules and update-v8
--        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
 -        id: cache-v8-npm
 -        env:
 -          cache-name: cache-v8-npm
@@ -3366,7 +3506,7 @@ index 8d2db8261c..0000000000
 -          labels: dependencies, v8 engine
 diff --git a/.github/workflows/update-wpt.yml b/.github/workflows/update-wpt.yml
 deleted file mode 100644
-index 7e9a6a30fe..0000000000
+index 05b1503f3c..0000000000
 --- a/.github/workflows/update-wpt.yml
 +++ /dev/null
 @@ -1,87 +0,0 @@
@@ -3399,7 +3539,7 @@ index 7e9a6a30fe..0000000000
 -        subsystem: ${{ fromJSON(github.event.inputs.subsystems || '["url", "urlpattern", "WebCryptoAPI"]') }}
 -
 -    steps:
--      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 -        with:
 -          persist-credentials: false
 -

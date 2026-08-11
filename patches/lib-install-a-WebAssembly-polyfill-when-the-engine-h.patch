@@ -46,7 +46,7 @@ index 2842efa128..58e2bea8b3 100644
 +    SOFTWARE.
 +  """
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index e9ab2b2a89..7971f9ecc1 100644
+index 2716c2ae81..17c283aa7a 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -9,6 +9,7 @@ const {
