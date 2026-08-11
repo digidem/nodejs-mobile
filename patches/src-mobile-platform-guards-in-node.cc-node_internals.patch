@@ -15,7 +15,7 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
  2 files changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/node.cc b/src/node.cc
-index 6f899ec062..4aaa736600 100644
+index 078497db7e..1184a00c8c 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -693,6 +693,8 @@ void ResetStdio() {

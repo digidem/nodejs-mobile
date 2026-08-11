@@ -101,6 +101,7 @@ ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/post-releas
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/remark-lint-problem-matcher.json
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/scorecard.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/stale.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/stress-test.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-internet.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-linux.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-macos.yml

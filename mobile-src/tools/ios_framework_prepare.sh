@@ -61,6 +61,9 @@ declare -a outputs_common=(
   "libncrypto.a"
   "libnghttp2.a"
   "libnode.a"
+  # node's own objects; upstream v24.19.0 split them out of libnode into the
+  # node_base target, leaving libnode holding only the snapshot stub.
+  "libnode_base.a"
   "libopenssl.a"
   "libsimdjson.a"
   "libsimdutf.a"

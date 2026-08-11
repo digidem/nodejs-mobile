@@ -16,15 +16,15 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 ---
- node.gyp  | 45 ++++++++++++++++++++++++++++++++++++++-------
+ node.gyp  | 16 ++++++++++++----
  node.gypi | 22 ++++++++++++++++++----
- 2 files changed, 56 insertions(+), 11 deletions(-)
+ 2 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index 6387b94550..15edb2b099 100644
+index bd66c9b498..06589d8cc3 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -64,6 +64,11 @@
+@@ -68,6 +68,11 @@
        'deps/acorn/acorn/dist/acorn.js',
        'deps/acorn/acorn-walk/dist/walk.js',
        'deps/minimatch/index.js',
@@ -36,36 +36,7 @@ index 6387b94550..15edb2b099 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -774,8 +779,13 @@
-             }],
-           ],
-           }, {
--          'sources': [
--            'src/node_snapshot_stub.cc'
-+          # nodejs-mobile patch: `conditions`>`not` added to wrap `sources`
-+          'conditions': [
-+            [ 'not (node_target_type=="static_library" and OS=="ios")', {
-+              'sources': [
-+                'src/node_snapshot_stub.cc'
-+              ],
-+            }],
-           ],
-         }],
-         [ 'OS in "linux freebsd openharmony" and '
-@@ -949,6 +959,12 @@
-             'src/node_snapshot_stub.cc',
-           ]
-         }],
-+        # nodejs-mobile patch:
-+        [ 'node_target_type=="static_library" and OS=="ios"', {
-+          'sources': [
-+            'src/node_snapshot_stub.cc',
-+          ]
-+        }],
-         [ 'node_shared_gtest=="false"', {
-           'dependencies': [
-             'deps/googletest/googletest.gyp:gtest_prod',
-@@ -1017,7 +1033,8 @@
+@@ -922,7 +927,8 @@
              '<@(node_quic_sources)',
            ],
          }],
@@ -75,20 +46,7 @@ index 6387b94550..15edb2b099 100644
            'target_arch=="x64" and '
            'node_target_type=="executable"', {
            'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
-@@ -1303,6 +1320,12 @@
-       'sources': [ '<@(node_cctest_sources)' ],
- 
-       'conditions': [
-+        # nodejs-mobile patch: added this whole `not` block
-+        [ 'not (node_target_type=="static_library" and OS=="ios")', {
-+          'sources': [
-+            'src/node_snapshot_stub.cc',
-+          ]
-+        }],
-         [ 'node_shared_gtest=="false"', {
-           'dependencies': [
-             'deps/googletest/googletest.gyp:gtest',
-@@ -1360,8 +1383,9 @@
+@@ -1399,8 +1405,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -100,7 +58,7 @@ index 6387b94550..15edb2b099 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1528,7 +1552,8 @@
+@@ -1566,7 +1573,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],
@@ -110,28 +68,6 @@ index 6387b94550..15edb2b099 100644
            'defines': ['NODE_JS2C_USE_STRING_LITERALS'],
          }],
          [ 'debug_node=="true"', {
-@@ -1566,7 +1591,7 @@
-       'defines': [ 'NODE_WANT_INTERNALS=1' ],
- 
-       'sources': [
--        'src/node_snapshot_stub.cc',
-+        # nodejs-mobile patch: moved `node_snapshot_stub.cc` to the `not` below
-         'tools/snapshot/node_mksnapshot.cc',
-       ],
- 
-@@ -1577,6 +1602,12 @@
-       },
- 
-       'conditions': [
-+        # nodejs-mobile patch: added this whole `not` block
-+        [ 'not (node_target_type=="static_library" and OS=="ios")', {
-+          'sources': [
-+            'src/node_snapshot_stub.cc',
-+          ]
-+        }],
-         ['node_write_snapshot_as_array_literals=="true"', {
-           'defines': [ 'NODE_MKSNAPSHOT_USE_ARRAY_LITERALS=1' ],
-         }],
 diff --git a/node.gypi b/node.gypi
 index 6587270c9e..ffce5184cd 100644
 --- a/node.gypi

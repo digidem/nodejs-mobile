@@ -58,7 +58,7 @@ index 90cb40d98d..2a242facab 100644
  
      if (try_sendfile)
 diff --git a/deps/uv/uv.gyp b/deps/uv/uv.gyp
-index 540445f1f3..f01630dafd 100644
+index 760a3cdb00..c465154227 100644
 --- a/deps/uv/uv.gyp
 +++ b/deps/uv/uv.gyp
 @@ -3,6 +3,12 @@
@@ -74,7 +74,7 @@ index 540445f1f3..f01630dafd 100644
        }, {
          'shared_unix_defines': [
            '_LARGEFILE_SOURCE',
-@@ -292,8 +298,22 @@
+@@ -291,8 +297,22 @@
            'defines': [
              '_GNU_SOURCE',
            ],
