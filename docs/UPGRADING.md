@@ -62,6 +62,14 @@ validates each patch individually, and — once merged — builds the full
 matrix. The version bump and release are a separate step (below), so an
 upgrade can land and be exercised before anyone decides to ship it.
 
+Because the PR moves `upstream-base.txt`, it also runs the **full device
+suite** on both platforms and cannot merge until that is green (the curated
+gate is an allow-list, so it cannot see tests upstream just added — they
+would otherwise surface on the nightly or at release). Expect the PR to take
+substantially longer than a normal one, and expect new upstream tests to need
+`.status` entries: anything that spawns a child node process cannot pass on
+either platform. → [TESTING.md](./TESTING.md)
+
 ## Release
 
 Land the upgrade PR with the version header still at the old release's
