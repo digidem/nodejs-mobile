@@ -16,7 +16,7 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1366 +++++++++++++++++
+ test/parallel/parallel.status                 | 1398 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -51,13 +51,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1676 insertions(+), 46 deletions(-)
+ 35 files changed, 1708 insertions(+), 46 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index cf7f8d42e8..ed19dda221 100644
+index cf7f8d42e8..d1f28be02e 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -158,6 +158,1372 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -158,6 +158,1404 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -192,6 +192,7 @@ index cf7f8d42e8..ed19dda221 100644
 +test-os-homedir-no-envvar: SKIP
 +test-os-userinfo-handles-getter-errors: SKIP
 +test-pending-deprecation: SKIP
++test-permission-fs-write-trace-events: SKIP
 +test-pipe-head: SKIP
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
@@ -259,6 +260,9 @@ index cf7f8d42e8..ed19dda221 100644
 +test-runner-misc: SKIP
 +test-runner-output: SKIP
 +test-runner-reporters: SKIP
++test-runner-tag-filter-cli: SKIP
++test-runner-tags-events: SKIP
++test-runner-tags-experimental-warning: SKIP
 +test-runner-watch-mode: SKIP
 +test-security-revert-unknown: SKIP
 +test-set-http-max-http-headers: SKIP
@@ -351,6 +355,7 @@ index cf7f8d42e8..ed19dda221 100644
 +test-unhandled-exception-with-worker-inuse: SKIP
 +test-unicode-node-options: SKIP
 +test-util-callbackify: SKIP
++test-util-getcallsites-sourcemap: SKIP
 +test-v8-coverage: SKIP
 +test-v8-stop-coverage: SKIP
 +test-v8-take-coverage: SKIP
@@ -617,6 +622,7 @@ index cf7f8d42e8..ed19dda221 100644
 +#
 +test-permission-allow-child-process-cli: SKIP
 +test-permission-child-process-inherit-flags: SKIP
++test-permission-child-process-inherit-flags-substring: SKIP
 +test-permission-config-file: SKIP
 +test-permission-fs-absolute-path: SKIP
 +test-permission-fs-read: SKIP
@@ -1188,9 +1194,11 @@ index cf7f8d42e8..ed19dda221 100644
 +test-dotenv-edge-cases: SKIP
 +test-dotenv-node-options: SKIP
 +test-permission-child-process-inherit-flags: SKIP
++test-permission-child-process-inherit-flags-substring: SKIP
 +test-permission-fs-repeat-path: SKIP
 +test-permission-fs-wildcard: SKIP
 +test-permission-fs-write-report: SKIP
++test-permission-fs-write-trace-events: SKIP
 +test-permission-sqlite-load-extension: SKIP
 +test-permission-warning-flags: SKIP
 +test-process-finalization: SKIP
@@ -1202,8 +1210,12 @@ index cf7f8d42e8..ed19dda221 100644
 +test-runner-global-setup-watch-mode: SKIP
 +test-runner-snapshot-file-tests: SKIP
 +test-runner-snapshot-tests: SKIP
++test-runner-tag-filter-cli: SKIP
++test-runner-tags-events: SKIP
++test-runner-tags-experimental-warning: SKIP
 +test-runner-watch-mode-complex: SKIP
 +test-snapshot-cwd: SKIP
++test-util-getcallsites-sourcemap: SKIP
 +test-webstorage: SKIP
 +#
 +# Measured on a full device sweep and reproduced 0/3 standalone -- platform
@@ -1280,18 +1292,38 @@ index cf7f8d42e8..ed19dda221 100644
 +test-compile-cache-updated-file: SKIP
 +test-debug-process: SKIP
 +test-debugger-inspect-help: SKIP
++test-debugger-probe-activation: SKIP
++test-debugger-probe-bound-never-hit: SKIP
 +test-debugger-probe-child-inspect-port-zero: SKIP
++test-debugger-probe-explicit-column: SKIP
++test-debugger-probe-expression-throws: SKIP
++test-debugger-probe-failure-hang-during-evaluate: SKIP
++test-debugger-probe-failure-process-exit: SKIP
++test-debugger-probe-failure-resume: SKIP
 +test-debugger-probe-global-option-order: SKIP
 +test-debugger-probe-json: SKIP
 +test-debugger-probe-json-preview: SKIP
 +test-debugger-probe-json-special-values: SKIP
++test-debugger-probe-late-resolution: SKIP
 +test-debugger-probe-launch: SKIP
++test-debugger-probe-max-hit: SKIP
++test-debugger-probe-max-hit-invalid: SKIP
++test-debugger-probe-max-hit-miss: SKIP
++test-debugger-probe-max-hit-partial: SKIP
++test-debugger-probe-max-hit-shared: SKIP
++test-debugger-probe-max-hit-text: SKIP
 +test-debugger-probe-miss: SKIP
 +test-debugger-probe-missing-expr: SKIP
++test-debugger-probe-multi-location: SKIP
++test-debugger-probe-narrow-suffix: SKIP
++test-debugger-probe-no-column-indent: SKIP
 +test-debugger-probe-requires-separator: SKIP
++test-debugger-probe-script-throws: SKIP
++test-debugger-probe-target-syntax-error: SKIP
 +test-debugger-probe-text: SKIP
 +test-debugger-probe-text-special-values: SKIP
 +test-debugger-probe-timeout: SKIP
++test-debugger-probe-typescript: SKIP
 +test-dgram-bind-socket-close-before-cluster-reply: SKIP
 +test-diagnostics-channel-child-process: SKIP
 +test-diagnostics-channel-process: SKIP
