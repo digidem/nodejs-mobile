@@ -853,6 +853,7 @@ jobs:
       - smoke-ios
       - smoke-host
       - release-notes
+      - upgrade-check
       - full-suite-gate
     runs-on: ubuntu-24.04
     steps:
@@ -1069,10 +1070,19 @@ jobs:
     steps:
       - name: Require the full device suite on an upstream bump
         env:
+          CHECK: ${{ needs.upgrade-check.result }}
           UPGRADE: ${{ needs.upgrade-check.outputs.upgrade }}
           ANDROID: ${{ needs.full-suite-android.result }}
           IOS: ${{ needs.full-suite-ios.result }}
         run: |
+          # An upgrade-check that did not succeed leaves `upgrade` empty, which
+          # is indistinguishable from a genuine false -- and the legs' own if:
+          # would have skipped them for the same reason. Fail rather than read
+          # a missing answer as "no bump".
+          if [ "$CHECK" != success ]; then
+            echo "::error::upgrade-check did not succeed ($CHECK); cannot tell whether this PR bumps the tag"
+            exit 1
+          fi
           if [ "$UPGRADE" != true ]; then
             echo "upstream-base.txt unchanged; full device suite not required"
             exit 0
