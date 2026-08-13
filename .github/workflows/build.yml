@@ -853,6 +853,8 @@ jobs:
       - smoke-ios
       - smoke-host
       - release-notes
+      - upgrade-check
+      - full-suite-gate
     runs-on: ubuntu-24.04
     steps:
       - name: Assert every required job succeeded
@@ -862,6 +864,45 @@ jobs:
           for r in $RESULTS; do
             [ "$r" = success ] || { echo "::error::a required job did not succeed ($r)"; exit 1; }
           done
+
+  # Does this PR move the pinned upstream tag? An upgrade brings whatever
+  # tests upstream added with it, and the curated gate is an allow-list, so by
+  # construction it cannot see them: they first run on the nightly or, worse,
+  # on the release. That is how v24.19.0's ~26 new child-process tests reached
+  # recipe red. So an upstream bump pays for a full device suite on the PR.
+  #
+  # Runs on every event and reports false off a PR, rather than carrying an
+  # `if:`: a skipped job's outputs are empty, and empty is indistinguishable
+  # from a genuine false at the point of use.
+  upgrade-check:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      upgrade: ${{ steps.d.outputs.upgrade }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: d
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != pull_request ]; then
+            echo "not a pull request; upgrade=false"
+            echo "upgrade=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # ...HEAD (merge base) not ..HEAD: a base branch that moved ahead
+          # while the PR sat open must not read as this PR bumping the tag.
+          if git diff --quiet "${BASE_SHA}...HEAD" -- upstream-base.txt; then
+            echo "upstream-base.txt unchanged; upgrade=false"
+            echo "upgrade=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "upstream-base.txt changed:"
+            git diff "${BASE_SHA}...HEAD" -- upstream-base.txt
+            echo "upgrade=true" >> "$GITHUB_OUTPUT"
+          fi
 
   # Decide whether this push is a release, and publish that decision as job
   # outputs for the gate chain below. The decision itself — including the
@@ -978,11 +1019,20 @@ jobs:
   # shards (~20-25 min on run 31339522834). The boot smoke stays in needs: a
   # binary that cannot print hello on an emulator should not get four
   # device-hours of suite first.
+  #
+  # always() because release-check is push-only: on an upgrade PR it is
+  # skipped, and a skipped job in needs: skips its dependents whatever their
+  # `if:` says. always() drops that coupling, so the artifact/smoke gates the
+  # skip used to provide have to be spelled out as result checks.
   full-suite-android:
     if: >-
-      needs.release-check.outputs.release == 'true' ||
-      needs.release-check.outputs.dryrun == 'true'
-    needs: [release-check, combine-android, smoke-android]
+      always() &&
+      needs.combine-android.result == 'success' &&
+      needs.smoke-android.result == 'success' &&
+      (needs.release-check.outputs.release == 'true' ||
+       needs.release-check.outputs.dryrun == 'true' ||
+       needs.upgrade-check.outputs.upgrade == 'true')
+    needs: [release-check, upgrade-check, combine-android, smoke-android]
     permissions:
       contents: read
       actions: read
@@ -993,9 +1043,13 @@ jobs:
 
   full-suite-ios:
     if: >-
-      needs.release-check.outputs.release == 'true' ||
-      needs.release-check.outputs.dryrun == 'true'
-    needs: [release-check, combine-ios, smoke-ios]
+      always() &&
+      needs.combine-ios.result == 'success' &&
+      needs.smoke-ios.result == 'success' &&
+      (needs.release-check.outputs.release == 'true' ||
+       needs.release-check.outputs.dryrun == 'true' ||
+       needs.upgrade-check.outputs.upgrade == 'true')
+    needs: [release-check, upgrade-check, combine-ios, smoke-ios]
     permissions:
       contents: read
       actions: read
@@ -1003,6 +1057,41 @@ jobs:
     with:
       build_run_id: ${{ github.run_id }}
       platform: ios
+
+  # One result for ci-required to require. The legs cannot go in its needs:
+  # directly: its assertion fails closed on `skipped`, and they are correctly
+  # skipped on every PR that does not move the tag. This job always runs — so
+  # it is never itself skipped — and it is the only place that knows whether a
+  # skip was legitimate.
+  full-suite-gate:
+    if: always()
+    needs: [upgrade-check, full-suite-android, full-suite-ios]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require the full device suite on an upstream bump
+        env:
+          CHECK: ${{ needs.upgrade-check.result }}
+          UPGRADE: ${{ needs.upgrade-check.outputs.upgrade }}
+          ANDROID: ${{ needs.full-suite-android.result }}
+          IOS: ${{ needs.full-suite-ios.result }}
+        run: |
+          # An upgrade-check that did not succeed leaves `upgrade` empty, which
+          # is indistinguishable from a genuine false -- and the legs' own if:
+          # would have skipped them for the same reason. Fail rather than read
+          # a missing answer as "no bump".
+          if [ "$CHECK" != success ]; then
+            echo "::error::upgrade-check did not succeed ($CHECK); cannot tell whether this PR bumps the tag"
+            exit 1
+          fi
+          if [ "$UPGRADE" != true ]; then
+            echo "upstream-base.txt unchanged; full device suite not required"
+            exit 0
+          fi
+          echo "android=$ANDROID ios=$IOS"
+          rc=0
+          [ "$ANDROID" = success ] || { echo "::error::full device suite (android) did not succeed on an upstream bump: $ANDROID"; rc=1; }
+          [ "$IOS" = success ] || { echo "::error::full device suite (ios) did not succeed on an upstream bump: $IOS"; rc=1; }
+          exit "$rc"
 
   # Publish: on a release commit, once every gate in this run is green, tag
   # the materialized tree and publish the GitHub prerelease with this run's
