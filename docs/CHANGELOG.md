@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.19.0-0">24.19.0-0</a><br/>
 <a href="#24.18.0-0">24.18.0-0</a><br/>
 <a href="#18.20.4">18.20.4</a><br/>
 <a href="#18.17.3">18.17.3</a><br/>
@@ -34,9 +35,16 @@
 </tr>
 </table>
 
+<a id="24.19.0-0"></a>
+## 2026-08-13, Version 24.19.0-0 (Current)
+
+### Notable Changes
+
+- **Engine: Node.js 24.18.0 → 24.19.0** (V8 13.6).
+
 <a id="24.18.0-0"></a>
 
-## 2026-08-11, Version 24.18.0-0 (Current)
+## 2026-08-11, Version 24.18.0-0
 
 First release on the Node.js 24 line. The project moved from a rebased fork to a **patches-only recipe** — a pinned upstream tag plus a reviewable series of patches, reconstructed and verified byte-for-byte before every build. See [`PATCHES.md`](./PATCHES.md) for the model.
 
