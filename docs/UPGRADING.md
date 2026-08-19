@@ -70,6 +70,14 @@ substantially longer than a normal one, and expect new upstream tests to need
 `.status` entries: anything that spawns a child node process cannot pass on
 either platform. → [TESTING.md](./TESTING.md)
 
+Merging the bump also moves this fork's `upstream-base` branch to the new
+tag, via the `upstream-base` job. That branch is load-bearing rather than
+informational: the release tag is pushed from a shallow clone whose history
+stops at the base, so the remote can only accept it if it already holds the
+base and its ancestry. Don't delete the branch, and if the job fails, fix it
+before cutting a release — `publish` `needs:` it, so a release run would
+otherwise get as far as tagging and stop there.
+
 ## Release
 
 Land the upgrade PR with the version header still at the old release's

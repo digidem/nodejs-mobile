@@ -1093,6 +1093,74 @@ jobs:
           [ "$IOS" = success ] || { echo "::error::full device suite (ios) did not succeed on an upstream bump: $IOS"; rc=1; }
           exit "$rc"
 
+  # Keep refs/heads/upstream-base on this fork pointing at the tag in
+  # upstream-base.txt. publish tags a tree materialized from a depth-1 clone of
+  # nodejs/node, so the pack it sends names the base commit's parent without
+  # carrying it; the remote's connectivity check rejects the tag ("did not
+  # receive expected object") unless it already holds that ancestry. This job
+  # is what makes it hold — the branch both delivers the objects and keeps them
+  # reachable, so no later GC can take them back.
+  #
+  # It runs on every push rather than only on a bump: the ls-remote comparison
+  # costs a second and no-ops, and gating on a "did this push move the file"
+  # derivation would rest the invariant on that derivation being right. Running
+  # at bump-merge time also keeps the full clone off the release run's critical
+  # path, where a failure costs a 3-4 hour rebuild to retry.
+  #
+  # Skipped on pull_request: it wants contents:write, which this workflow
+  # deliberately keeps away from PR runs. A bump PR therefore gets no signal
+  # here, but its merge to recipe pushes the base long before any release run.
+  upstream-base:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write # pushes refs/heads/upstream-base
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Mirror the pinned upstream base onto this fork
+        run: |
+          set -euo pipefail
+          # || true: grep exits 1 on a comments-only file, which under pipefail
+          # would kill the step before the message below ever prints.
+          BASE=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]' || true)
+          [ -n "$BASE" ] || { echo "::error::no base in upstream-base.txt"; exit 1; }
+
+          UPSTREAM=https://github.com/nodejs/node.git
+          # ^{} peels the annotated tag to the commit it points at; upstream
+          # release tags are annotated, so the unpeeled line is the tag object.
+          WANT=$(git ls-remote "$UPSTREAM" "refs/tags/${BASE}^{}" | cut -f1)
+          [ -n "$WANT" ] || { echo "::error::${BASE} is not a tag on nodejs/node"; exit 1; }
+          HAVE=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" \
+            refs/heads/upstream-base | cut -f1)
+
+          if [ "$WANT" = "$HAVE" ]; then
+            echo "upstream-base already at ${BASE} (${WANT})"
+            exit 0
+          fi
+
+          # --single-branch: the base tag's history alone, not every release
+          # line. The push that follows is small whenever the fork already
+          # carries an older base — git sends only the delta between them.
+          git clone --bare --single-branch --branch "$BASE" \
+            "$UPSTREAM" "$RUNNER_TEMP/upstream.git"
+          # --force: a new base need not descend from the old one (it does not
+          # across a major). Superseded bases stay reachable from the release
+          # tags built on them, so nothing is orphaned.
+          #
+          # --no-follow-tags: never let upstream's own vX.Y.Z tag ride along.
+          # It would collide with this fork's vX.Y.Z-R release tag namespace
+          # and can be refused outright by a tag ruleset, failing the push.
+          git -C "$RUNNER_TEMP/upstream.git" push --force --no-follow-tags \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "${WANT}:refs/heads/upstream-base"
+          echo "Pushed upstream-base -> ${BASE} (${WANT})"
+
   # Publish: on a release commit, once every gate in this run is green, tag
   # the materialized tree and publish the GitHub prerelease with this run's
   # artifacts. All gating is needs:-based within one run -- no cross-run SHA
@@ -1113,6 +1181,7 @@ jobs:
       - full-suite-ios
       - real-device-smoke-android
       - real-device-smoke-ios
+      - upstream-base
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -1145,11 +1214,9 @@ jobs:
 
       # Note: the materialized tree is a SHALLOW clone of nodejs/node (prepare.sh
       # uses --depth 1), so this pushes a tag whose history is grafted at the
-      # upstream base. That is accepted because this repository already contains
-      # upstream's history, so the remote has the boundary commit and git sends
-      # only the new commits. Verified empirically against this remote. A fork
-      # with no upstream history would get "shallow update not allowed" here and
-      # would need to fetch the base's ancestry before tagging.
+      # upstream base, and git sends only the commits above that boundary. The
+      # remote accepts it only because the upstream-base job (needs:, above) has
+      # already put the base and its ancestry there.
       - name: Tag the materialized tree
         run: |
           git config user.name "nodejs-mobile-bot"

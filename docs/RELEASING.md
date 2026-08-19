@@ -34,6 +34,15 @@ Releasing is a button, a review, and (optionally) an approval:
    gate chain — build matrix both flavors, boot smokes, NAPI smoke, the
    curated and full device suites, BrowserStack real devices — and the
    publish job, which `needs:` all of it.
+
+   One of those needs is `upstream-base`, which is plumbing rather than a
+   gate. The tag is pushed from a tree materialized by a depth-1 clone, so
+   its history stops at the upstream base and the remote will only accept it
+   if it already holds that base and everything under it. The job keeps this
+   fork's `upstream-base` branch on the pinned tag, which puts those objects
+   there and keeps them reachable. It no-ops in a second unless the base
+   moved, so it costs nothing except on the run after an upgrade.
+   → [UPGRADING.md](./UPGRADING.md)
 4. **Optional human gate:** the publish job runs in the `release`
    Environment. Add required reviewers under Settings → Environments →
    release and the pipeline pauses for an approval click before tagging.
