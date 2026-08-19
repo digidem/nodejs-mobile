@@ -132,6 +132,18 @@ plugins expose an app-data-dir call that does this for you.
 
 Node native modules, which contain native code, are able to run on nodejs-mobile, as long as they can be cross-compiled for the target platform / CPU. The cross-compiling feature is integrated into the plugins and instructions can be found in the [nodejs-mobile-cordova](https://github.com/nodejs-mobile/nodejs-mobile-cordova#native-modules) or in the [nodejs-mobile-react-native](https://github.com/nodejs-mobile/nodejs-mobile-react-native#native-modules) README, but only Linux and MacOS development machines are currently supported. Modules that contain custom build steps and platform specific code may need workarounds/changes to get them to work. We've created a github repository so that the workarounds/changes can be discussed and shared: https://github.com/nodejs-mobile/nodejs-mobile-module-compat
 
+One caveat if you ship the **lite** flavor: it is built with V8 pointer
+compression, which changes the V8 ABI (see ["Pointer compression" in
+BUILDING.md](./BUILDING.md#pointer-compression-lite-only) on the recipe
+branch). Modules written against **N-API** — the ABI `libnode` exports, and
+what most maintained modules use — are unaffected. A module that includes V8's
+headers directly (`v8.h`, NAN) has to be compiled with the same defines the
+library was: the shipped `include/node` headers carry no `config.gypi`, so add
+`-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH` to that module's build
+for the lite flavor (and nothing extra for full). Compiled without them and
+loaded into lite, it reads object fields at the wrong offsets. The `full`
+flavor keeps the upstream-standard ABI.
+
 ## How can I improve Node.js load times?
 
 Applications that contain a large number of files in the Node.js project can have their load times decreased by reducing the number of files. While installing npm modules, these can be installed with the `--production` flag, so that modules that are used for development only are not included in your project, e.g.: `npm install --production <module_name>`. Using tools that merge all nodejs project files into a bundle, such as [`noderify`](https://www.npmjs.com/package/noderify) or [`esbuild`](https://esbuild.github.io/) and using the bundle instead has been observed to improve load times in most situations.

@@ -132,8 +132,9 @@ target's build command.
 The build ships in two flavors (selected by `NODEJS_MOBILE_FLAVOR`, default
 `full`). **`full`** is the general-purpose binary all consumers get. **`lite`**
 is a smaller binary for consumers that don't need the full feature set, built by
-layering feature-drops on top of the full configure — so the full binary and its
-test gate are unchanged.
+layering feature-drops — and one V8 configuration change, [pointer
+compression](#pointer-compression-lite-only) — on top of the full configure, so
+the full binary and its test gate are unchanged.
 
 What `lite` drops (all already-available upstream `configure` flags, so no extra
 patch-stack surface):
@@ -158,11 +159,64 @@ Measured shipping sizes (arm64, after symbol strip):
   both flavors; no
   `--v8-lite-mode` (Android keeps the JIT and V8's native WASM for undici).
 
+Those figures were measured before pointer compression was turned on; it aims
+at the heap rather than at the binary, and the release CI re-measures the
+shipping artifacts on every release.
+
 `build-id` (`-Wl,--build-id=sha1`) is emitted on the Android `libnode.so` in
 **both** flavors so crash reporters (e.g. Sentry) can symbolicate native
 crashes. The safeguard for `intl=none` is running your own application's test
 suite against the lite binary — it catches `Intl` breakage from future
 dependency changes.
+
+### Pointer compression (lite only)
+
+`lite` also configures V8 with `--experimental-enable-pointer-compression`.
+V8 then stores tagged pointers as 32-bit offsets from a per-isolate 4 GB
+*cage* base instead of as full 64-bit addresses, so every object field, array
+element and map slot on the JS heap halves. The lever here is **runtime memory,
+not file size**: V8's own measurements put the saving at roughly 40% of the JS
+heap ([v8.dev/blog/pointer-compression](https://v8.dev/blog/pointer-compression)),
+which on a phone is the margin between staying resident and being reaped by the
+low-memory killer (Android) or jetsam (iOS).
+
+Why it is `lite`-only, when the flag is available to both flavors:
+
+- **It changes the V8 ABI.** A native addon that includes V8's headers directly
+  (`v8.h`, NAN, node-addon-api's V8 escape hatches) has to be compiled with the
+  same defines as the library it loads into — `V8_COMPRESS_POINTERS` and
+  `V8_31BIT_SMIS_ON_64BIT_ARCH`, the two the public V8 headers branch on.
+  Mismatched, it reads object fields at the wrong offsets and corrupts the
+  heap. The artifact ships headers without a `config.gypi`, so those
+  defines have to be passed by hand; see the
+  [FAQ](./FAQ.md#are-nodejs-native-modules-supported). **N-API
+  addons are unaffected**: that ABI hides V8's object layout, it is what
+  `libnode.so` exports, and it is what the addon gate (`crc-native`, see
+  [TESTING.md](./TESTING.md#the-napi-addon-gate)) builds and loads. `full` is
+  the binary every consumer gets by default, so it keeps the upstream-standard
+  ABI; `lite` is opt-in, and its consumers are the ones trading compatibility
+  for footprint.
+- **It caps the JS heap at 4 GB** and is still flagged `--experimental-` upstream
+  — neither costs anything on a device whose whole budget is a fraction of that,
+  but both are reasons not to impose it on the default binary.
+
+**64-bit slices only.** Upstream's `common.gypi` force-disables pointer
+compression for `target_arch in "arm ia32 mips mipsel"`, so the Android
+`armeabi-v7a` slice cannot have it, and passing the flag there would build the
+same uncompressed library either way. `android_configure.py` gates it on
+`arm64`/`x64` anyway, because that upstream guard zeroes the gyp variable but
+not the copy `configure` already wrote into `config.gypi`: ungated, a 32-bit
+lite build would ship a `process.config` claiming compression it doesn't have —
+`tools/test.py` derives its `$pointer_compression` status variable from exactly
+that, and `test-max-old-space-size-percentage` and
+`test-experimental-shared-value-conveyor` branch on it. iOS needs no such gate —
+every slice it builds is arm64.
+
+Each isolate (the main one, plus one per `Worker`) reserves its own cage, so
+the cost is 4 GB of *address space* per isolate — reserved, not committed, and
+harmless on a 64-bit address space. Node's shared-cage mode
+(`--experimental-pointer-compression-shared-cage`) is deliberately left off,
+matching upstream's default.
 
 
 ---
