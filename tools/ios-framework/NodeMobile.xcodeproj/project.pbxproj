@@ -1,0 +1,504 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3C02AFD41FA919C30053C191 /* NodeMobile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3C02AFD31FA919C30053C191 /* NodeMobile.cpp */; };
+		A36728C72E5355E6004DF2FB /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728C62E5355E5004DF2FB /* Security.framework */; };
+		A36728E72E53580A004DF2FB /* libabseil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728BF2E530EF7004DF2FB /* libabseil.a */; };
+		A36728E82E53580A004DF2FB /* libada.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F6860EE02ACD491900070ED3 /* libada.a */; };
+		A36728E92E53580A004DF2FB /* libbrotli.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EAF240437620019E302 /* libbrotli.a */; };
+		A36728EA2E53580A004DF2FB /* libcares.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C9191EC3922F0007AD59 /* libcares.a */; };
+		A36728EB2E53580A004DF2FB /* libcrdtp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728BB2E530EF7004DF2FB /* libcrdtp.a */; };
+		A36728EE2E53580A004DF2FB /* libhighway.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728BD2E530EF7004DF2FB /* libhighway.a */; };
+		A36728EF2E53580A004DF2FB /* libhistogram.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EAB240437620019E302 /* libhistogram.a */; };
+		A36728F02E53580A004DF2FB /* libllhttp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EAC240437620019E302 /* libllhttp.a */; };
+		A36728F12E53580A004DF2FB /* libnbytes.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728C02E530EF7004DF2FB /* libnbytes.a */; };
+		A36728F22E53580A004DF2FB /* libncrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728C12E530EF7004DF2FB /* libncrypto.a */; };
+		A36728F32E53580A004DF2FB /* libnghttp2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 334822141F6AFBD200CF403E /* libnghttp2.a */; };
+		A36728F42E53580A004DF2FB /* libnode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C91D1EC3922F0007AD59 /* libnode.a */; };
+		A36728F42E53580A004E02FB /* libnode_base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728F42E53580A004E12FB /* libnode_base.a */; };
+		A36728F52E53580A004DF2FB /* libopenssl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C91E1EC3922F0007AD59 /* libopenssl.a */; };
+		A36728F62E53580A004DF2FB /* libsimdjson.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728BA2E530EF7004DF2FB /* libsimdjson.a */; };
+		DEADBEEF000000000000D002 /* libicui18n.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEADBEEF000000000000D001 /* libicui18n.a */; };
+		DEADBEEF000000000000D004 /* libicuucx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEADBEEF000000000000D003 /* libicuucx.a */; };
+		DEADBEEF000000000000D006 /* libicudata.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEADBEEF000000000000D005 /* libicudata.a */; };
+		DEADBEEF000000000000D008 /* libmerve.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEADBEEF000000000000D007 /* libmerve.a */; };
+		DEADBEEF000000000000D00A /* libicustubdata.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEADBEEF000000000000D009 /* libicustubdata.a */; };
+		A36728F72E53580A004DF2FB /* libsimdutf.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F6860EE62ACD493C00070ED3 /* libsimdutf.a */; };
+		A36728F82E53580A004DF2FB /* libuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C91F1EC3922F0007AD59 /* libuv.a */; };
+		A36728F92E53580A004DF2FB /* libuvwasi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EB0240437620019E302 /* libuvwasi.a */; };
+		A36728FA2E53580A004DF2FB /* libv8_base_without_compiler.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EB3240437620019E302 /* libv8_base_without_compiler.a */; };
+		A36728FB2E53580A004DF2FB /* libv8_compiler.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EC0240437AB0019E302 /* libv8_compiler.a */; };
+		A36728FE2E53580A004DF2FB /* libv8_libbase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EB1240437620019E302 /* libv8_libbase.a */; };
+		A36728FF2E53580A004DF2FB /* libv8_libplatform.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EAE240437620019E302 /* libv8_libplatform.a */; };
+		A36729002E53580A004DF2FB /* libv8_snapshot.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33300EC1240437AB0019E302 /* libv8_snapshot.a */; };
+		A36729012E53580A004DF2FB /* libv8_zlib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F63BCE7E29756DCD0049F595 /* libv8_zlib.a */; };
+		A36729022E53580A004DF2FB /* libzlib_data_chunk_simd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728C32E530EF7004DF2FB /* libzlib_data_chunk_simd.a */; };
+		A36729032E53580A004DF2FB /* libzlib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3376C9201EC3922F0007AD59 /* libzlib.a */; };
+		A36729042E53580A004DF2FB /* libzstd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A36728BC2E530EF7004DF2FB /* libzstd.a */; };
+		A3F2E7592E716AB00001C23B /* libsqlite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A3F2E7582E716AA30001C23B /* libsqlite.a */; };
+		D9A7619D1F7C63A8006AFE86 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 331917C21EC4702A00F93D52 /* CoreFoundation.framework */; };
+		D9A762281F7C675E006097B1 /* NodeMobile.h in Headers */ = {isa = PBXBuildFile; fileRef = D9A762261F7C674F006097B1 /* NodeMobile.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		331917C21EC4702A00F93D52 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		33300EAB240437620019E302 /* libhistogram.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libhistogram.a; path = bin/libhistogram.a; sourceTree = "<group>"; };
+		33300EAC240437620019E302 /* libllhttp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libllhttp.a; path = bin/libllhttp.a; sourceTree = "<group>"; };
+		33300EAE240437620019E302 /* libv8_libplatform.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_libplatform.a; path = bin/libv8_libplatform.a; sourceTree = "<group>"; };
+		33300EAF240437620019E302 /* libbrotli.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libbrotli.a; path = bin/libbrotli.a; sourceTree = "<group>"; };
+		33300EB0240437620019E302 /* libuvwasi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libuvwasi.a; path = bin/libuvwasi.a; sourceTree = "<group>"; };
+		33300EB1240437620019E302 /* libv8_libbase.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_libbase.a; path = bin/libv8_libbase.a; sourceTree = "<group>"; };
+		33300EB3240437620019E302 /* libv8_base_without_compiler.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base_without_compiler.a; path = bin/libv8_base_without_compiler.a; sourceTree = "<group>"; };
+		33300EC0240437AB0019E302 /* libv8_compiler.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_compiler.a; path = bin/libv8_compiler.a; sourceTree = "<group>"; };
+		33300EC1240437AB0019E302 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = bin/libv8_snapshot.a; sourceTree = "<group>"; };
+		334822141F6AFBD200CF403E /* libnghttp2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnghttp2.a; path = bin/libnghttp2.a; sourceTree = "<group>"; };
+		3376C9191EC3922F0007AD59 /* libcares.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcares.a; path = bin/libcares.a; sourceTree = "<group>"; };
+		3376C91D1EC3922F0007AD59 /* libnode.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnode.a; path = bin/libnode.a; sourceTree = "<group>"; };
+		A36728F42E53580A004E12FB /* libnode_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnode_base.a; path = bin/libnode_base.a; sourceTree = "<group>"; };
+		3376C91E1EC3922F0007AD59 /* libopenssl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libopenssl.a; path = bin/libopenssl.a; sourceTree = "<group>"; };
+		3376C91F1EC3922F0007AD59 /* libuv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libuv.a; path = bin/libuv.a; sourceTree = "<group>"; };
+		3376C9201EC3922F0007AD59 /* libzlib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzlib.a; path = bin/libzlib.a; sourceTree = "<group>"; };
+		3C02AFD31FA919C30053C191 /* NodeMobile.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = NodeMobile.cpp; sourceTree = "<group>"; };
+		A36728BA2E530EF7004DF2FB /* libsimdjson.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsimdjson.a; path = bin/libsimdjson.a; sourceTree = "<group>"; };
+		DEADBEEF000000000000D001 /* libicui18n.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libicui18n.a; path = bin/libicui18n.a; sourceTree = "<group>"; };
+		DEADBEEF000000000000D003 /* libicuucx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libicuucx.a; path = bin/libicuucx.a; sourceTree = "<group>"; };
+		DEADBEEF000000000000D005 /* libicudata.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libicudata.a; path = bin/libicudata.a; sourceTree = "<group>"; };
+		DEADBEEF000000000000D007 /* libmerve.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmerve.a; path = bin/libmerve.a; sourceTree = "<group>"; };
+		DEADBEEF000000000000D009 /* libicustubdata.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libicustubdata.a; path = bin/libicustubdata.a; sourceTree = "<group>"; };
+		A36728BB2E530EF7004DF2FB /* libcrdtp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcrdtp.a; path = bin/libcrdtp.a; sourceTree = "<group>"; };
+		A36728BC2E530EF7004DF2FB /* libzstd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzstd.a; path = bin/libzstd.a; sourceTree = "<group>"; };
+		A36728BD2E530EF7004DF2FB /* libhighway.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libhighway.a; path = bin/libhighway.a; sourceTree = "<group>"; };
+		A36728BF2E530EF7004DF2FB /* libabseil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libabseil.a; path = bin/libabseil.a; sourceTree = "<group>"; };
+		A36728C02E530EF7004DF2FB /* libnbytes.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnbytes.a; path = bin/libnbytes.a; sourceTree = "<group>"; };
+		A36728C12E530EF7004DF2FB /* libncrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libncrypto.a; path = bin/libncrypto.a; sourceTree = "<group>"; };
+		A36728C32E530EF7004DF2FB /* libzlib_data_chunk_simd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzlib_data_chunk_simd.a; path = bin/libzlib_data_chunk_simd.a; sourceTree = "<group>"; };
+		A36728C62E5355E5004DF2FB /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
+		A3F2E7582E716AA30001C23B /* libsqlite.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsqlite.a; path = bin/libsqlite.a; sourceTree = "<group>"; };
+		D9A761AE1F7C63A8006AFE86 /* NodeMobile.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = NodeMobile.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D9A762251F7C674F006097B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D9A762261F7C674F006097B1 /* NodeMobile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NodeMobile.h; sourceTree = "<group>"; };
+		F63BCE7E29756DCD0049F595 /* libv8_zlib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_zlib.a; path = bin/libv8_zlib.a; sourceTree = "<group>"; };
+		F6860EE02ACD491900070ED3 /* libada.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libada.a; path = bin/libada.a; sourceTree = "<group>"; };
+		F6860EE62ACD493C00070ED3 /* libsimdutf.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsimdutf.a; path = bin/libsimdutf.a; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D9A7619C1F7C63A8006AFE86 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A36728F52E53580A004DF2FB /* libopenssl.a in Frameworks */,
+				A36728F32E53580A004DF2FB /* libnghttp2.a in Frameworks */,
+				A36729022E53580A004DF2FB /* libzlib_data_chunk_simd.a in Frameworks */,
+				A36729002E53580A004DF2FB /* libv8_snapshot.a in Frameworks */,
+				A36728F02E53580A004DF2FB /* libllhttp.a in Frameworks */,
+				A36728E82E53580A004DF2FB /* libada.a in Frameworks */,
+				A36728E92E53580A004DF2FB /* libbrotli.a in Frameworks */,
+				A36728FA2E53580A004DF2FB /* libv8_base_without_compiler.a in Frameworks */,
+				A36728FE2E53580A004DF2FB /* libv8_libbase.a in Frameworks */,
+				A36728F42E53580A004DF2FB /* libnode.a in Frameworks */,
+				A36728F42E53580A004E02FB /* libnode_base.a in Frameworks */,
+				A36728FF2E53580A004DF2FB /* libv8_libplatform.a in Frameworks */,
+				A36728F12E53580A004DF2FB /* libnbytes.a in Frameworks */,
+				A36728F82E53580A004DF2FB /* libuv.a in Frameworks */,
+				A3F2E7592E716AB00001C23B /* libsqlite.a in Frameworks */,
+				A36728EA2E53580A004DF2FB /* libcares.a in Frameworks */,
+				A36728F72E53580A004DF2FB /* libsimdutf.a in Frameworks */,
+				A36728E72E53580A004DF2FB /* libabseil.a in Frameworks */,
+				A36728F92E53580A004DF2FB /* libuvwasi.a in Frameworks */,
+				A36729042E53580A004DF2FB /* libzstd.a in Frameworks */,
+				A36728EE2E53580A004DF2FB /* libhighway.a in Frameworks */,
+				A36728EF2E53580A004DF2FB /* libhistogram.a in Frameworks */,
+				A36728F62E53580A004DF2FB /* libsimdjson.a in Frameworks */,
+				DEADBEEF000000000000D008 /* libmerve.a in Frameworks */,
+				DEADBEEF000000000000D002 /* libicui18n.a in Frameworks */,
+				DEADBEEF000000000000D004 /* libicuucx.a in Frameworks */,
+				DEADBEEF000000000000D006 /* libicudata.a in Frameworks */,
+				DEADBEEF000000000000D00A /* libicustubdata.a in Frameworks */,
+				A36729012E53580A004DF2FB /* libv8_zlib.a in Frameworks */,
+				A36728C72E5355E6004DF2FB /* Security.framework in Frameworks */,
+				A36728EB2E53580A004DF2FB /* libcrdtp.a in Frameworks */,
+				A36728FB2E53580A004DF2FB /* libv8_compiler.a in Frameworks */,
+				D9A7619D1F7C63A8006AFE86 /* CoreFoundation.framework in Frameworks */,
+				A36728F22E53580A004DF2FB /* libncrypto.a in Frameworks */,
+				A36729032E53580A004DF2FB /* libzlib.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3376C9031EC391130007AD59 = {
+			isa = PBXGroup;
+			children = (
+				D9A762241F7C674F006097B1 /* NodeMobile */,
+				3376C90E1EC391130007AD59 /* Products */,
+				3376C9181EC3922E0007AD59 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		3376C90E1EC391130007AD59 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D9A761AE1F7C63A8006AFE86 /* NodeMobile.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3376C9181EC3922E0007AD59 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A3F2E7582E716AA30001C23B /* libsqlite.a */,
+				A36728C62E5355E5004DF2FB /* Security.framework */,
+				A36728BF2E530EF7004DF2FB /* libabseil.a */,
+				A36728BB2E530EF7004DF2FB /* libcrdtp.a */,
+				A36728BD2E530EF7004DF2FB /* libhighway.a */,
+				A36728C02E530EF7004DF2FB /* libnbytes.a */,
+				A36728C12E530EF7004DF2FB /* libncrypto.a */,
+				A36728BA2E530EF7004DF2FB /* libsimdjson.a */,
+				DEADBEEF000000000000D001 /* libicui18n.a */,
+				DEADBEEF000000000000D003 /* libicuucx.a */,
+				DEADBEEF000000000000D005 /* libicudata.a */,
+				DEADBEEF000000000000D007 /* libmerve.a */,
+				DEADBEEF000000000000D009 /* libicustubdata.a */,
+				A36728C32E530EF7004DF2FB /* libzlib_data_chunk_simd.a */,
+				A36728BC2E530EF7004DF2FB /* libzstd.a */,
+				F6860EE02ACD491900070ED3 /* libada.a */,
+				33300EAF240437620019E302 /* libbrotli.a */,
+				3376C9191EC3922F0007AD59 /* libcares.a */,
+				33300EAB240437620019E302 /* libhistogram.a */,
+				33300EAC240437620019E302 /* libllhttp.a */,
+				334822141F6AFBD200CF403E /* libnghttp2.a */,
+				3376C91D1EC3922F0007AD59 /* libnode.a */,
+				A36728F42E53580A004E12FB /* libnode_base.a */,
+				3376C91E1EC3922F0007AD59 /* libopenssl.a */,
+				F6860EE62ACD493C00070ED3 /* libsimdutf.a */,
+				3376C91F1EC3922F0007AD59 /* libuv.a */,
+				33300EB0240437620019E302 /* libuvwasi.a */,
+				33300EB3240437620019E302 /* libv8_base_without_compiler.a */,
+				33300EC0240437AB0019E302 /* libv8_compiler.a */,
+				33300EB1240437620019E302 /* libv8_libbase.a */,
+				33300EAE240437620019E302 /* libv8_libplatform.a */,
+				33300EC1240437AB0019E302 /* libv8_snapshot.a */,
+				F63BCE7E29756DCD0049F595 /* libv8_zlib.a */,
+				3376C9201EC3922F0007AD59 /* libzlib.a */,
+				331917C21EC4702A00F93D52 /* CoreFoundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D9A762241F7C674F006097B1 /* NodeMobile */ = {
+			isa = PBXGroup;
+			children = (
+				D9A762251F7C674F006097B1 /* Info.plist */,
+				D9A762261F7C674F006097B1 /* NodeMobile.h */,
+				3C02AFD31FA919C30053C191 /* NodeMobile.cpp */,
+			);
+			path = NodeMobile;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		D9A761A71F7C63A8006AFE86 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D9A762281F7C675E006097B1 /* NodeMobile.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D9A7619A1F7C63A8006AFE86 /* NodeMobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D9A761AB1F7C63A8006AFE86 /* Build configuration list for PBXNativeTarget "NodeMobile" */;
+			buildPhases = (
+				D9A7619B1F7C63A8006AFE86 /* Sources */,
+				D9A7619C1F7C63A8006AFE86 /* Frameworks */,
+				D9A761A71F7C63A8006AFE86 /* Headers */,
+				D9A761AA1F7C63A8006AFE86 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NodeMobile;
+			productName = nodeLib;
+			productReference = D9A761AE1F7C63A8006AFE86 /* NodeMobile.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3376C9041EC391130007AD59 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0900;
+				ORGANIZATIONNAME = "Janea Systems";
+				TargetAttributes = {
+					D9A7619A1F7C63A8006AFE86 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 3376C9071EC391130007AD59 /* Build configuration list for PBXProject "NodeMobile" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				en,
+			);
+			mainGroup = 3376C9031EC391130007AD59;
+			productRefGroup = 3376C90E1EC391130007AD59 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D9A7619A1F7C63A8006AFE86 /* NodeMobile */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D9A761AA1F7C63A8006AFE86 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D9A7619B1F7C63A8006AFE86 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C02AFD41FA919C30053C191 /* NodeMobile.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3376C9131EC391130007AD59 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		3376C9141EC391130007AD59 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VALID_ARCHS = arm64;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		D9A761AC1F7C63A8006AFE86 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_IDENTITY = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = YES;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = NodeMobile/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/bin",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-v",
+					"-lstdc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.janeasystems.NodeMobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SEPARATE_STRIP = YES;
+				SKIP_INSTALL = YES;
+				STRIP_STYLE = "non-global";
+				VALID_ARCHS = "arm64 x86_64";
+			};
+			name = Debug;
+		};
+		D9A761AD1F7C63A8006AFE86 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_IDENTITY = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = YES;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = NodeMobile/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/bin",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-v",
+					"-lstdc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.janeasystems.NodeMobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SEPARATE_STRIP = YES;
+				SKIP_INSTALL = YES;
+				STRIP_STYLE = "non-global";
+				VALID_ARCHS = "arm64 x86_64";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3376C9071EC391130007AD59 /* Build configuration list for PBXProject "NodeMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3376C9131EC391130007AD59 /* Debug */,
+				3376C9141EC391130007AD59 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D9A761AB1F7C63A8006AFE86 /* Build configuration list for PBXNativeTarget "NodeMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D9A761AC1F7C63A8006AFE86 /* Debug */,
+				D9A761AD1F7C63A8006AFE86 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3376C9041EC391130007AD59 /* Project object */;
+}
