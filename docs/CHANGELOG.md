@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.19.0-1">24.19.0-1</a><br/>
 <a href="#24.19.0-0">24.19.0-0</a><br/>
 <a href="#24.18.0-0">24.18.0-0</a><br/>
 <a href="#18.20.4">18.20.4</a><br/>
@@ -35,8 +36,15 @@
 </tr>
 </table>
 
+<a id="24.19.0-1"></a>
+## 2026-08-21, Version 24.19.0-1 (Current)
+
+### Notable Changes
+
+- **Build:** Turn on [V8 pointer compression](https://blog.platformatic.dev/we-cut-nodejs-memory-in-half) for the lite builds. **BREAKING:** the lite builds now have a different ABI, so any native modules that do not use Node-API will need to be rebuilt against these headers.
+
 <a id="24.19.0-0"></a>
-## 2026-08-13, Version 24.19.0-0 (Current)
+## 2026-08-13, Version 24.19.0-0
 
 ### Notable Changes
 
