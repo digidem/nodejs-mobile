@@ -45,8 +45,17 @@ V8_DISABLE_MAGLEV="--v8-disable-maglev"
 LITE_FLAGS=""
 if [ "$FLAVOR" = "lite" ]; then
   INTL="none"
-  # lite additionally drops features size-constrained consumers don't need.
-  LITE_FLAGS="--without-amaro --without-inspector --without-sqlite"
+  # lite additionally drops features size-constrained consumers don't need, and
+  # compresses V8 pointers to 32 bits inside a 4GB cage — the lever on the JS
+  # heap rather than on the binary. No arch gate is needed here the way there is
+  # in android_configure.py: every slice this script builds is arm64, and
+  # upstream only force-disables pointer compression for 32-bit target_arch.
+  # It is lite-only because it changes the V8 ABI — an addon that includes V8
+  # headers directly must be compiled with the matching
+  # V8_COMPRESS_POINTERS/V8_31BIT_SMIS_ON_64BIT_ARCH defines or it reads object
+  # fields at the wrong offsets. N-API addons are unaffected (that ABI hides V8
+  # layout). See "The lite variant" in docs/BUILDING.md on the recipe branch.
+  LITE_FLAGS="--without-amaro --without-inspector --without-sqlite --experimental-enable-pointer-compression"
 fi
 
 declare -a outputs_common=(
