@@ -39,7 +39,9 @@
 <a id="24.19.0-1"></a>
 ## 2026-08-21, Version 24.19.0-1 (Current)
 
-- _TODO: summarize changes before merging._
+### Notable Changes
+
+- **Build:** Turn on [V8 pointer compression](https://blog.platformatic.dev/we-cut-nodejs-memory-in-half) for the lite builds. **BREAKING:** the lite builds now have a different ABI, so any native modules that do not use Node-API will need to be rebuilt against these headers.
 
 <a id="24.19.0-0"></a>
 ## 2026-08-13, Version 24.19.0-0
