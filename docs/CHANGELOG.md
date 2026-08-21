@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.19.0-1">24.19.0-1</a><br/>
 <a href="#24.19.0-0">24.19.0-0</a><br/>
 <a href="#24.18.0-0">24.18.0-0</a><br/>
 <a href="#18.20.4">18.20.4</a><br/>
@@ -35,8 +36,13 @@
 </tr>
 </table>
 
+<a id="24.19.0-1"></a>
+## 2026-08-21, Version 24.19.0-1 (Current)
+
+- _TODO: summarize changes before merging._
+
 <a id="24.19.0-0"></a>
-## 2026-08-13, Version 24.19.0-0 (Current)
+## 2026-08-13, Version 24.19.0-0
 
 ### Notable Changes
 
