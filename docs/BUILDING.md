@@ -132,9 +132,9 @@ target's build command.
 The build ships in two flavors (selected by `NODEJS_MOBILE_FLAVOR`, default
 `full`). **`full`** is the general-purpose binary all consumers get. **`lite`**
 is a smaller binary for consumers that don't need the full feature set, built by
-layering feature-drops — and one V8 configuration change, [pointer
-compression](#pointer-compression-lite-only) — on top of the full configure, so
-the full binary and its test gate are unchanged.
+layering feature-drops — and on Android one V8 configuration change, [pointer
+compression](#pointer-compression-android-lite-only) — on top of the full
+configure, so the full binary and its test gate are unchanged.
 
 What `lite` drops (all already-available upstream `configure` flags, so no extra
 patch-stack surface):
@@ -159,9 +159,9 @@ Measured shipping sizes (arm64, after symbol strip):
   both flavors; no
   `--v8-lite-mode` (Android keeps the JIT and V8's native WASM for undici).
 
-Those figures were measured before pointer compression was turned on; it aims
-at the heap rather than at the binary, and the release CI re-measures the
-shipping artifacts on every release.
+Those figures were measured before pointer compression was turned on for
+Android; it aims at the heap rather than at the binary, and the release CI
+re-measures the shipping artifacts on every release.
 
 `build-id` (`-Wl,--build-id=sha1`) is emitted on the Android `libnode.so` in
 **both** flavors so crash reporters (e.g. Sentry) can symbolicate native
@@ -169,18 +169,22 @@ crashes. The safeguard for `intl=none` is running your own application's test
 suite against the lite binary — it catches `Intl` breakage from future
 dependency changes.
 
-### Pointer compression (lite only)
+### Pointer compression (Android lite only)
 
-`lite` also configures V8 with `--experimental-enable-pointer-compression`.
-V8 then stores tagged pointers as 32-bit offsets from a per-isolate 4 GB
-*cage* base instead of as full 64-bit addresses, so every object field, array
-element and map slot on the JS heap halves. The lever here is **runtime memory,
-not file size**: V8's own measurements put the saving at roughly 40% of the JS
-heap ([v8.dev/blog/pointer-compression](https://v8.dev/blog/pointer-compression)),
+Android `lite` also configures V8 with
+`--experimental-enable-pointer-compression`. V8 then stores tagged pointers as
+32-bit offsets from a per-isolate 4 GB *cage* base instead of as full 64-bit
+addresses, so every object field, array element and map slot on the JS heap
+halves. The lever here is **runtime memory, not file size**: V8's own
+measurements put the saving at roughly 40% of the JS heap
+([v8.dev/blog/pointer-compression](https://v8.dev/blog/pointer-compression)),
 which on a phone is the margin between staying resident and being reaped by the
-low-memory killer (Android) or jetsam (iOS).
+low-memory killer.
 
-Why it is `lite`-only, when the flag is available to both flavors:
+**iOS does not get it** — the cage reservation cannot succeed there at all; see
+[iOS cannot reserve the cage](#ios-cannot-reserve-the-cage) below.
+
+Why it is `lite`-only on Android, when the flag is available to both flavors:
 
 - **It changes the V8 ABI.** A native addon that includes V8's headers directly
   (`v8.h`, NAN, node-addon-api's V8 escape hatches) has to be compiled with the
@@ -209,14 +213,49 @@ not the copy `configure` already wrote into `config.gypi`: ungated, a 32-bit
 lite build would ship a `process.config` claiming compression it doesn't have —
 `tools/test.py` derives its `$pointer_compression` status variable from exactly
 that, and `test-max-old-space-size-percentage` and
-`test-experimental-shared-value-conveyor` branch on it. iOS needs no such gate —
-every slice it builds is arm64.
+`test-experimental-shared-value-conveyor` branch on it.
 
 Each isolate (the main one, plus one per `Worker`) reserves its own cage, so
-the cost is 4 GB of *address space* per isolate — reserved, not committed, and
-harmless on a 64-bit address space. Node's shared-cage mode
+the cost is 4 GB of *address space* per isolate. Node's shared-cage mode
 (`--experimental-pointer-compression-shared-cage`) is deliberately left off,
 matching upstream's default.
+
+#### iOS cannot reserve the cage
+
+The address space that costs nothing on Android is exactly what iOS will not
+hand out, so the flag is **not** passed in `tools/ios_framework_prepare.sh`.
+
+V8 does not ask for 4 GB. The cage has to be 4 GB-*aligned* as well as
+4 GB long, and V8 gets that alignment by over-reserving and trimming —
+`OS::Allocate` in `deps/v8/src/base/platform/platform-posix.cc` requests
+`size + (alignment - page_size)`, so one `mmap` of just under **8 GB**,
+`PROT_NONE`, before it unmaps the misaligned head and tail.
+
+An iOS process does not have 8 GB of address space to give. Without the
+[`com.apple.developer.kernel.extended-virtual-addressing`](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.kernel.extended-virtual-addressing)
+entitlement the kernel caps a process at `ARM64_MIN_MAX_ADDRESS`-derived
+limits — **7.375 GB** usable on devices with more than 3 GB of RAM, and less
+below that, after the 4 GB `PAGE_ZERO` and the 4 GB shared region are taken out
+([the arithmetic, with the kernel
+constants](https://alwaysprocessing.blog/2022/02/20/size-matters)). The
+reservation is therefore larger than the entire address space of the process
+and fails on every device, not marginally and not only on small ones.
+`VirtualMemoryCage::InitReservation` returns false and
+`IsolateGroup::Initialize` calls `V8::FatalProcessOutOfMemory(... "Failed to
+reserve virtual memory for process-wide V8 pointer compression cage")`, which
+aborts the process during `Isolate` init — i.e. the app crashes a second into
+launch, before any embedder JS runs.
+
+The entitlement would lift the cap ("jumbo mode", full 64-bit address space),
+but it is not something a runtime library can require: it is a restricted
+capability that every consuming app would have to add to its own provisioning
+profile, and it would still spend 4 GB of address space per isolate. Shipping
+iOS `lite` uncompressed is the cheaper trade.
+
+This is invisible to the iOS **simulator**, which is a macOS process and has no
+such cap — the simulator legs of `curated-tests-ios` pass on a build that
+cannot start on any physical device. Treat iOS simulator green as no evidence
+at all about address-space behaviour.
 
 
 ---
