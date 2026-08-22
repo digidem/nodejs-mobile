@@ -68,7 +68,7 @@ it through `tools/test.py`.
 | `build.yml` → `smoke-{android,ios}` (+ the NAPI symbol assert in `combine-android`) | ubuntu+KVM / macos | PR · push `recipe` | **boot smoke**: the exact shipping artifact boots and runs JS; NAPI symbols in `.dynsym` |
 | `build.yml` → `curated-tests-android` / `curated-tests-ios` | ubuntu+KVM / macos | PR · push `recipe` · releases | **curated device tests**: the curated subset + crc-native addon load on an x86_64 emulator and arm64 simulator |
 | `full-device-suite.yml` (also `build.yml` → `full-suite-android` / `full-suite-ios` on releases and on PRs that bump `upstream-base.txt`) | ubuntu+KVM / macos | nightly 03:00 UTC · dispatch · releases · upstream-bump PRs | **full device suite**: the whole non-`.status`-skipped `test/parallel` + `test/sequential` suite on both platforms, 4 round-robin shards each (`test.py --run=n,4`). The curated gate covers what someone chose; this covers everything else, so a test upstream adds tomorrow is picked up without anyone noticing it exists. On a PR that moves the pinned tag it also gates `ci-required` (via `full-suite-gate`): an upgrade carries whatever tests upstream added, and an allow-list gate cannot see them |
-| `build.yml` → `real-device-smoke-android` / `real-device-smoke-ios` | ubuntu / macos-15 + BrowserStack | releases (untagged version of record; required to publish) · dispatch | **real-device smoke**: boot + crc-native addon load on physical devices — Android arm64 (Pixel 9, 16 KB pages) via Espresso and iPhone via XCUITest. Needs `BROWSERSTACK_USER`/`BROWSERSTACK_PW` secrets. |
+| `build.yml` → `real-device-smoke-android` / `real-device-smoke-ios` | ubuntu / macos-15 + BrowserStack | releases (untagged version of record; required to publish) · dispatch | **real-device smoke**: boot + crc-native addon load on physical devices — Android arm64 (Pixel 9, 16 KB pages) via Espresso and iPhone via XCUITest. The iOS leg runs **once per flavor** (`ios_flavors`, both by default): a simulator is a macOS process and is not subject to the address-space limits a real iOS process is, so simulator-only coverage cannot tell you a flavor boots on hardware. Android is still full-only. Needs `BROWSERSTACK_USER`/`BROWSERSTACK_PW` secrets. |
 
 Every job first **materializes** the source tree from the recipe branch
 (`.github/actions/materialize` runs `scripts/prepare.sh` and verifies the
@@ -102,7 +102,11 @@ it; don't merge through a red one without knowing why it's red. They are
 blocking on the release chain, where `publish` `needs:` them.
 
 The real-device smoke stays release-only: GitHub Actions minutes are free for
-this project, BrowserStack device minutes are not.
+this project, BrowserStack device minutes are not. Within that budget the iOS
+leg still runs per flavor rather than for `full` alone — the flavor a consumer
+ships is the one that has to be proven on hardware, and 24.19.0-1 shipped an
+iOS `lite` build that aborted during `Isolate` init on every physical device
+while every simulator leg stayed green.
 
 ### The curated gate and the full suite
 

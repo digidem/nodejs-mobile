@@ -50,9 +50,9 @@ Releasing is a button, a review, and (optionally) an approval:
 5. Publish tags **`vX.Y.Z-R`** on a materialized full-source commit (the
    release stays browsable as a complete tree) and creates the GitHub
    **prerelease** with four zips: `nodejs-mobile-{android,ios}{,-lite}-X.Y.Z-R.zip`.
-   Promote (untick "prerelease") when satisfied — the `full` flavor has
-   already passed real devices by construction; `lite` is
-   emulator/simulator-tested only.
+   Promote (untick "prerelease") when satisfied — both iOS flavors have
+   passed a real device by construction, as has Android `full`; Android
+   `lite` is still emulator-tested only.
 
 A failed gate means no tag and no release; fix on `recipe` and the next
 push retries automatically (the version is still untagged — the trigger is
