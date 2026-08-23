@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.19.0-2">24.19.0-2</a><br/>
 <a href="#24.19.0-1">24.19.0-1</a><br/>
 <a href="#24.19.0-0">24.19.0-0</a><br/>
 <a href="#24.18.0-0">24.18.0-0</a><br/>
@@ -36,8 +37,15 @@
 </tr>
 </table>
 
+<a id="24.19.0-2"></a>
+## 2026-08-23, Version 24.19.0-2 (Current)
+
+### Notable Changes
+
+- **Fix:** Turn off [V8 pointer compression](https://blog.platformatic.dev/we-cut-nodejs-memory-in-half) for iOS -- it crashes the process. iOS does not allow the 8GB of memory reservation that v8 pointer compression requires, see https://github.com/digidem/nodejs-mobile/pull/8.
+
 <a id="24.19.0-1"></a>
-## 2026-08-21, Version 24.19.0-1 (Current)
+## 2026-08-21, Version 24.19.0-1
 
 ### Notable Changes
 
