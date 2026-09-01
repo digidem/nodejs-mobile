@@ -15,10 +15,10 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
  2 files changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/node.cc b/src/node.cc
-index 078497db7e..1184a00c8c 100644
+index f03a4447e5..9bc60cf2db 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -693,6 +693,8 @@ void ResetStdio() {
+@@ -698,6 +698,8 @@ void ResetStdio() {
        CHECK_NE(err, -1);
      }
  
@@ -27,7 +27,7 @@ index 078497db7e..1184a00c8c 100644
      if (s.isatty) {
        sigset_t sa;
        int err;
-@@ -714,6 +716,7 @@ void ResetStdio() {
+@@ -719,6 +721,7 @@ void ResetStdio() {
        // - if the process group is orphaned, e.g. because the user logged out,
        //   tcsetattr fails with EIO
      }

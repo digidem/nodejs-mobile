@@ -16,7 +16,7 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1398 +++++++++++++++++
+ test/parallel/parallel.status                 | 1438 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -51,13 +51,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1708 insertions(+), 46 deletions(-)
+ 35 files changed, 1748 insertions(+), 46 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index cf7f8d42e8..d1f28be02e 100644
+index e4c82da4d6..7a71cae10c 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -158,6 +158,1404 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -162,6 +162,1444 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -191,7 +191,11 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-openssl-ca-options: SKIP
 +test-os-homedir-no-envvar: SKIP
 +test-os-userinfo-handles-getter-errors: SKIP
++test-package-map-cli: SKIP
 +test-pending-deprecation: SKIP
++test-permission-audit-fs-does-not-deny: SKIP
++test-permission-drop-fs-granted-path: SKIP
++test-permission-drop-fs-specific-path: SKIP
 +test-permission-fs-write-trace-events: SKIP
 +test-pipe-head: SKIP
 +test-pipe-unref: SKIP
@@ -211,6 +215,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-process-env: SKIP
 +test-process-exec-argv: SKIP
 +test-process-execpath: SKIP
++test-process-exit-after-fetch-throw: SKIP
 +test-process-exit-code: SKIP
 +test-process-external-stdio-close: SKIP
 +test-process-external-stdio-close-spawn: SKIP
@@ -250,6 +255,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-repl-unsafe-array-iteration: SKIP
 +test-repl-unsupported-option: SKIP
 +test-require-invalid-main-no-exports: SKIP
++test-require-package-map: SKIP
 +test-require-symlink: SKIP
 +test-runner-cli: SKIP
 +test-runner-coverage: SKIP
@@ -257,6 +263,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-runner-extraneous-async-activity: SKIP
 +test-runner-import-no-scheme: SKIP
 +test-runner-inspect: SKIP
++test-runner-log: SKIP
 +test-runner-misc: SKIP
 +test-runner-output: SKIP
 +test-runner-reporters: SKIP
@@ -312,6 +319,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-throw-error-with-getter-throw-traced: SKIP
 +test-throw-undefined-or-null-traced: SKIP
 +test-tick-processor-arguments: SKIP
++test-timers-async-store-leak: SKIP
 +test-timers-immediate-promisified: SKIP
 +test-timers-interval-promisified: SKIP
 +test-timers-timeout-promisified: SKIP
@@ -624,6 +632,15 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-permission-child-process-inherit-flags: SKIP
 +test-permission-child-process-inherit-flags-substring: SKIP
 +test-permission-config-file: SKIP
++test-permission-diagnostics-channel: SKIP
++test-permission-drop-addons: SKIP
++test-permission-drop-child-process: SKIP
++test-permission-drop-diagnostics-channel: SKIP
++test-permission-drop-errors: SKIP
++test-permission-drop-fs-all: SKIP
++test-permission-drop-fs-scope: SKIP
++test-permission-drop-fs-write: SKIP
++test-permission-drop-worker: SKIP
 +test-permission-fs-absolute-path: SKIP
 +test-permission-fs-read: SKIP
 +test-permission-fs-read-entrypoint: SKIP
@@ -720,6 +737,11 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-debugger-low-level: SKIP
 +test-debugger-object-type-remote-object: SKIP
 +test-debugger-preserve-breaks: SKIP
++test-debugger-probe-cond: SKIP
++test-debugger-probe-cond-invalid: SKIP
++test-debugger-probe-cond-max-hit: SKIP
++test-debugger-probe-cond-shared: SKIP
++test-debugger-probe-cond-throws: SKIP
 +test-debugger-profile: SKIP
 +test-debugger-profile-command: SKIP
 +test-debugger-random-port: SKIP
@@ -814,7 +836,11 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-openssl-ca-options: SKIP
 +test-os-homedir-no-envvar: SKIP
 +test-os-userinfo-handles-getter-errors: SKIP
++test-package-map-cli: SKIP
 +test-pending-deprecation: SKIP
++test-permission-audit-fs-does-not-deny: SKIP
++test-permission-drop-fs-granted-path: SKIP
++test-permission-drop-fs-specific-path: SKIP
 +test-pipe-head: SKIP
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
@@ -833,6 +859,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-process-env: SKIP
 +test-process-exec-argv: SKIP
 +test-process-execpath: SKIP
++test-process-exit-after-fetch-throw: SKIP
 +test-process-exit-code: SKIP
 +test-process-external-stdio-close: SKIP
 +test-process-external-stdio-close-spawn: SKIP
@@ -872,6 +899,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-repl-unsafe-array-iteration: SKIP
 +test-repl-unsupported-option: SKIP
 +test-require-invalid-main-no-exports: SKIP
++test-require-package-map: SKIP
 +test-require-symlink: SKIP
 +test-runner-cli: SKIP
 +test-runner-coverage: SKIP
@@ -879,6 +907,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-runner-extraneous-async-activity: SKIP
 +test-runner-import-no-scheme: SKIP
 +test-runner-inspect: SKIP
++test-runner-log: SKIP
 +test-runner-misc: SKIP
 +test-runner-output: SKIP
 +test-runner-reporters: SKIP
@@ -931,6 +960,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +test-throw-error-with-getter-throw-traced: SKIP
 +test-throw-undefined-or-null-traced: SKIP
 +test-tick-processor-arguments: SKIP
++test-timers-async-store-leak: SKIP
 +test-timers-immediate-promisified: SKIP
 +test-timers-interval-promisified: SKIP
 +test-timers-timeout-promisified: SKIP
@@ -1043,6 +1073,7 @@ index cf7f8d42e8..d1f28be02e 100644
 +#
 +test-fetch-disabled: SKIP
 +test-vm-codegen: SKIP
++test-wasm: SKIP
 +test-wasm-simple: SKIP
 +test-wasm-web-api: SKIP
 +test-worker-message-port-wasm-module: SKIP
@@ -1157,6 +1188,15 @@ index cf7f8d42e8..d1f28be02e 100644
 +# sandbox it is being denied by. See docs/TESTING.md, "How a test PASSes".
 +#
 +test-permission-allow-child-process-cli: SKIP
++test-permission-diagnostics-channel: SKIP
++test-permission-drop-addons: SKIP
++test-permission-drop-child-process: SKIP
++test-permission-drop-diagnostics-channel: SKIP
++test-permission-drop-errors: SKIP
++test-permission-drop-fs-all: SKIP
++test-permission-drop-fs-scope: SKIP
++test-permission-drop-fs-write: SKIP
++test-permission-drop-worker: SKIP
 +test-permission-fs-write: SKIP
 +test-permission-fs-windows-path: SKIP
 +#
@@ -1476,7 +1516,7 @@ index daf7f8064b..76c2ce82dd 100644
          assert.strictEqual(recvBufferSize, expectedBufferSize);
          assert.strictEqual(sendBufferSize, expectedBufferSize);
 diff --git a/test/parallel/test-dgram-membership.js b/test/parallel/test-dgram-membership.js
-index ebfdaa9cb6..8414b251c8 100644
+index 052deb92d6..19e9b0e81e 100644
 --- a/test/parallel/test-dgram-membership.js
 +++ b/test/parallel/test-dgram-membership.js
 @@ -108,7 +108,10 @@ const setup = dgram.createSocket.bind(dgram, { type: 'udp4', reuseAddr: true });
@@ -2108,10 +2148,10 @@ index e1595350cd..f5d84f7480 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 627e61911d..7a4e74ce4a 100644
+index 01a021130c..059f682010 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -43,6 +43,135 @@ test-perf-hooks: SKIP
+@@ -39,6 +39,135 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  

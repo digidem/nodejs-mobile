@@ -24,10 +24,10 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 diff --git a/test/common/index.js b/test/common/index.js
 old mode 100755
 new mode 100644
-index 6cfebae8f4..b9a9213da1
+index 9d15b57bf6..70d5fefae0
 --- a/test/common/index.js
 +++ b/test/common/index.js
-@@ -159,6 +159,8 @@ const isFreeBSD = process.platform === 'freebsd';
+@@ -161,6 +161,8 @@ const isFreeBSD = process.platform === 'freebsd';
  const isOpenBSD = process.platform === 'openbsd';
  const isLinux = process.platform === 'linux';
  const isMacOS = process.platform === 'darwin';
@@ -36,7 +36,7 @@ index 6cfebae8f4..b9a9213da1
  const isASan = process.config.variables.asan === 1;
  const isRiscv64 = process.arch === 'riscv64';
  const isDebug = process.features.debug;
-@@ -945,8 +947,10 @@ const common = {
+@@ -976,8 +978,10 @@ const common = {
    invalidArgTypeHelper,
    isAlive,
    isASan,

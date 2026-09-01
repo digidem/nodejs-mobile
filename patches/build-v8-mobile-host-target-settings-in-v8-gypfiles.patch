@@ -46,7 +46,7 @@ index e614c39a6b..711428f898 100644
      'configurations': {
        'Debug': {
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index 95194aca28..217a787878 100644
+index f90a29d102..b814fee544 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
 @@ -868,6 +868,15 @@
