@@ -410,8 +410,15 @@ A test that runs with `--permission` but without `--allow-fs-write` cannot be
 scored when it calls `process.exit()`: the harness writes its verdict to a file
 from a `process.on('exit')` hook, and the permission model — correctly — denies
 that write, so no verdict lands and the run reports FAIL whatever the test did.
-This is not fixable from inside the sandbox doing the denying. The 22 affected
+This is not fixable from inside the sandbox doing the denying. The affected
 cases are skipped, with that reason recorded next to them in `parallel.status`.
+
+The flags header is not the whole story: a test that starts with
+`--allow-fs-write` and then calls `process.permission.drop('fs.write')` (or
+`drop('fs')`) has the same problem from that point on, and the exit hook runs
+after it. Read the `drop()` calls, not just the `// Flags:` line. Every
+upstream release adds a few of these — → [UPGRADING.md](./UPGRADING.md#new-upstream-tests)
+for the triage to run when the base moves.
 
 ### The NAPI addon gate
 
