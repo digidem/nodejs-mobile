@@ -51,6 +51,16 @@ Also:
   files, so a missed one fails loudly.
 - add `.status` entries for the tests upstream just added — see [new upstream
   tests](#new-upstream-tests) below.
+- watch for upstream **splitting a build target**. gyp resolves the new
+  dependency on Android, but the iOS framework links a hand-maintained list of
+  archives — `outputs_common` in `mobile-src/tools/ios_framework_prepare.sh`
+  plus four entries in the `NodeMobile.xcodeproj` pbxproj — so a new
+  `static_library` shows up as undefined symbols at `Ld`, long after every
+  compile has passed. v24.19.0 split `libnode_base` out of `libnode`;
+  v24.20.0 split `libncrypto_engine` out of `libncrypto`. If an iOS leg
+  fails with `Undefined symbols` naming a class you did not touch, check
+  `deps/*/*.gyp` for a target that did not exist at the old base. Note the
+  pbxproj is `.gitignore`d inside the tree, so staging it needs `git add -f`.
 
 ### `sha1 information is lacking or useless`
 
