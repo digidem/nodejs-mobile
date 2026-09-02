@@ -41,7 +41,9 @@
 <a id="24.20.0-0"></a>
 ## 2026-09-02, Version 24.20.0-0 (Current)
 
-- _TODO: summarize changes before merging._
+### Notable Changes
+
+- **Engine: Node.js 24.19.0 → 24.20.0** (V8 13.6).
 
 <a id="24.19.0-2"></a>
 ## 2026-08-23, Version 24.19.0-2
