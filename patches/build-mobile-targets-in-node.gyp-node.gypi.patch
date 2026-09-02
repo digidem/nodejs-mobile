@@ -21,7 +21,7 @@ Co-authored-by: Julia Samól <j.samol@papers.ch>
  2 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index bd66c9b498..06589d8cc3 100644
+index c58f4812e2..d8b6eb51f5 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -68,6 +68,11 @@
@@ -36,7 +36,7 @@ index bd66c9b498..06589d8cc3 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -922,7 +927,8 @@
+@@ -923,7 +928,8 @@
              '<@(node_quic_sources)',
            ],
          }],
@@ -46,7 +46,7 @@ index bd66c9b498..06589d8cc3 100644
            'target_arch=="x64" and '
            'node_target_type=="executable"', {
            'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
-@@ -1399,8 +1405,9 @@
+@@ -1405,8 +1411,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -58,7 +58,7 @@ index bd66c9b498..06589d8cc3 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1566,7 +1573,8 @@
+@@ -1627,7 +1634,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],

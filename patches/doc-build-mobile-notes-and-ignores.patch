@@ -12,8 +12,8 @@ git operations in a built tree never sweep them up.
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
  .gitignore |   5 +
- README.md  | 915 ++---------------------------------------------------
- 2 files changed, 32 insertions(+), 888 deletions(-)
+ README.md  | 917 ++---------------------------------------------------
+ 2 files changed, 32 insertions(+), 890 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 74eb99c815..ce1c201ce9 100644
@@ -39,10 +39,10 @@ index 74eb99c815..ce1c201ce9 100644
  /deps/openssl/openssl.props
  /deps/openssl/openssl.targets
 diff --git a/README.md b/README.md
-index dc175eadf5..1d3ab7e321 100644
+index a6cf7d6683..1d3ab7e321 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,910 +1,49 @@
+@@ -1,912 +1,49 @@
 -# Node.js
 +# Node.js for Mobile Apps
  
@@ -390,8 +390,6 @@ index dc175eadf5..1d3ab7e321 100644
 -  **Dario Piotrowicz** <<dario.piotrowicz@gmail.com>> (he/him)
 -* [deokjinkim](https://github.com/deokjinkim) -
 -  **Deokjin Kim** <<deokjin81.kim@gmail.com>> (he/him)
--* [edsadr](https://github.com/edsadr) -
--  **Adrian Estrada** <<edsadr@gmail.com>> (he/him)
 -* [ErickWendel](https://github.com/ErickWendel) -
 -  **Erick Wendel** <<erick.workspace@gmail.com>> (he/him)
 -* [Ethan-Arrowood](https://github.com/Ethan-Arrowood) -
@@ -464,6 +462,8 @@ index dc175eadf5..1d3ab7e321 100644
 -  **Matteo Collina** <<matteo.collina@gmail.com>> (he/him) - [Support me](https://github.com/sponsors/mcollina)
 -* [meixg](https://github.com/meixg) -
 -  **Xuguang Mei** <<meixuguang@gmail.com>> (he/him)
+-* [MikeMcC399](https://github.com/MikeMcC399) -
+-  **Mike McCready** <<66998419+MikeMcC399@users.noreply.github.com>> (he/him)
 -* [MoLow](https://github.com/MoLow) -
 -  **Moshe Atlow** <<moshe@atlow.co.il>> (he/him)
 -* [MrJithil](https://github.com/MrJithil) -
@@ -584,6 +584,8 @@ index dc175eadf5..1d3ab7e321 100644
 -  **Xu Meng** <<dmabupt@gmail.com>> (he/him)
 -* [dnlup](https://github.com/dnlup) -
 -  **dnlup** <<dnlup.dev@gmail.com>>
+-* [edsadr](https://github.com/edsadr) -
+-  **Adrian Estrada** <<edsadr@gmail.com>> (he/him)
 -* [eljefedelrodeodeljefe](https://github.com/eljefedelrodeodeljefe) -
 -  **Robert Jefe Lindstaedt** <<robert.lindstaedt@gmail.com>>
 -* [estliberitas](https://github.com/estliberitas) -

@@ -8,17 +8,27 @@ for process-level facilities mobile OSes forbid or lack (tty tcsetattr
 teardown on iOS; NODE_IMPLEMENTS_POSIX_CREDENTIALS turned on for
 Android API >= 21, which upstream leaves off).
 
+Also drops --experimental-wasm-jspi from the V8 argument list on iOS,
+which upstream appends unconditionally as of v24.20.0. iOS builds V8 in
+lite mode, so V8_ENABLE_WEBASSEMBLY is off and the whole
+--experimental-wasm-* flag family does not exist; V8 leaves the flag
+unconsumed and node turns that into "bad option" and exits before
+running any JS. The guard is on the platform rather than on
+V8_ENABLE_WEBASSEMBLY because node's own targets never receive that
+define -- it is set only on V8's, and testing it here would silently
+drop the flag on Android too, where WebAssembly is enabled.
+
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 ---
- src/node.cc          | 3 +++
+ src/node.cc          | 9 +++++++++
  src/node_internals.h | 2 +-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/src/node.cc b/src/node.cc
-index 078497db7e..1184a00c8c 100644
+index f03a4447e5..967abd834d 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -693,6 +693,8 @@ void ResetStdio() {
+@@ -698,6 +698,8 @@ void ResetStdio() {
        CHECK_NE(err, -1);
      }
  
@@ -27,7 +37,7 @@ index 078497db7e..1184a00c8c 100644
      if (s.isatty) {
        sigset_t sa;
        int err;
-@@ -714,6 +716,7 @@ void ResetStdio() {
+@@ -719,6 +721,7 @@ void ResetStdio() {
        // - if the process group is orphaned, e.g. because the user logged out,
        //   tcsetattr fails with EIO
      }
@@ -35,6 +45,20 @@ index 078497db7e..1184a00c8c 100644
    }
  #endif  // __POSIX__
  }
+@@ -787,7 +790,13 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+   }
+ 
+   // WebAssembly JS Promise Integration
++  // nodejs-mobile patch: iOS builds V8 in lite mode, which compiles out
++  // WebAssembly and every --experimental-wasm-* flag with it. V8 leaves the
++  // unrecognized flag in v8_args and node then fails with "bad option" before
++  // running any JS, so the flag must not be added there.
++#if !(defined(__APPLE__) && TARGET_OS_IPHONE)
+   v8_args.emplace_back("--experimental-wasm-jspi");
++#endif  // !(defined(__APPLE__) && TARGET_OS_IPHONE)
+ 
+ #ifdef __POSIX__
+   // Block SIGPROF signals when sleeping in epoll_wait/kevent/etc.  Avoids the
 diff --git a/src/node_internals.h b/src/node_internals.h
 index 8e930a6fec..b279bf9999 100644
 --- a/src/node_internals.h

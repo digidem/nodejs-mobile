@@ -103,6 +103,7 @@ ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/scorecard.y
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/stale.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/stress-test.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-internet.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-linux-quic.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-linux.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-macos.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/timezone-update.yml

@@ -66,6 +66,9 @@ declare -a outputs_common=(
   "libmerve.a"
   "libnbytes.a"
   "libncrypto.a"
+  # v24.20.0 split EnginePointer out of ncrypto into its own target; libnode_base
+  # references it, so the framework link needs the archive too.
+  "libncrypto_engine.a"
   "libnghttp2.a"
   "libnode.a"
   # node's own objects; upstream v24.19.0 split them out of libnode into the

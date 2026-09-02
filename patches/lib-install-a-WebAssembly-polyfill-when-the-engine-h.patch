@@ -15,7 +15,7 @@ jitless/frozen-intrinsics host gates in smoke-host.
  2 files changed, 113 insertions(+)
 
 diff --git a/LICENSE b/LICENSE
-index 2842efa128..58e2bea8b3 100644
+index 9cc3315dd3..b876545603 100644
 --- a/LICENSE
 +++ b/LICENSE
 @@ -2944,3 +2944,26 @@ The externally maintained libraries used by Node.js are:
@@ -46,7 +46,7 @@ index 2842efa128..58e2bea8b3 100644
 +    SOFTWARE.
 +  """
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 2716c2ae81..17c283aa7a 100644
+index a7ff17a646..45cc4326a6 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -9,6 +9,7 @@ const {
@@ -65,7 +65,7 @@ index 2716c2ae81..17c283aa7a 100644
    setupTraceCategoryState();
    setupInspectorHooks();
    setupNetworkInspection();
-@@ -363,6 +365,94 @@ function setupEventsource() {
+@@ -364,6 +366,94 @@ function setupEventsource() {
    }
  }
  
