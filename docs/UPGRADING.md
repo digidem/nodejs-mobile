@@ -133,10 +133,16 @@ git -C out diff --name-status v24.19.0 v24.20.0 -- test/parallel test/sequential
 
 A minor release can add hundreds. Most need nothing. Triage by cause:
 
-- **Spawns a child node process** — grep the new files for `child_process`,
-  `spawnSync`, `execFile`, `process.execPath`. Cannot pass on either
-  platform: on Android `process.execPath` is `app_process64`, so the child
-  SIGABRTs. Skip.
+- **Spawns a child node process** — cannot pass on Android, where
+  `process.execPath` is `app_process64`, so the child SIGABRTs (its stderr
+  comes back as `Error changing dalvik-cache ownership`). Skip. Grepping for
+  `child_process` is **not** enough, and this is where triage actually goes
+  wrong: a test can spawn through `common.spawnPromisified` destructured off
+  `require('../common')`, which never names `child_process`, or through
+  `node:test`'s `run({ isolation: 'process' })`, which spawns inside the
+  runner. Grep for `process.execPath`, `spawnPromisified` and `isolation`
+  too, and read the test titles — `'…forwarded from child processes'` is the
+  giveaway that greps miss.
 - **Runs under `--permission` with no `--allow-fs-write`** at exit — read the
   `// Flags:` header, and watch for a test that starts with the permission
   and calls `process.permission.drop('fs.write')` (or `'fs'`) partway
@@ -150,6 +156,11 @@ A minor release can add hundreds. Most need nothing. Triage by cause:
   platforms; `test-debugger-probe-*` is a glob on Android but an itemized
   list on iOS, so a new member of that family needs an iOS entry only.
 - **Everything else** — leave it to run. The suite is the measurement.
+
+A child-process spawner usually still passes on the iOS *simulator*, where
+`posix_spawn` is permitted, so expect these to fail the Android suite alone.
+Skip them on Android and leave the iOS entry off unless a device sweep shows
+otherwise — never skip a test that is currently passing.
 
 `// Flags:` headers *are* honoured on device (the proxy forwards the whole
 argv `test.py` hands it), so a new flag-gated feature needs no special
