@@ -16,7 +16,7 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1441 +++++++++++++++++
+ test/parallel/parallel.status                 | 1444 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -51,13 +51,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1751 insertions(+), 46 deletions(-)
+ 35 files changed, 1754 insertions(+), 46 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index e4c82da4d6..3091abc240 100644
+index e4c82da4d6..d951785ba4 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -162,6 +162,1447 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -162,6 +162,1450 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -906,6 +906,7 @@ index e4c82da4d6..3091abc240 100644
 +test-require-symlink: SKIP
 +test-runner-cli: SKIP
 +test-runner-coverage: SKIP
++test-runner-entry-file: SKIP
 +test-runner-exit-code: SKIP
 +test-runner-extraneous-async-activity: SKIP
 +test-runner-import-no-scheme: SKIP
@@ -958,6 +959,8 @@ index e4c82da4d6..3091abc240 100644
 +test-stdout-close-unref: SKIP
 +test-stdout-stderr-reading: SKIP
 +test-stdout-to-file: SKIP
++test-stream-iter-disabled: SKIP
++test-stream-iter-readable-interop-disabled: SKIP
 +test-stream-pipeline-process: SKIP
 +test-sync-io-option: SKIP
 +test-throw-error-with-getter-throw-traced: SKIP

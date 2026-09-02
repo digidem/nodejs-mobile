@@ -157,10 +157,13 @@ A minor release can add hundreds. Most need nothing. Triage by cause:
   list on iOS, so a new member of that family needs an iOS entry only.
 - **Everything else** — leave it to run. The suite is the measurement.
 
-A child-process spawner usually still passes on the iOS *simulator*, where
-`posix_spawn` is permitted, so expect these to fail the Android suite alone.
-Skip them on Android and leave the iOS entry off unless a device sweep shows
-otherwise — never skip a test that is currently passing.
+A child-process spawner fails the Android suite outright, and on the iOS
+*simulator* it is **flaky rather than passing**: `posix_spawn` is permitted
+there, so it often works and sometimes does not — the same test failed the
+Android suite, passed one iOS run, then failed the next. Skip these on both
+platforms. A green iOS shard is not evidence the test is sound; it cannot
+work on a real device either way, which is why `parallel.status` already
+carries a block saying this class is "not coverage worth keeping".
 
 `// Flags:` headers *are* honoured on device (the proxy forwards the whole
 argv `test.py` hands it), so a new flag-gated feature needs no special
