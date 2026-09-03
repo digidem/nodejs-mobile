@@ -1093,37 +1093,36 @@ jobs:
           [ "$IOS" = success ] || { echo "::error::full device suite (ios) did not succeed on an upstream bump: $IOS"; rc=1; }
           exit "$rc"
 
-  # Keep refs/heads/upstream-base on this fork pointing at the tag in
+  # Verify refs/heads/upstream-base on this fork points at the tag pinned in
   # upstream-base.txt. publish tags a tree materialized from a depth-1 clone of
   # nodejs/node, so the pack it sends names the base commit's parent without
   # carrying it; the remote's connectivity check rejects the tag ("did not
-  # receive expected object") unless it already holds that ancestry. This job
-  # is what makes it hold — the branch both delivers the objects and keeps them
-  # reachable, so no later GC can take them back.
+  # receive expected object") unless it already holds that ancestry. The
+  # upstream-base branch is what makes it hold -- it both delivers the objects
+  # and keeps them reachable, so no later GC can take them back.
   #
-  # It runs on every push rather than only on a bump: the ls-remote comparison
-  # costs a second and no-ops, and gating on a "did this push move the file"
-  # derivation would rest the invariant on that derivation being right. Running
-  # at bump-merge time also keeps the full clone off the release run's critical
-  # path, where a failure costs a 3-4 hour rebuild to retry.
+  # Moving that branch is a manual maintainer step, deliberately not done here.
+  # The push carries upstream's own .github/workflows/ files, and GitHub
+  # refuses those from an App token (which GITHUB_TOKEN is) unless it holds the
+  # `workflows` permission -- a scope no `permissions:` block can grant. Doing
+  # it in CI therefore means storing a PAT or deploy key with write access to
+  # this repo, which is not worth the exposure for a push taken once per
+  # upstream bump. So this job only checks, and prints the exact commands.
   #
-  # Skipped on pull_request: it wants contents:write, which this workflow
-  # deliberately keeps away from PR runs. A bump PR therefore gets no signal
-  # here, but its merge to recipe pushes the base long before any release run.
+  # It runs on every event, PRs included: the check is two ls-remotes, and a
+  # bump PR is exactly where the maintainer wants to learn the base still
+  # needs pushing -- long before a release run gets as far as tagging.
   upstream-base:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     permissions:
-      contents: write # pushes refs/heads/upstream-base
-    env:
-      GH_TOKEN: ${{ github.token }}
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
-      - name: Mirror the pinned upstream base onto this fork
+      - name: Check the pinned upstream base is on this fork
         run: |
           set -euo pipefail
           # || true: grep exits 1 on a comments-only file, which under pipefail
@@ -1140,26 +1139,33 @@ jobs:
             refs/heads/upstream-base | cut -f1)
 
           if [ "$WANT" = "$HAVE" ]; then
-            echo "upstream-base already at ${BASE} (${WANT})"
+            echo "upstream-base is at ${BASE} (${WANT})"
             exit 0
           fi
 
-          # --single-branch: the base tag's history alone, not every release
-          # line. The push that follows is small whenever the fork already
-          # carries an older base — git sends only the delta between them.
-          git clone --bare --single-branch --branch "$BASE" \
-            "$UPSTREAM" "$RUNNER_TEMP/upstream.git"
-          # --force: a new base need not descend from the old one (it does not
-          # across a major). Superseded bases stay reachable from the release
-          # tags built on them, so nothing is orphaned.
-          #
-          # --no-follow-tags: never let upstream's own vX.Y.Z tag ride along.
-          # It would collide with this fork's vX.Y.Z-R release tag namespace
-          # and can be refused outright by a tag ruleset, failing the push.
-          git -C "$RUNNER_TEMP/upstream.git" push --force --no-follow-tags \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "${WANT}:refs/heads/upstream-base"
-          echo "Pushed upstream-base -> ${BASE} (${WANT})"
+          echo "::error::upstream-base is not at ${BASE}; a maintainer must push it before a release can be tagged (see docs/UPGRADING.md)"
+          cat >&2 <<EOF
+
+          upstream-base is at: ${HAVE:-(no such branch)}
+          it must be at:       ${WANT}  (${BASE})
+
+          Moving it is a manual step -- the push rewrites upstream's own
+          .github/workflows/ files, which GITHUB_TOKEN is not permitted to do,
+          and this workflow holds no credential that is. From a clone of this
+          fork, with a remote you can push to:
+
+            git fetch https://github.com/nodejs/node.git refs/tags/${BASE}
+            git push --force --no-follow-tags <remote> ${WANT}:refs/heads/upstream-base
+
+          then re-run this job.
+
+          --force because a new base need not descend from the old one (it does
+          not across a major); superseded bases stay reachable from the release
+          tags built on them, so nothing is orphaned. --no-follow-tags keeps
+          upstream's own ${BASE} tag out of this fork's vX.Y.Z-R tag namespace,
+          where it would collide and can be refused by a tag ruleset.
+          EOF
+          exit 1
 
   # Publish: on a release commit, once every gate in this run is green, tag
   # the materialized tree and publish the GitHub prerelease with this run's
@@ -1215,8 +1221,9 @@ jobs:
       # Note: the materialized tree is a SHALLOW clone of nodejs/node (prepare.sh
       # uses --depth 1), so this pushes a tag whose history is grafted at the
       # upstream base, and git sends only the commits above that boundary. The
-      # remote accepts it only because the upstream-base job (needs:, above) has
-      # already put the base and its ancestry there.
+      # remote accepts it only because the base and its ancestry are already
+      # there, on the upstream-base branch that the upstream-base job (needs:,
+      # above) has verified.
       - name: Tag the materialized tree
         run: |
           git config user.name "nodejs-mobile-bot"

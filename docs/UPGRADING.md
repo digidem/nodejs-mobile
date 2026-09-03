@@ -189,13 +189,28 @@ gate is an allow-list, so it cannot see tests upstream just added — they
 would otherwise surface on the nightly or at release). Expect the PR to take
 substantially longer than a normal one. → [TESTING.md](./TESTING.md)
 
-Merging the bump also moves this fork's `upstream-base` branch to the new
-tag, via the `upstream-base` job. That branch is load-bearing rather than
-informational: the release tag is pushed from a shallow clone whose history
-stops at the base, so the remote can only accept it if it already holds the
-base and its ancestry. Don't delete the branch, and if the job fails, fix it
-before cutting a release — `publish` `needs:` it, so a release run would
-otherwise get as far as tagging and stop there.
+A bump also needs this fork's `upstream-base` branch moved to the new tag.
+That branch is load-bearing rather than informational: the release tag is
+pushed from a shallow clone whose history stops at the base, so the remote
+can only accept it if it already holds the base and its ancestry. Don't
+delete it, and don't leave it behind — `publish` `needs:` the `upstream-base`
+job, so a release run would otherwise get as far as tagging and stop there.
+
+Moving it is a manual maintainer step. CI only checks it, because the push
+carries upstream's own `.github/workflows/` files and GitHub refuses those
+from `GITHUB_TOKEN` without the `workflows` permission — a scope a workflow
+cannot grant itself. Automating it would mean giving CI a PAT or deploy key
+with write access to this repo, which is not worth the exposure for a push
+taken once per upgrade. The `upstream-base` job prints the exact commands
+when it fails; they amount to:
+
+```sh
+git fetch https://github.com/nodejs/node.git refs/tags/v24.20.0
+git push --force --no-follow-tags digidem <sha-of-v24.20.0>:refs/heads/upstream-base
+```
+
+Push it any time from the bump PR onwards — nothing reads the branch except
+a release run — then re-run the job.
 
 ## Release
 
