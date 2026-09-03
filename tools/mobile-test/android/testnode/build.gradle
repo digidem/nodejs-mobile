@@ -1,0 +1,5 @@
+// Top-level build file for the Android test harness
+// (docs/TESTING.md on the recipe branch).
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
