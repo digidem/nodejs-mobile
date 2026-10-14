@@ -72,14 +72,15 @@ doc-build-mobile-notes-and-ignores.patch	README.md
 ci-remove-upstream-only-workflows-and-config.patch	.github/ISSUE_TEMPLATE/config.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/SUPPORT.md
 ci-remove-upstream-only-workflows-and-config.patch	.github/label-pr-config.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/author-ready-conflicts.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/auto-start-ci.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/build-tarball.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/close-stalled.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/codeql.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/comment-labeled.yml
-ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/commit-lint-problem-matcher.json
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/commit-lint.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/commit-queue.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/contributor-guidance.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/coverage-linux-without-intl.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/coverage-linux.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/coverage-windows.yml
