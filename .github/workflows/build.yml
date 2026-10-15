@@ -584,6 +584,9 @@ jobs:
           target: default
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # Pinned to emulator 37.1.11: 37.2.12 gets the runner killed (shutdown
+          # signal) ~10 min into the full suite, on recipe as well as on upgrades.
+          emulator-build: 15917651
           disable-animations: true
           # NB: android-emulator-runner runs `script` line-by-line, so the
           # invocation must be a single line (no backslash continuations).

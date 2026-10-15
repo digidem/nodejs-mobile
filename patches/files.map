@@ -37,6 +37,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dg
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-membership.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-socket-buffer-size.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-copyfile.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-glob.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-lchmod.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-mkdir.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-open-flags.js
@@ -46,6 +47,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-readdir-ucs2.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-realpath-native.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-realpath.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-rmSync-special-char-additional-error.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-rmdir-recursive.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-stat.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-watch.js
@@ -63,6 +65,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-pr
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-repl-options.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-runner-concurrency.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-signal-handler.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-sqlite-backup.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-watch-mode-files_watcher.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/sequential.status
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/test-async-wrap-getasyncid.js
@@ -72,14 +75,15 @@ doc-build-mobile-notes-and-ignores.patch	README.md
 ci-remove-upstream-only-workflows-and-config.patch	.github/ISSUE_TEMPLATE/config.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/SUPPORT.md
 ci-remove-upstream-only-workflows-and-config.patch	.github/label-pr-config.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/author-ready-conflicts.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/auto-start-ci.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/build-tarball.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/close-stalled.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/codeql.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/comment-labeled.yml
-ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/commit-lint-problem-matcher.json
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/commit-lint.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/commit-queue.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/contributor-guidance.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/coverage-linux-without-intl.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/coverage-linux.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/coverage-windows.yml

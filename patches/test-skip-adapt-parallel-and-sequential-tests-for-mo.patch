@@ -16,11 +16,12 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1444 +++++++++++++++++
+ test/parallel/parallel.status                 | 1473 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
  test/parallel/test-fs-copyfile.js             |    3 +-
+ test/parallel/test-fs-glob.mjs                |    5 +-
  test/parallel/test-fs-lchmod.js               |    4 +-
  test/parallel/test-fs-mkdir.js                |    5 +-
  test/parallel/test-fs-open-flags.js           |    3 +-
@@ -30,6 +31,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-fs-readdir-ucs2.js         |    2 +-
  test/parallel/test-fs-realpath-native.js      |    7 +
  test/parallel/test-fs-realpath.js             |    8 +-
+ ...fs-rmSync-special-char-additional-error.js |    4 +-
  test/parallel/test-fs-rmdir-recursive.js      |    6 +
  test/parallel/test-fs-stat.js                 |    7 +
  test/parallel/test-fs-watch.js                |   10 +-
@@ -47,17 +49,18 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-repl-options.js            |    6 +-
  test/parallel/test-runner-concurrency.js      |    3 +
  test/parallel/test-signal-handler.js          |   12 +-
+ test/parallel/test-sqlite-backup.mjs          |    7 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1754 insertions(+), 46 deletions(-)
+ 38 files changed, 1796 insertions(+), 49 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index e4c82da4d6..d951785ba4 100644
+index d13efc8ac1..0536fbccdd 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -162,6 +162,1450 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1479 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -76,6 +79,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
 +test-bash-completion: SKIP
++test-benchmark-compare: SKIP
 +test-buffer-constructor-node-modules-paths: SKIP
 +test-child-process-*: SKIP
 +test-cli-*: SKIP
@@ -83,8 +87,10 @@ index e4c82da4d6..d951785ba4 100644
 +test-common: SKIP
 +test-common-countdown: SKIP
 +test-common-expect-warning: SKIP
++test-common-wpt-script-modifier: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -100,6 +106,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-debugger-help: SKIP
 +test-debugger-invalid-json: SKIP
 +test-debugger-list: SKIP
++test-debugger-no-inspect-brk: SKIP
 +test-debugger-object-type-remote-object: SKIP
 +test-debugger-profile: SKIP
 +test-debugger-profile-command: SKIP
@@ -128,10 +135,13 @@ index e4c82da4d6..d951785ba4 100644
 +test-env-var-no-warnings: SKIP
 +test-error-reporting: SKIP
 +test-force-repl*: SKIP
++test-fs-glob-no-follow-symlink-globstar: SKIP
 +test-fs-readfile-error: SKIP
 +test-fs-readfile-pipe*: SKIP
 +test-fs-readfilesync-pipe-large: SKIP
++test-fs-realpath-async-stale-stat-values: SKIP
 +test-fs-realpath-pipe: SKIP
++test-fs-realpath-stale-stat-values: SKIP
 +test-fs-syncwritestream: SKIP
 +test-fs-write-sigxfsz: SKIP
 +test-fs-write-stream-patch-open: SKIP
@@ -177,6 +187,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-module-main-fail: SKIP
 +test-module-main-preserve-symlinks-fail: SKIP
 +test-module-run-main-monkey-patch: SKIP
++test-module-unreadable-package-json: SKIP
 +test-module-wrap: SKIP
 +test-module-wrapper: SKIP
 +test-net-child-process-connect-reset: SKIP
@@ -197,6 +208,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-permission-drop-fs-granted-path: SKIP
 +test-permission-drop-fs-specific-path: SKIP
 +test-permission-fs-write-trace-events: SKIP
++test-permission-openssl-store: SKIP
 +test-pipe-head: SKIP
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
@@ -266,6 +278,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-runner-inspect: SKIP
 +test-runner-log: SKIP
 +test-runner-misc: SKIP
++test-runner-mock-dual-package: SKIP
 +test-runner-output: SKIP
 +test-runner-reporters: SKIP
 +test-runner-tag-filter-cli: SKIP
@@ -378,6 +391,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-vm-sigint-existing-handler: SKIP
 +test-vm-syntax-error-message: SKIP
 +test-vm-syntax-error-stderr: SKIP
++test-webcrypto-prototype-pollution: SKIP
 +test-worker-init-failure: SKIP
 +test-worker-message-type-unknown: SKIP
 +test-worker-on-process-exit: SKIP
@@ -645,6 +659,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-permission-drop-fs-write: SKIP
 +test-permission-drop-worker: SKIP
 +test-permission-fs-absolute-path: SKIP
++test-permission-fs-filehandle-sync: SKIP
 +test-permission-fs-read: SKIP
 +test-permission-fs-read-entrypoint: SKIP
 +test-permission-fs-relative-path: SKIP
@@ -658,6 +673,8 @@ index e4c82da4d6..d951785ba4 100644
 +test-permission-fs-write-report: SKIP
 +test-permission-inspector: SKIP
 +test-permission-inspector-brk: SKIP
++test-permission-linked-binding: SKIP
++test-permission-linked-binding-drop: SKIP
 +test-permission-processbinding: SKIP
 +test-permission-sqlite-load-extension: SKIP
 +test-permission-warning-flags: SKIP
@@ -710,6 +727,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
 +test-bash-completion: SKIP
++test-benchmark-compare: SKIP
 +test-buffer-constructor-node-modules-paths: SKIP
 +test-child-process-*: SKIP
 +test-cli-*: SKIP
@@ -717,9 +735,11 @@ index e4c82da4d6..d951785ba4 100644
 +test-common: SKIP
 +test-common-countdown: SKIP
 +test-common-expect-warning: SKIP
++test-common-wpt-script-modifier: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
 +test-crypto-no-algorithm: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -738,6 +758,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-debugger-invalid-json: SKIP
 +test-debugger-list: SKIP
 +test-debugger-low-level: SKIP
++test-debugger-no-inspect-brk: SKIP
 +test-debugger-object-type-remote-object: SKIP
 +test-debugger-preserve-breaks: SKIP
 +test-debugger-probe-cond: SKIP
@@ -775,10 +796,13 @@ index e4c82da4d6..d951785ba4 100644
 +test-env-var-no-warnings: SKIP
 +test-error-reporting: SKIP
 +test-force-repl*: SKIP
++test-fs-glob-no-follow-symlink-globstar: SKIP
 +test-fs-readfile-error: SKIP
 +test-fs-readfile-pipe*: SKIP
 +test-fs-readfilesync-pipe-large: SKIP
++test-fs-realpath-async-stale-stat-values: SKIP
 +test-fs-realpath-pipe: SKIP
++test-fs-realpath-stale-stat-values: SKIP
 +test-fs-syncwritestream: SKIP
 +test-fs-write-sigxfsz: SKIP
 +test-fs-write-stream-patch-open: SKIP
@@ -824,6 +848,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-module-main-fail: SKIP
 +test-module-main-preserve-symlinks-fail: SKIP
 +test-module-run-main-monkey-patch: SKIP
++test-module-unreadable-package-json: SKIP
 +test-module-wrap: SKIP
 +test-module-wrapper: SKIP
 +test-net-child-process-connect-reset: SKIP
@@ -844,6 +869,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-permission-audit-fs-does-not-deny: SKIP
 +test-permission-drop-fs-granted-path: SKIP
 +test-permission-drop-fs-specific-path: SKIP
++test-permission-openssl-store: SKIP
 +test-pipe-head: SKIP
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
@@ -913,6 +939,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-runner-inspect: SKIP
 +test-runner-log: SKIP
 +test-runner-misc: SKIP
++test-runner-mock-dual-package: SKIP
 +test-runner-output: SKIP
 +test-runner-reporters: SKIP
 +test-runner-watch-mode: SKIP
@@ -1021,6 +1048,7 @@ index e4c82da4d6..d951785ba4 100644
 +test-vm-sigint-existing-handler: SKIP
 +test-vm-syntax-error-message: SKIP
 +test-vm-syntax-error-stderr: SKIP
++test-webcrypto-prototype-pollution: SKIP
 +test-worker-init-failure: SKIP
 +test-worker-message-type-unknown: SKIP
 +test-worker-on-process-exit: SKIP
@@ -1078,6 +1106,7 @@ index e4c82da4d6..d951785ba4 100644
 +# jitless configuration on the host instead (host-smoke workflow).
 +#
 +test-fetch-disabled: SKIP
++test-internal-webidl-buffer-source: SKIP
 +test-vm-codegen: SKIP
 +test-wasm: SKIP
 +test-wasm-simple: SKIP
@@ -1203,8 +1232,11 @@ index e4c82da4d6..d951785ba4 100644
 +test-permission-drop-fs-scope: SKIP
 +test-permission-drop-fs-write: SKIP
 +test-permission-drop-worker: SKIP
++test-permission-fs-filehandle-sync: SKIP
 +test-permission-fs-write: SKIP
 +test-permission-fs-windows-path: SKIP
++test-permission-linked-binding: SKIP
++test-permission-linked-binding-drop: SKIP
 +#
 +# fs.watch's `ignore` option. libuv compiles FSEvents out entirely on iOS --
 +# "iOS (currently) doesn't provide the FSEvents-API (nor CoreServices)",
@@ -1576,6 +1608,22 @@ index 51d7153de0..9b1395f99b 100644
    assert.strictEqual(err.path, src);
    assert.strictEqual(err.dest, dest);
  }
+diff --git a/test/parallel/test-fs-glob.mjs b/test/parallel/test-fs-glob.mjs
+index 869fbcac0d..893887dc36 100644
+--- a/test/parallel/test-fs-glob.mjs
++++ b/test/parallel/test-fs-glob.mjs
+@@ -658,7 +658,10 @@ describe('globSync - ENOTDIR', function() {
+ 
+ describe('glob - seen cache', function() {
+   // Refs: https://github.com/nodejs/node/issues/62897
+-  test('does not skip siblings after a seen child path', () => {
++  // nodejs-mobile patch: spawns a child node process.
++  test('does not skip siblings after a seen child path', {
++    skip: common.isAndroid || common.isIOS,
++  }, () => {
+     // The glob traversal used to return early from the children loop when a
+     // child path had already been seen through a different pattern context,
+     // silently dropping the remaining siblings. Whether the bug triggered
 diff --git a/test/parallel/test-fs-lchmod.js b/test/parallel/test-fs-lchmod.js
 index d439710291..d048680b95 100644
 --- a/test/parallel/test-fs-lchmod.js
@@ -1733,6 +1781,21 @@ index 6ad074397e..c27aee2759 100644
    try { fs.unlinkSync(link); } catch {
      // Continue regardless of error.
    }
+diff --git a/test/parallel/test-fs-rmSync-special-char-additional-error.js b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+index 9b4de3c84d..dbfc1eb426 100644
+--- a/test/parallel/test-fs-rmSync-special-char-additional-error.js
++++ b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+@@ -43,7 +43,9 @@ try {
+   }, (err) => {
+     // Verify that the error is due to permission restrictions
+     let expectedCode = 'EACCES';
+-    if (common.isMacOS) {
++    // nodejs-mobile patch: mobile links libc++, whose std::filesystem::remove_all
++    // reports ENOTEMPTY here, as on macOS.
++    if (common.isMacOS || common.isAndroid || common.isIOS) {
+       expectedCode = 'ENOTEMPTY';
+     } else if (common.isWindows) {
+       expectedCode = 'EPERM';
 diff --git a/test/parallel/test-fs-rmdir-recursive.js b/test/parallel/test-fs-rmdir-recursive.js
 index 77c205794b..4c52904b43 100644
 --- a/test/parallel/test-fs-rmdir-recursive.js
@@ -2013,7 +2076,7 @@ index a2df7d580d..eeb6c1de91 100644
 +
 +assert.deepStrictEqual(process.getActiveResourcesInfo(), expected);
 diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
-index b670ff37ac..68724daf7f 100644
+index 7f54beeea6..14f222d299 100644
 --- a/test/parallel/test-process-versions.js
 +++ b/test/parallel/test-process-versions.js
 @@ -2,8 +2,15 @@
@@ -2134,6 +2197,31 @@ index b84d2063a2..4411854e0b 100644
    }
  }, 1);
  
+diff --git a/test/parallel/test-sqlite-backup.mjs b/test/parallel/test-sqlite-backup.mjs
+index ee5f54fd90..f703409f4c 100644
+--- a/test/parallel/test-sqlite-backup.mjs
++++ b/test/parallel/test-sqlite-backup.mjs
+@@ -2,6 +2,8 @@
+ import {
+   isWindows,
+   skipIfSQLiteMissing,
++  isAndroid,
++  isIOS,
+   spawnPromisified,
+ } from '../common/index.mjs';
+ import fixtures from '../common/fixtures.js';
+@@ -380,7 +382,10 @@ test('source database is kept alive while a backup is in flight', async (t) => {
+   t.assert.strictEqual(rows.n, 500);
+ });
+ 
+-test('backup promise settles when the backup is the last active request', async (t) => {
++// nodejs-mobile patch: spawns a child node process.
++test('backup promise settles when the backup is the last active request', {
++  skip: isAndroid || isIOS,
++}, async (t) => {
+   const { code, signal, stderr } = await spawnPromisified(process.execPath, [
+     fixtures.path('sqlite', 'backup-last-request.mjs'),
+     nextDb(),
 diff --git a/test/parallel/test-watch-mode-files_watcher.mjs b/test/parallel/test-watch-mode-files_watcher.mjs
 index e1595350cd..f5d84f7480 100644
 --- a/test/parallel/test-watch-mode-files_watcher.mjs
@@ -2154,10 +2242,10 @@ index e1595350cd..f5d84f7480 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 01a021130c..059f682010 100644
+index 6b5714500b..9c8a8e0f5c 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -39,6 +39,135 @@ test-perf-hooks: SKIP
+@@ -43,6 +43,135 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  
@@ -2294,7 +2382,7 @@ index 01a021130c..059f682010 100644
  # https://github.com/nodejs/node/issues/49933
  test-watch-mode-inspect: SKIP
 diff --git a/test/sequential/test-async-wrap-getasyncid.js b/test/sequential/test-async-wrap-getasyncid.js
-index 5db4a77631..dba092fd3f 100644
+index ef48f457a8..529cc62b12 100644
 --- a/test/sequential/test-async-wrap-getasyncid.js
 +++ b/test/sequential/test-async-wrap-getasyncid.js
 @@ -12,6 +12,8 @@ const providers = { ...internalBinding('async_wrap').Providers };
@@ -2319,7 +2407,7 @@ index 5db4a77631..dba092fd3f 100644
      const objKeys = Object.keys(providers);
      if (objKeys.length > 0)
        process._rawDebug(objKeys);
-@@ -196,7 +204,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+@@ -198,7 +206,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
    testInitialized(handle, 'Pipe');
  }
  
@@ -2329,7 +2417,7 @@ index 5db4a77631..dba092fd3f 100644
    tmpdir.refresh();
  
    const server = net.createServer(common.mustCall((socket) => {
-@@ -328,6 +337,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+@@ -330,6 +339,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
  // DIRHANDLE
  {
    const dirBinding = internalBinding('fs_dir');

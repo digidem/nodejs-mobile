@@ -23,10 +23,10 @@ Co-authored-by: João Matos <joao@tritao.eu>
  1 file changed, 118 insertions(+), 7 deletions(-)
 
 diff --git a/common.gypi b/common.gypi
-index 83e0691d4a..dc33231a0d 100644
+index bc690955d3..b3a74cb587 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -112,7 +112,7 @@
+@@ -115,7 +115,7 @@
          'obj_dir%': '<(PRODUCT_DIR)/obj.target',
          'v8_base': '<(PRODUCT_DIR)/obj.target/tools/v8_gypfiles/libv8_snapshot.a',
        }],
@@ -35,7 +35,7 @@ index 83e0691d4a..dc33231a0d 100644
          'obj_dir%': '<(PRODUCT_DIR)/obj.target',
          'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
        }],
-@@ -223,6 +223,23 @@
+@@ -226,6 +226,23 @@
                }],
              ],
            }],
@@ -59,7 +59,7 @@ index 83e0691d4a..dc33231a0d 100644
            ['OS=="solaris"', {
              # pull in V8's postmortem metadata
              'ldflags': [ '-Wl,-z,allextract' ]
-@@ -231,7 +248,7 @@
+@@ -234,7 +251,7 @@
              # increase performance, number from experimentation
              'cflags': [ '-qINLINE=::150:100000' ]
            }],
@@ -68,7 +68,7 @@ index 83e0691d4a..dc33231a0d 100644
              # -fno-omit-frame-pointer is necessary for the --perf_basic_prof
              # flag to work correctly. perf(1) gets confused about JS stack
              # frames otherwise, even with --call-graph dwarf.
-@@ -450,7 +467,7 @@
+@@ -453,7 +470,7 @@
        [ 'target_arch=="arm64"', {
          'msvs_configuration_platform': 'arm64',
        }],
@@ -77,7 +77,7 @@ index 83e0691d4a..dc33231a0d 100644
          'cflags+': [
            '-fno-omit-frame-pointer',
            '-fsanitize=address',
-@@ -478,7 +495,7 @@
+@@ -481,7 +498,7 @@
            }],
          ],
        }],
@@ -86,7 +86,7 @@ index 83e0691d4a..dc33231a0d 100644
          'cflags+': [
            '-fno-omit-frame-pointer',
            '-fsanitize=undefined',
-@@ -487,7 +504,7 @@
+@@ -490,7 +507,7 @@
          'cflags!': [ '-fno-omit-frame-pointer' ],
          'ldflags': [ '-fsanitize=undefined' ],
        }],
@@ -95,7 +95,7 @@ index 83e0691d4a..dc33231a0d 100644
          'xcode_settings': {
            'OTHER_CFLAGS+': [
              '-fno-omit-frame-pointer',
-@@ -595,11 +612,13 @@
+@@ -601,11 +618,13 @@
            }],
            ['_toolset=="host"', {
              'conditions': [
@@ -111,7 +111,7 @@ index 83e0691d4a..dc33231a0d 100644
                  'cflags': [ '-m64' ],
                  'ldflags': [ '-m64' ],
                }],
-@@ -759,6 +778,98 @@
+@@ -773,6 +792,98 @@
            }],
          ],
        }],
