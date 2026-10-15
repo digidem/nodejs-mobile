@@ -16,11 +16,12 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1470 +++++++++++++++++
+ test/parallel/parallel.status                 | 1473 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
  test/parallel/test-fs-copyfile.js             |    3 +-
+ test/parallel/test-fs-glob.mjs                |    5 +-
  test/parallel/test-fs-lchmod.js               |    4 +-
  test/parallel/test-fs-mkdir.js                |    5 +-
  test/parallel/test-fs-open-flags.js           |    3 +-
@@ -30,6 +31,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-fs-readdir-ucs2.js         |    2 +-
  test/parallel/test-fs-realpath-native.js      |    7 +
  test/parallel/test-fs-realpath.js             |    8 +-
+ ...fs-rmSync-special-char-additional-error.js |    4 +-
  test/parallel/test-fs-rmdir-recursive.js      |    6 +
  test/parallel/test-fs-stat.js                 |    7 +
  test/parallel/test-fs-watch.js                |   10 +-
@@ -51,13 +53,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1780 insertions(+), 46 deletions(-)
+ 37 files changed, 1790 insertions(+), 48 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..c7df93ded6 100644
+index d13efc8ac1..0536fbccdd 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1476 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1479 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -87,6 +89,7 @@ index d13efc8ac1..c7df93ded6 100644
 +test-common-wpt-script-modifier: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -735,6 +738,7 @@ index d13efc8ac1..c7df93ded6 100644
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
 +test-crypto-no-algorithm: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -1101,6 +1105,7 @@ index d13efc8ac1..c7df93ded6 100644
 +# jitless configuration on the host instead (host-smoke workflow).
 +#
 +test-fetch-disabled: SKIP
++test-internal-webidl-buffer-source: SKIP
 +test-vm-codegen: SKIP
 +test-wasm: SKIP
 +test-wasm-simple: SKIP
@@ -1602,6 +1607,22 @@ index 51d7153de0..9b1395f99b 100644
    assert.strictEqual(err.path, src);
    assert.strictEqual(err.dest, dest);
  }
+diff --git a/test/parallel/test-fs-glob.mjs b/test/parallel/test-fs-glob.mjs
+index 869fbcac0d..893887dc36 100644
+--- a/test/parallel/test-fs-glob.mjs
++++ b/test/parallel/test-fs-glob.mjs
+@@ -658,7 +658,10 @@ describe('globSync - ENOTDIR', function() {
+ 
+ describe('glob - seen cache', function() {
+   // Refs: https://github.com/nodejs/node/issues/62897
+-  test('does not skip siblings after a seen child path', () => {
++  // nodejs-mobile patch: spawns a child node process.
++  test('does not skip siblings after a seen child path', {
++    skip: common.isAndroid || common.isIOS,
++  }, () => {
+     // The glob traversal used to return early from the children loop when a
+     // child path had already been seen through a different pattern context,
+     // silently dropping the remaining siblings. Whether the bug triggered
 diff --git a/test/parallel/test-fs-lchmod.js b/test/parallel/test-fs-lchmod.js
 index d439710291..d048680b95 100644
 --- a/test/parallel/test-fs-lchmod.js
@@ -1759,6 +1780,21 @@ index 6ad074397e..c27aee2759 100644
    try { fs.unlinkSync(link); } catch {
      // Continue regardless of error.
    }
+diff --git a/test/parallel/test-fs-rmSync-special-char-additional-error.js b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+index 9b4de3c84d..dbfc1eb426 100644
+--- a/test/parallel/test-fs-rmSync-special-char-additional-error.js
++++ b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+@@ -43,7 +43,9 @@ try {
+   }, (err) => {
+     // Verify that the error is due to permission restrictions
+     let expectedCode = 'EACCES';
+-    if (common.isMacOS) {
++    // nodejs-mobile patch: mobile links libc++, whose std::filesystem::remove_all
++    // reports ENOTEMPTY here, as on macOS.
++    if (common.isMacOS || common.isAndroid || common.isIOS) {
+       expectedCode = 'ENOTEMPTY';
+     } else if (common.isWindows) {
+       expectedCode = 'EPERM';
 diff --git a/test/parallel/test-fs-rmdir-recursive.js b/test/parallel/test-fs-rmdir-recursive.js
 index 77c205794b..4c52904b43 100644
 --- a/test/parallel/test-fs-rmdir-recursive.js

@@ -37,6 +37,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dg
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-membership.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-socket-buffer-size.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-copyfile.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-glob.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-lchmod.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-mkdir.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-open-flags.js
@@ -46,6 +47,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-readdir-ucs2.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-realpath-native.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-realpath.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-rmSync-special-char-additional-error.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-rmdir-recursive.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-stat.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-watch.js
