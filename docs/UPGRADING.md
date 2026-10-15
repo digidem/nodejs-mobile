@@ -10,15 +10,16 @@ occasionally, one that only the compile catches (see the warning below).
 ## Re-base the series
 
 ```sh
-$EDITOR upstream-base.txt                 # bump the tag, e.g. v24.20.0
+$EDITOR upstream-base.txt                 # bump the tag, e.g. v24.20.0 (don't commit yet)
 scripts/prepare.sh                        # clone new base + apply series
 ```
 
-`prepare.sh` stops at the first patch that no longer applies. For each
-conflict, resolve **in `out/`** with the usual `git am` loop
-(`git status` → edit → `git add` → `git am --continue`), guided by one
-question: *what does this patch intend, and what did upstream change?*
-Patterns seen in practice:
+`prepare.sh` stops at the first patch that no longer applies and prints a
+summary of the unmerged paths. Resolve **in `out/`**, `git -C out am
+--continue`, then resume the rest of the series with
+`scripts/apply-series.sh out` (see [Resuming](#resuming-after-a-conflict)).
+Each conflict comes down to one question: *what does this patch intend, and
+what did upstream change?* Patterns seen in practice:
 
 - **Adjacent churn** — upstream changed a line next to a mobile hunk (e.g. a
   version string in `common.gypi`): keep upstream's new value, keep the
@@ -28,8 +29,18 @@ Patterns seen in practice:
 - **Upstream restructured context the patch relied on** (e.g. a macro block
   the mobile diff sat inside was removed): re-apply only the mobile intent
   against the new structure.
+- **Upstream absorbed the mobile hunk** — upstream now does what the patch
+  did, often more generally: drop the hunk, and trim the paragraph of the
+  patch header that explained it (edit the `.patch` header, then
+  regenerate). Recheck the `Co-authored-by:` trailers against what remains.
+  v24.22.0 wrapped `--experimental-wasm-jspi` in `#if V8_ENABLE_WEBASSEMBLY`
+  and started defining that macro for node's own targets in `common.gypi`;
+  iOS builds V8 in lite mode, so that retired our iOS-only guard. Before
+  dropping one, trace the chain on the new base — the old header may say
+  why upstream's spelling would not have worked before.
 - **Delete/modify** — a file we delete was modified upstream: the intent is
-  still deletion → `git rm` the unmerged paths, continue.
+  still deletion → `git rm` the unmerged paths, continue. The conflict
+  summary prints the one-liner.
 - **Wholesale-replacement docs** (the fork `README.md` replaces the upstream
   remainder): resolve to ours.
 
@@ -46,9 +57,11 @@ Also:
   removal patch doesn't cover yet — `git rm` them in `out/` *and* add each
   path to `patches/files.map` against the upstream-CI removal patch
   (`ci-remove-upstream-only-workflows-and-config.patch`), or
-  `regenerate-patches.py` rejects the deletion as owned by no patch. A
-  `verify-patches` job asserts the materialized tree carries zero workflow
-  files, so a missed one fails loudly.
+  `regenerate-patches.py` rejects the deletion as owned by no patch.
+  `apply-series.sh` lists any it finds, and a `verify-patches` job asserts
+  the materialized tree carries zero workflow files. The reverse also
+  happens: when upstream deletes a file a `files.map` line names (v24.22.0
+  dropped `commit-lint-problem-matcher.json`), remove that line.
 - add `.status` entries for the tests upstream just added — see [new upstream
   tests](#new-upstream-tests) below.
 - watch for upstream **splitting a build target**. gyp resolves the new
@@ -64,47 +77,36 @@ Also:
 
 ### `sha1 information is lacking or useless`
 
-A patch that stops with
-
 ```
 error: sha1 information is lacking or useless (README.md).
 error: could not build fake ancestor
 ```
 
-has not conflicted. `--3way` needs the *pre-image* blob the patch header
-records, and `prepare.sh` clones `--depth 1`, so `out/` holds only the new
-tag's blobs — for any file upstream touched since the old base, git has
-nothing to merge against. Fetch the base you are moving off to supply them:
+is not a conflict. `--3way` needs the *pre-image* blob the patch header
+records, and `prepare.sh` clones `--depth 1`, so the clone has nothing to
+merge against for files upstream touched since the old base. The scripts
+fetch the old base for you when it is derivable — the committed
+`upstream-base.txt`, while your bump is still uncommitted — or from
+`OLD_BASE=<tag>`. If you see this error, set `OLD_BASE` and re-run
+`scripts/apply-series.sh out`.
+
+### Resuming after a conflict
+
+`prepare.sh` refuses to run when `out/` exists, so it cannot resume. Once
+you have resolved a conflict and run `git -C out am --continue`:
 
 ```sh
-git -C out fetch --depth 1 origin tag v24.19.0
+scripts/apply-series.sh out
 ```
 
-Retry the patch and it either applies or fails as an ordinary content
-conflict you can resolve. Do this before editing anything by hand: with the
-old blobs present, `git am --3way` absorbs most upstream drift on its own.
+It skips every patch whose subject is already in `out/`'s history (or
+starts at `--from <patch>`), applies the rest, commits the `mobile-src/`
+overlay if it hasn't been, and compares the tree hash — informational
+here, since the hash moves with the upgrade. The overlay is not optional:
+without it, `regenerate-patches.py` reads every fork-only file as deleted.
 
-### Finishing the series by hand
-
-`prepare.sh` refuses to run when `out/` exists, so it cannot be re-run to
-resume. Once you have resolved the conflict, land it and apply the rest of
-`patches/series` yourself with the same invocation the script uses:
-
-```sh
-git -C out am --continue
-git -C out am --3way --keep-cr --whitespace=nowarn patches/<each remaining>.patch
-```
-
-Then redo step 3, the `mobile-src/` overlay, which never ran. It is not
-optional — without that commit `out/` is upstream plus patches, and
-`regenerate-patches.py` reads every fork-only file as deleted:
-
-```sh
-( cd mobile-src && git ls-files -z --cached --others --exclude-standard . ) > /tmp/manifest
-( cd mobile-src && tar cf - --null -T /tmp/manifest ) | ( cd out && tar xf - )
-git -C out add -f --pathspec-from-file=/tmp/manifest --pathspec-file-nul
-git -C out commit -m "mobile: fork-only files (mobile-src overlay)"
-```
+Work with `git -C out …` rather than `cd out`, and give `git -C out am`
+absolute patch paths — it resolves relative ones against `out/`.
 
 ### Regenerate and commit
 
@@ -128,10 +130,17 @@ the moment the base moves — and the suite gates the merge. Work out what
 needs skipping *before* pushing rather than reading it off a red run:
 
 ```sh
-git -C out diff --name-status v24.19.0 v24.20.0 -- test/parallel test/sequential | grep '^A'
+scripts/triage-new-tests.py out v24.20.0 v24.22.0
 ```
 
-A minor release can add hundreds. Most need nothing. Triage by cause:
+It covers added tests and the added lines of modified ones — an existing
+test can gain a subtest that spawns a child or a `// Flags:` entry iOS
+rejects (v24.22.0 did both, to `test-fs-glob` and
+`test-internal-webidl-buffer-source`). It drops tests the platform's
+`.status` block already matches and prints one line per suspect with its
+category, the platforms still open, the matching source line, and any
+top-level `common.skip()` guard. A minor release can add hundreds of tests;
+most need nothing. Read each suspect against these causes:
 
 - **Spawns a child node process** — cannot pass on Android, where
   `process.execPath` is `app_process64`, so the child SIGABRTs (its stderr
@@ -147,6 +156,9 @@ A minor release can add hundreds. Most need nothing. Triage by cause:
   `// Flags:` header, and watch for a test that starts with the permission
   and calls `process.permission.drop('fs.write')` (or `'fs'`) partway
   through. The verdict write is denied either way. Skip.
+- **V8 flags iOS doesn't have** — iOS builds V8 in lite mode, which compiles
+  out WebAssembly, so a `// Flags: --experimental-wasm-*` header fails with
+  `bad option` before the test runs. Skip on iOS only.
 - **Self-skipping** — a test that ends at `common.skip()` scores PASS, so it
   needs no entry. This is why v24.20.0's ~250 new QUIC tests are absent from
   `parallel.status`: the mobile build doesn't pass `--experimental-quic`, so
@@ -155,6 +167,14 @@ A minor release can add hundreds. Most need nothing. Triage by cause:
   `test-eslint-*` and `test-child-process-*` are skipped wholesale on both
   platforms; `test-debugger-probe-*` is a glob on Android but an itemized
   list on iOS, so a new member of that family needs an iOS entry only.
+- **Execs a non-node binary** (`mkfifo`, `sh`) — a judgement call. Android
+  ships toybox, so it may work; a real iOS device can't spawn at all.
+  Existing `mkfifo` tests are skipped; say which way you went in the PR.
+- **Expects a libstdc++ errno** — mobile links libc++, like macOS, so code
+  built on `std::filesystem` reports macOS's errno: `rmSync` on a read-only
+  directory gives `ENOTEMPTY`, not `EACCES`. When the test already
+  special-cases `common.isMacOS`, extend that condition with an anchored
+  `common.isAndroid || common.isIOS` guard rather than skipping the file.
 - **Everything else** — leave it to run. The suite is the measurement.
 
 A child-process spawner fails the Android suite outright, and on the iOS
@@ -177,6 +197,25 @@ lie. Say in the PR that the new entries are inferred and the suite is what
 confirms them.
 
 ## Open the PR
+
+Unlike the repo's usual short-prose PRs, an upgrade PR uses headings, so a
+reviewer can find the test decisions and tell routine ones from the ones
+that need thought:
+
+- **Conflicts** — each one and how it was resolved.
+- **Upstream changes absorbed** — mobile hunks dropped because upstream now
+  covers them, and the chain that proves it; new or removed workflows and
+  `files.map` lines; new build targets.
+- **Test changes**, in three groups:
+  - *Clear-cut skips* — spawns a child node, permission sandbox, iOS
+    lite-mode flags.
+  - *Judgement calls* — external binaries, platform errno differences, an
+    anchored guard chosen over a skip (or the reverse).
+  - *Failures that may indicate a mobile issue* — anything the suite
+    surfaced that none of the above explains; say what was investigated
+    before it was skipped, or why it was not.
+- **Verification** — reconstruction, audits, what was built locally.
+- **Manual steps** — the `upstream-base` push below.
 
 CI re-runs the reconstruction against a fresh upstream clone,
 validates each patch individually, and — once merged — builds the full

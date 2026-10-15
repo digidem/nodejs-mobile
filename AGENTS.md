@@ -73,12 +73,12 @@ Bump `upstream-base.txt`, run `prepare.sh`, resolve conflicts in `out/`,
 regenerate. Expect a handful of small conflicts. **A clean `git am` is not
 proof of correctness** — an upstream restructure can leave a platform guard
 (`#if TARGET_OS_OSX`) enclosing the wrong span, which only the compile
-catches. Two things bite every time: `prepare.sh`'s `--depth 1` clone has no
-pre-image blobs, so a patch on an upstream-modified file dies with `sha1
-information is lacking or useless` until you `git -C out fetch --depth 1
-origin tag <old base>`; and `prepare.sh` can't resume, so after a conflict
-you apply the rest of the series *and* redo the `mobile-src` overlay by hand.
-New upstream tests need `.status` triage before the PR, not after — the full
+catches. Bump `upstream-base.txt` *without committing* so `prepare.sh` can
+fetch the old base's blobs for `--3way`; after resolving a conflict, resume
+with `scripts/apply-series.sh out` (it also redoes the `mobile-src`
+overlay). Use `git -C out …`, not `cd out`, with absolute patch paths for
+`git -C out am`. Triage new *and modified* upstream tests with
+`scripts/triage-new-tests.py out <old> <new>` before the PR — the full
 device suite gates the merge. → [docs/UPGRADING.md](./docs/UPGRADING.md)
 
 ## Gotchas
