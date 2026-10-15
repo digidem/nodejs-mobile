@@ -49,11 +49,12 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-repl-options.js            |    6 +-
  test/parallel/test-runner-concurrency.js      |    3 +
  test/parallel/test-signal-handler.js          |   12 +-
+ test/parallel/test-sqlite-backup.mjs          |    7 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 37 files changed, 1790 insertions(+), 48 deletions(-)
+ 38 files changed, 1796 insertions(+), 49 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
 index d13efc8ac1..0536fbccdd 100644
@@ -2196,6 +2197,31 @@ index b84d2063a2..4411854e0b 100644
    }
  }, 1);
  
+diff --git a/test/parallel/test-sqlite-backup.mjs b/test/parallel/test-sqlite-backup.mjs
+index ee5f54fd90..f703409f4c 100644
+--- a/test/parallel/test-sqlite-backup.mjs
++++ b/test/parallel/test-sqlite-backup.mjs
+@@ -2,6 +2,8 @@
+ import {
+   isWindows,
+   skipIfSQLiteMissing,
++  isAndroid,
++  isIOS,
+   spawnPromisified,
+ } from '../common/index.mjs';
+ import fixtures from '../common/fixtures.js';
+@@ -380,7 +382,10 @@ test('source database is kept alive while a backup is in flight', async (t) => {
+   t.assert.strictEqual(rows.n, 500);
+ });
+ 
+-test('backup promise settles when the backup is the last active request', async (t) => {
++// nodejs-mobile patch: spawns a child node process.
++test('backup promise settles when the backup is the last active request', {
++  skip: isAndroid || isIOS,
++}, async (t) => {
+   const { code, signal, stderr } = await spawnPromisified(process.execPath, [
+     fixtures.path('sqlite', 'backup-last-request.mjs'),
+     nextDb(),
 diff --git a/test/parallel/test-watch-mode-files_watcher.mjs b/test/parallel/test-watch-mode-files_watcher.mjs
 index e1595350cd..f5d84f7480 100644
 --- a/test/parallel/test-watch-mode-files_watcher.mjs

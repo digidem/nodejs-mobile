@@ -65,6 +65,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-pr
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-repl-options.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-runner-concurrency.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-signal-handler.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-sqlite-backup.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-watch-mode-files_watcher.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/sequential.status
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/test-async-wrap-getasyncid.js
