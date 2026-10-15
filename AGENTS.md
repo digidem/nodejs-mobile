@@ -42,6 +42,9 @@ an unowned upstream edit is an error until you assign it. → [docs/CONTRIBUTING
 
 ## Build
 
+Bare `tools/…` paths below are inside the materialized tree (`out/`); in
+this repo they live under `mobile-src/tools/`.
+
 - **Android:** `./tools/android_build.sh <ndk> <sdk> [arch]` — **Linux only**.
   A macOS host cannot complete it: node's gyp links the *host* build-tools
   with GNU `ar`/`ld` options Apple's toolchain rejects. Not a mobile bug.
@@ -53,32 +56,33 @@ an unowned upstream edit is an error until you assign it. → [docs/CONTRIBUTING
 
 ## Test
 
-The gate is a curated `test/parallel` subset
-(`mobile-src/tools/mobile-test/curated-device-tests.txt`) run through the
-proxy harness on an Android emulator and an iOS simulator, plus boot smokes,
-a NAPI symbol smoke, and a real-device smoke on BrowserStack. A test passes
-when the app writes `PASS` to its per-launch sandbox verdict file — never
-scraped from logs.
+The PR gate is a curated `test/parallel` subset
+(`tools/mobile-test/curated-device-tests.txt`) run through the proxy harness
+on an Android emulator and an iOS simulator, plus boot smokes and a NAPI
+symbol smoke. The BrowserStack real-device smoke runs only on releases (or
+on demand). A test passes when the app writes `PASS` to its per-launch
+sandbox verdict file — never scraped from logs.
 
 Curation caveats: tests that **spawn a child node process** can't pass on
 Android and are excluded. The curated list is an **allow-list**, so a test
-that is neither listed nor `.status`-skipped never runs on a PR — run
-`tools/mobile-test/coverage-manifest.py` for how much that is (roughly 95%
-of the runnable suite). The nightly `full-device-suite.yml` sweeps that
-remainder on both platforms. → [TESTING.md](./docs/TESTING.md)
+that is neither listed nor `.status`-skipped never runs on a PR — that is
+most of the runnable suite; `tools/mobile-test/coverage-manifest.py` prints
+the current figure. `full-device-suite.yml` sweeps that remainder on both
+platforms nightly, on releases, and on upstream-upgrade PRs.
+→ [TESTING.md](./docs/TESTING.md)
 
 ## Upgrading upstream
 
 Bump `upstream-base.txt`, run `prepare.sh`, resolve conflicts in `out/`,
-regenerate. Expect a handful of small conflicts. **A clean `git am` is not
+regenerate. **A clean `git am` is not
 proof of correctness** — an upstream restructure can leave a platform guard
 (`#if TARGET_OS_OSX`) enclosing the wrong span, which only the compile
-catches. Two things bite every time: `prepare.sh`'s `--depth 1` clone has no
-pre-image blobs, so a patch on an upstream-modified file dies with `sha1
-information is lacking or useless` until you `git -C out fetch --depth 1
-origin tag <old base>`; and `prepare.sh` can't resume, so after a conflict
-you apply the rest of the series *and* redo the `mobile-src` overlay by hand.
-New upstream tests need `.status` triage before the PR, not after — the full
+catches. Bump `upstream-base.txt` *without committing* so `prepare.sh` can
+fetch the old base's blobs for `--3way`; after resolving a conflict, resume
+with `scripts/apply-series.sh out` (it also redoes the `mobile-src`
+overlay). Use `git -C out …`, not `cd out`, with absolute patch paths for
+`git -C out am`. Triage new *and modified* upstream tests with
+`scripts/triage-new-tests.py out <old> <new>` before the PR — the full
 device suite gates the merge. → [docs/UPGRADING.md](./docs/UPGRADING.md)
 
 ## Gotchas
